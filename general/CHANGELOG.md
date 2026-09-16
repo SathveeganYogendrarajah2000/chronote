@@ -10,17 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for [0.1.0] - Phase 1 Windows MVP
-- Desktop application shell using Tauri 2.x and React 19.
-- Local-first workspace initialization and folder management.
-- Continuous Daily Stand-up (DSM) journal with collapsible date entries.
-- General Notes system with standalone title-based documents.
-- Tiptap 3.x rich-text editor with instant Markdown shortcut input rules.
-- First-class code blocks with syntax highlighting, language selector, and copy button.
-- Embedded SQLite FTS5 search engine supporting sub-50 ms queries across tags, dates, and code.
-- Multi-document tab bar with DSM pinning and session restore.
-- Resource browser categorizing Code, Images, Links, Attachments, and Backlinks.
-- Atomic filesystem save pipeline (`.tmp` -> `fsync` -> rename).
-- Document exporters for Markdown (`.md`), Microsoft Word (`.docx`), PDF (`.pdf`), and Zip backup.
+- Milestone 1.2: Workspace & Storage Engine (Atomic file persistence in Rust, SQLite FTS5 index cache).
+- Milestone 1.3: Continuous Daily Stand-up (DSM) journal with collapsible date entries.
+- Milestone 1.4: General Notes subsystem.
+- Milestone 1.5: Tiptap 3.x rich-text editor with instant Markdown shortcut input rules.
+- Milestone 1.6: Instant Search DSL & Resource Browser.
+- Milestone 1.7: Export Pipeline (Markdown, DOCX, PDF, Zip backup).
+
+---
+
+## [0.1.0-alpha.1] - 2026-09-16
+
+### Added
+- **Milestone 1.1: Project Scaffolding & Native Shell:**
+  - Initialized Tauri 2.x native shell with Rust 2021 stable backend (`chronote`, `chronote_lib`).
+  - Configured React 19, TypeScript strict mode (`strict: true`, `noImplicitAny: true`, `exactOptionalPropertyTypes: true`), and Vite 6.
+  - Implemented Clean Architecture directory hierarchy (`domain`, `application`, `infrastructure`, `presentation`, `src-tauri`).
+  - Created pure TypeScript domain layer with Zod validation schemas (`TagSchema`, `IsoDateSchema`, `DsmEntrySchema`, `GeneralNoteSchema`, `WorkspaceSchema`).
+  - Created tag normalizer and generator utility for stable prefixed identifiers (`wsp_`, `ent_`, `not_`, `blk_`, `img_`, `att_`).
+  - Implemented Zustand application stores (`useWorkspaceStore`, `useTabsStore`, `useUiStore`) with tab pinning, close history stack, and scroll state preservation.
+  - Created typed Tauri IPC bridge and test mock adapter.
+  - Implemented dark and light theme custom CSS design tokens (`tokens.css`, `reset.css`, `layout.css`).
+  - Built responsive 3-pane desktop layout (`AppHeader`, `NavigationSidebar`, `TabBar`, `MainContentArea`, `ResourcePane`).
+  - Added desktop global keyboard accelerators (`Ctrl+F`, `Ctrl+N`, `Ctrl+Shift+D`, `Ctrl+\`, `Ctrl+W`, `Ctrl+Tab`, `Ctrl+Shift+T`).
+  - Implemented unit tests for domain validators, tag normalization, and tab store (18/18 tests passing in Vitest, 2/2 in Cargo).
 
 ---
 

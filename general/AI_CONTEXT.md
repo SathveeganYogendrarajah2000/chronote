@@ -15,9 +15,9 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Phase 0 (Documentation & Architecture Foundation)**.
-- **Status:** Architecture and documentation foundation completed. **NO application code has been written yet.**
-- **Next Milestone:** Phase 1 — Windows MVP initialization (Tauri 2.x + React 19 + TypeScript + Vite + Rust + SQLite FTS5).
+- **Current Phase:** **Phase 1 (Windows MVP Development)**.
+- **Status:** Milestone 1.1 (Project Scaffolding & Native Shell) **COMPLETED**. Tauri 2.x native shell, React 19, TypeScript strict mode, Vite, Zustand stores, Pure TS domain models with Zod validation, base CSS design tokens, and 3-pane responsive desktop layout implemented. 18/18 Vitest unit tests and 2/2 Rust native tests passing.
+- **Next Milestone:** Milestone 1.2: Workspace & Storage Engine (Local workspace directory initialization, atomic persistence pipeline in Rust, SQLite index.db cache).
 
 ---
 
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Completed comprehensive documentation foundation (Phase 0).
-- **Next Recommended Task:** Initialize the Tauri 2.x project scaffolding with React 19, TypeScript, Vite, and Rust native shell following the structure defined in [general/ARCHITECTURE.md](file:///e:/workspace/chronote/general/ARCHITECTURE.md).
+- **Current Work:** Milestone 1.1 completed (Clean Architecture foundation, Tauri 2.x Rust native core, domain models with Zod validation, base CSS tokens and 3-pane layout).
+- **Next Recommended Task:** Milestone 1.2: Workspace & Storage Engine (Implement workspace directory picker, `workspace.json` initialization, Rust atomic writer `.tmp` -> `fsync` -> `rename`, and SQLite FTS5 index initialization in `.chronote/index.db`).
 
 ---
 
