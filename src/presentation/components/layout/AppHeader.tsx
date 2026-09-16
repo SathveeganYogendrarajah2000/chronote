@@ -1,6 +1,7 @@
 import React from "react";
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
+import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { IconButton } from "../common/IconButton";
 import { generateId } from "@domain/id.utils";
 
@@ -15,6 +16,7 @@ export const AppHeader: React.FC = () => {
     setSearchModalOpen,
   } = useUiStore();
 
+  const { workspace, setWorkspaceModalOpen } = useWorkspaceStore();
   const { openTab } = useTabsStore();
 
   const handleCreateNote = () => {
@@ -62,6 +64,19 @@ export const AppHeader: React.FC = () => {
       </button>
 
       <div className="header-actions">
+        <button
+          type="button"
+          className="header-workspace-btn"
+          onClick={() => setWorkspaceModalOpen(true)}
+          title={workspace ? `Workspace: ${workspace.name}\nPath: ${workspace.path}` : "Open or Create Workspace"}
+        >
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9zM2.5 3a.5.5 0 0 0-.5.5V4h5.236a2.03 2.03 0 0 1-.318-.426C6.541 3.14 5.922 3 5.264 3H2.5z" />
+          </svg>
+          <span className="header-workspace-name">
+            {workspace ? workspace.name : "Open Workspace"}
+          </span>
+        </button>
         <button
           type="button"
           className="btn-primary-action"

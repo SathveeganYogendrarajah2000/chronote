@@ -8,15 +8,23 @@ import { NavigationSidebar } from "./components/layout/NavigationSidebar";
 import { TabBar } from "./components/layout/TabBar";
 import { MainContentArea } from "./components/layout/MainContentArea";
 import { ResourcePane } from "./components/layout/ResourcePane";
+import { WorkspaceModal } from "./components/workspace/WorkspaceModal";
 
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
+import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 import { generateId } from "@domain/id.utils";
 
 export const App: React.FC = () => {
   const { toggleSidebar, setSearchModalOpen } = useUiStore();
   const { tabs, activeTabId, switchTab, closeTab, reopenClosedTab, openTab } = useTabsStore();
+  const { init: initWorkspace } = useWorkspaceStore();
+
+  // Initialize workspace from background on startup
+  useEffect(() => {
+    void initWorkspace();
+  }, [initWorkspace]);
 
   // Register global desktop keyboard accelerators (EDITOR_SPEC.md Section 6)
   useEffect(() => {
@@ -103,6 +111,7 @@ export const App: React.FC = () => {
         </div>
         <ResourcePane />
       </div>
+      <WorkspaceModal />
     </div>
   );
 };

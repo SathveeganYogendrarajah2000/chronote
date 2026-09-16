@@ -10,12 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for [0.1.0] - Phase 1 Windows MVP
-- Milestone 1.2: Workspace & Storage Engine (Atomic file persistence in Rust, SQLite FTS5 index cache).
 - Milestone 1.3: Continuous Daily Stand-up (DSM) journal with collapsible date entries.
 - Milestone 1.4: General Notes subsystem.
 - Milestone 1.5: Tiptap 3.x rich-text editor with instant Markdown shortcut input rules.
 - Milestone 1.6: Instant Search DSL & Resource Browser.
 - Milestone 1.7: Export Pipeline (Markdown, DOCX, PDF, Zip backup).
+
+---
+
+## [0.1.0-alpha.2] - 2026-09-17
+
+### Added
+- **Milestone 1.2: Workspace & Storage Engine:**
+  - Implemented atomic file persistence pipeline in Rust (`.tmp` -> `File::sync_all()` -> `std::fs::rename`) with automatic orphan `.tmp` sweep.
+  - Built directory layout initializer generating `notes/`, `assets/images/`, `assets/files/`, `.chronote/`, `workspace.json`, `.gitignore`, and `.stignore`.
+  - Added path traversal security guard rejecting `..` and non-workspace paths.
+  - Implemented SQLite index database cache at `.chronote/index.db` with WAL mode, normalized relational tables (`documents`, `dsm_entries`, `tags`, `backlinks`, `resources`), and FTS5 virtual tables (`fts_blocks`, `fts_code_trigram`).
+  - Added disaster recovery index rebuild scanner reconstructing 100% of SQLite state from disk JSON files in milliseconds.
+  - Added native OS directory picker via `rfd` (asynchronous folder selection dialog).
+  - Implemented Tauri IPC commands for workspace creation, folder picking, opening, DSM & note persistence, and index rebuilding.
+  - Implemented `MockIpcBridge` for complete in-memory testing and headless browser execution.
+  - Upgraded `useWorkspaceStore` with full workspace lifecycle, recent workspace persistence, and error handling.
+  - Created developer-native `WorkspaceModal` dialog for opening and creating workspaces.
+  - Connected `AppHeader` and `NavigationSidebar` to dynamic workspace note lists and tag aggregation.
+  - Added 6 new frontend unit tests (24/24 Vitest passing) and 10 new native Rust tests (12/12 passing) with zero Clippy warnings.
 
 ---
 

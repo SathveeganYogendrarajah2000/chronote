@@ -1,6 +1,9 @@
-//! Storage and atomic filesystem persistence module for Chronote.
-//!
-//! Follows the atomic write protocol:
-//! 1. Write to temporary file (.tmp)
-//! 2. Flush OS buffers via File::sync_all()
-//! 3. Atomic rename to target path.
+pub mod atomic;
+pub mod error;
+pub mod models;
+pub mod workspace;
+
+pub use atomic::{atomic_write, cleanup_orphan_tmp_files};
+pub use error::StorageError;
+pub use models::*;
+pub use workspace::*;

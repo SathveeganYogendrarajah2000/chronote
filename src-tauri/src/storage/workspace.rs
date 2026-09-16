@@ -1,0 +1,393 @@
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use chrono::Utc;
+use uuid::Uuid;
+
+use super::atomic::{atomic_write, cleanup_orphan_tmp_files};
+use super::error::StorageError;
+use super::models::{DsmDocument, GeneralNote, NoteMetadata, Workspace, WorkspaceSettings};
+
+/// Validates that `subpath` remains within the bounds of `workspace_root`.
+/// Defends against directory traversal attacks (SECURITY.md Section 3).
+pub fn validate_workspace_path(
+    workspace_root: &Path,
+    subpath: &Path,
+) -> Result<PathBuf, StorageError> {
+    for comp in subpath.components() {
+        match comp {
+            std::path::Component::ParentDir => {
+                return Err(StorageError::PathTraversal(format!(
+                    "Path {:?} contains parent directory traversal ('..')",
+                    subpath
+                )));
+            }
+            std::path::Component::Prefix(_) | std::path::Component::RootDir => {
+                return Err(StorageError::PathTraversal(format!(
+                    "Path {:?} is an absolute or prefixed path",
+                    subpath
+                )));
+            }
+            _ => {}
+        }
+    }
+
+    let target = workspace_root.join(subpath);
+    if target.exists() {
+        let canonical_root = workspace_root.canonicalize().map_err(StorageError::Io)?;
+        let canonical_target = target.canonicalize().map_err(StorageError::Io)?;
+        if !canonical_target.starts_with(&canonical_root) {
+            return Err(StorageError::PathTraversal(format!(
+                "Path {:?} resolves outside workspace root {:?}",
+                subpath, workspace_root
+            )));
+        }
+    }
+
+    Ok(target)
+}
+
+/// Initializes a new Chronote workspace directory layout.
+pub fn init_workspace(root: &Path, name: &str) -> Result<Workspace, StorageError> {
+    if !root.exists() {
+        fs::create_dir_all(root)?;
+    }
+
+    // 1. Create directory structure
+    let notes_dir = root.join("notes");
+    let assets_img_dir = root.join("assets").join("images");
+    let assets_files_dir = root.join("assets").join("files");
+    let cache_dir = root.join(".chronote");
+
+    fs::create_dir_all(&notes_dir)?;
+    fs::create_dir_all(&assets_img_dir)?;
+    fs::create_dir_all(&assets_files_dir)?;
+    fs::create_dir_all(&cache_dir)?;
+
+    // 2. Auto-generate .gitignore and .stignore
+    let gitignore_path = root.join(".gitignore");
+    if !gitignore_path.exists() {
+        fs::write(&gitignore_path, ".chronote/\n*.tmp.*\n")?;
+    }
+
+    let stignore_path = root.join(".stignore");
+    if !stignore_path.exists() {
+        fs::write(&stignore_path, ".chronote\n*.tmp.*\n")?;
+    }
+
+    // 3. Initialize workspace.json
+    let workspace_json_path = root.join("workspace.json");
+    let workspace = if workspace_json_path.exists() {
+        open_workspace(root)?
+    } else {
+        let now = Utc::now().to_rfc3339();
+        let wsp_id = format!("wsp_{}", Uuid::new_v4().simple());
+        let new_wsp = Workspace {
+            id: wsp_id,
+            schema_version: 1,
+            name: name.to_string(),
+            path: root.to_string_lossy().to_string(),
+            created_at: now.clone(),
+            updated_at: now,
+            settings: WorkspaceSettings::default(),
+        };
+        let bytes = serde_json::to_vec_pretty(&new_wsp)?;
+        atomic_write(&workspace_json_path, &bytes)?;
+        new_wsp
+    };
+
+    // 4. Initialize notes/dsm.json if missing
+    let dsm_path = notes_dir.join("dsm.json");
+    if !dsm_path.exists() {
+        let now = Utc::now().to_rfc3339();
+        let initial_dsm = DsmDocument {
+            id: "dsm_master".to_string(),
+            schema_version: 1,
+            title: "Daily Stand-up Journal".to_string(),
+            created_at: now.clone(),
+            updated_at: now,
+            entries: Vec::new(),
+        };
+        let bytes = serde_json::to_vec_pretty(&initial_dsm)?;
+        atomic_write(&dsm_path, &bytes)?;
+    }
+
+    // 5. Sweep orphan .tmp files
+    let _ = cleanup_orphan_tmp_files(&notes_dir, Duration::from_secs(300));
+
+    Ok(workspace)
+}
+
+/// Opens and validates an existing Chronote workspace directory.
+pub fn open_workspace(root: &Path) -> Result<Workspace, StorageError> {
+    if !root.exists() || !root.is_dir() {
+        return Err(StorageError::InvalidWorkspace(format!(
+            "Directory does not exist: {:?}",
+            root
+        )));
+    }
+
+    let workspace_json_path = root.join("workspace.json");
+    if !workspace_json_path.exists() {
+        return Err(StorageError::InvalidWorkspace(
+            "Missing workspace.json in directory".to_string(),
+        ));
+    }
+
+    let content = fs::read_to_string(&workspace_json_path)?;
+    let mut workspace: Workspace = serde_json::from_str(&content)?;
+
+    if workspace.schema_version != 1 {
+        return Err(StorageError::Corrupted(format!(
+            "Unsupported workspace schema version: {}",
+            workspace.schema_version
+        )));
+    }
+
+    // Ensure path matches current actual directory
+    workspace.path = root.to_string_lossy().to_string();
+
+    // Sweep abandoned .tmp files in notes directory
+    let notes_dir = root.join("notes");
+    if notes_dir.exists() {
+        let _ = cleanup_orphan_tmp_files(&notes_dir, Duration::from_secs(300));
+    }
+
+    Ok(workspace)
+}
+
+/// Updates workspace settings in workspace.json.
+pub fn save_workspace_settings(
+    root: &Path,
+    settings: &WorkspaceSettings,
+) -> Result<Workspace, StorageError> {
+    let mut workspace = open_workspace(root)?;
+    workspace.settings = settings.clone();
+    workspace.updated_at = Utc::now().to_rfc3339();
+
+    let workspace_json_path = root.join("workspace.json");
+    let bytes = serde_json::to_vec_pretty(&workspace)?;
+    atomic_write(&workspace_json_path, &bytes)?;
+
+    Ok(workspace)
+}
+
+/// Reads the continuous DSM journal master document.
+pub fn read_dsm(root: &Path) -> Result<DsmDocument, StorageError> {
+    let dsm_path = root.join("notes").join("dsm.json");
+    if !dsm_path.exists() {
+        return Err(StorageError::NotFound("notes/dsm.json not found".to_string()));
+    }
+
+    let content = fs::read_to_string(&dsm_path)?;
+    let doc: DsmDocument = serde_json::from_str(&content)?;
+    Ok(doc)
+}
+
+/// Atomically saves the continuous DSM journal master document.
+pub fn save_dsm(root: &Path, doc: &DsmDocument) -> Result<(), StorageError> {
+    let dsm_path = root.join("notes").join("dsm.json");
+    let bytes = serde_json::to_vec_pretty(doc)?;
+    atomic_write(&dsm_path, &bytes)?;
+    Ok(())
+}
+
+/// Reads a standalone General note from notes/{id}.json.
+pub fn read_note(root: &Path, id: &str) -> Result<GeneralNote, StorageError> {
+    if !id.starts_with("not_") {
+        return Err(StorageError::InvalidWorkspace(format!(
+            "Invalid note ID prefix: {id}"
+        )));
+    }
+
+    let filename = format!("{id}.json");
+    let note_path = root.join("notes").join(filename);
+    if !note_path.exists() {
+        return Err(StorageError::NotFound(format!("Note {id} not found")));
+    }
+
+    let content = fs::read_to_string(&note_path)?;
+    let note: GeneralNote = serde_json::from_str(&content)?;
+    Ok(note)
+}
+
+/// Atomically saves a standalone General note to notes/{id}.json.
+pub fn save_note(root: &Path, note: &GeneralNote) -> Result<(), StorageError> {
+    if !note.id.starts_with("not_") {
+        return Err(StorageError::InvalidWorkspace(format!(
+            "Invalid note ID prefix: {}",
+            note.id
+        )));
+    }
+
+    let filename = format!("{}.json", note.id);
+    let note_path = root.join("notes").join(filename);
+    let bytes = serde_json::to_vec_pretty(note)?;
+    atomic_write(&note_path, &bytes)?;
+    Ok(())
+}
+
+/// Lists all general notes by reading header metadata from disk notes/*.json.
+pub fn list_notes(root: &Path) -> Result<Vec<NoteMetadata>, StorageError> {
+    let notes_dir = root.join("notes");
+    if !notes_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut notes = Vec::new();
+
+    for entry in fs::read_dir(notes_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_file() {
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                if name.starts_with("not_") && name.ends_with(".json") {
+                    if let Ok(content) = fs::read_to_string(&path) {
+                        if let Ok(note) = serde_json::from_str::<GeneralNote>(&content) {
+                            notes.push(NoteMetadata {
+                                id: note.id,
+                                title: note.title,
+                                tags: note.tags,
+                                pinned: note.pinned,
+                                updated_at: note.updated_at,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort: pinned first, then updated_at descending
+    notes.sort_by(|a, b| {
+        b.pinned
+            .cmp(&a.pinned)
+            .then_with(|| b.updated_at.cmp(&a.updated_at))
+    });
+
+    Ok(notes)
+}
+
+/// Deletes a general note file from notes/{id}.json.
+pub fn delete_note(root: &Path, id: &str) -> Result<(), StorageError> {
+    if !id.starts_with("not_") {
+        return Err(StorageError::InvalidWorkspace(format!(
+            "Invalid note ID prefix: {id}"
+        )));
+    }
+
+    let filename = format!("{id}.json");
+    let note_path = root.join("notes").join(filename);
+    if note_path.exists() {
+        fs::remove_file(note_path)?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_init_and_open_workspace() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+
+        let wsp = init_workspace(root, "Test Workspace").expect("Init should succeed");
+        assert_eq!(wsp.name, "Test Workspace");
+        assert_eq!(wsp.schema_version, 1);
+
+        // Verify layout
+        assert!(root.join("notes").exists());
+        assert!(root.join("assets").join("images").exists());
+        assert!(root.join("assets").join("files").exists());
+        assert!(root.join(".chronote").exists());
+        assert!(root.join(".gitignore").exists());
+        assert!(root.join(".stignore").exists());
+        assert!(root.join("workspace.json").exists());
+        assert!(root.join("notes").join("dsm.json").exists());
+
+        // Test opening
+        let opened = open_workspace(root).expect("Open should succeed");
+        assert_eq!(opened.id, wsp.id);
+        assert_eq!(opened.name, wsp.name);
+    }
+
+    #[test]
+    fn test_save_and_read_dsm() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+        init_workspace(root, "DSM Test").unwrap();
+
+        let mut dsm = read_dsm(root).unwrap();
+        assert_eq!(dsm.entries.len(), 0);
+
+        dsm.title = "Updated DSM Journal".to_string();
+        save_dsm(root, &dsm).unwrap();
+
+        let reloaded = read_dsm(root).unwrap();
+        assert_eq!(reloaded.title, "Updated DSM Journal");
+    }
+
+    #[test]
+    fn test_save_and_list_general_notes() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+        init_workspace(root, "Notes Test").unwrap();
+
+        let note1 = GeneralNote {
+            id: "not_01JC87XK89".to_string(),
+            schema_version: 1,
+            title: "Spring Security Guide".to_string(),
+            tags: vec!["springboot".to_string(), "security".to_string()],
+            content: serde_json::json!({ "type": "doc", "content": [] }),
+            pinned: false,
+            created_at: Utc::now().to_rfc3339(),
+            updated_at: "2026-09-16T10:00:00Z".to_string(),
+        };
+
+        let note2 = GeneralNote {
+            id: "not_01JC87XK90".to_string(),
+            schema_version: 1,
+            title: "Pinned Note".to_string(),
+            tags: vec!["architecture".to_string()],
+            content: serde_json::json!({ "type": "doc", "content": [] }),
+            pinned: true,
+            created_at: Utc::now().to_rfc3339(),
+            updated_at: "2026-09-15T10:00:00Z".to_string(),
+        };
+
+        save_note(root, &note1).unwrap();
+        save_note(root, &note2).unwrap();
+
+        let notes = list_notes(root).unwrap();
+        assert_eq!(notes.len(), 2);
+        // note2 is pinned, so it should be first
+        assert_eq!(notes[0].id, "not_01JC87XK90");
+        assert!(notes[0].pinned);
+        assert_eq!(notes[1].id, "not_01JC87XK89");
+
+        // Read single note
+        let read = read_note(root, "not_01JC87XK89").unwrap();
+        assert_eq!(read.title, "Spring Security Guide");
+
+        // Delete note
+        delete_note(root, "not_01JC87XK89").unwrap();
+        let remaining = list_notes(root).unwrap();
+        assert_eq!(remaining.len(), 1);
+    }
+
+    #[test]
+    fn test_path_traversal_defense() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+        init_workspace(root, "Security Test").unwrap();
+
+        let malicious = Path::new("../../etc/passwd");
+        let result = validate_workspace_path(root, malicious);
+        assert!(result.is_err());
+    }
+}

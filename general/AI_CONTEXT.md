@@ -16,8 +16,8 @@
 
 ## 2. Current Phase & Status
 - **Current Phase:** **Phase 1 (Windows MVP Development)**.
-- **Status:** Milestone 1.1 (Project Scaffolding & Native Shell) **COMPLETED**. Tauri 2.x native shell, React 19, TypeScript strict mode, Vite, Zustand stores, Pure TS domain models with Zod validation, base CSS design tokens, and 3-pane responsive desktop layout implemented. 18/18 Vitest unit tests and 2/2 Rust native tests passing.
-- **Next Milestone:** Milestone 1.2: Workspace & Storage Engine (Local workspace directory initialization, atomic persistence pipeline in Rust, SQLite index.db cache).
+- **Status:** Milestone 1.2 (Workspace & Storage Engine) **COMPLETED**. Local workspace directory initialization, atomic persistence pipeline in Rust (`.tmp` -> `fsync` -> `rename`) with orphan sweep, SQLite index.db cache with WAL mode & FTS5 virtual tables (`fts_blocks`, `fts_code_trigram`), disaster recovery index rebuild from disk, Tauri IPC commands, and frontend WorkspaceModal integration. 24/24 Vitest unit tests and 12/12 Rust native tests passing with zero Clippy warnings.
+- **Next Milestone:** Milestone 1.3: Continuous Daily Stand-up (DSM) Journal (Continuous timeline view rendering sequential date entries, entry collapsing/expanding with auto-derived summaries, entry-level tag management, and date picker navigation).
 
 ---
 
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Milestone 1.1 completed (Clean Architecture foundation, Tauri 2.x Rust native core, domain models with Zod validation, base CSS tokens and 3-pane layout).
-- **Next Recommended Task:** Milestone 1.2: Workspace & Storage Engine (Implement workspace directory picker, `workspace.json` initialization, Rust atomic writer `.tmp` -> `fsync` -> `rename`, and SQLite FTS5 index initialization in `.chronote/index.db`).
+- **Current Work:** Milestone 1.2 completed (Workspace layout initialization, atomic file persistence in Rust, SQLite FTS5 index cache, disaster recovery rebuild, and frontend WorkspaceModal).
+- **Next Recommended Task:** Milestone 1.3: Continuous Daily Stand-up (DSM) Journal (Continuous timeline view rendering sequential date entries, entry collapsing/expanding with auto-derived summaries, entry-level tag management, and date picker navigation).
 
 ---
 
