@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import type { NoteMetadata } from "@domain/note.types";
 import { ipcBridge, type IndexStats } from "@infrastructure/tauri/ipcBridge";
+import { useDsmStore } from "./useDsmStore";
 
 export interface RecentWorkspaceItem {
   path: string;
@@ -176,6 +177,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     try {
       const notes = await ipcBridge.listGeneralNotes();
       set({ recentNotes: notes });
+      await useDsmStore.getState().loadDsm();
     } catch (err) {
       console.error("Failed to refresh notes:", err);
     }

@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import "./styles/tokens.css";
 import "./styles/reset.css";
 import "./styles/layout.css";
+import "./styles/dsm.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";
@@ -13,6 +14,7 @@ import { WorkspaceModal } from "./components/workspace/WorkspaceModal";
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
+import { useDsmStore, getTodayIsoDate } from "@application/stores/useDsmStore";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 import { generateId } from "@domain/id.utils";
 
@@ -45,10 +47,11 @@ export const App: React.FC = () => {
           title: "Untitled Note",
         });
       }
-      // Ctrl+Shift+D: Jump to DSM
+      // Ctrl+Shift+D: Jump to DSM Today
       else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
         e.preventDefault();
         switchTab(DSM_TAB_ID);
+        useDsmStore.getState().jumpToDate(getTodayIsoDate());
       }
       // Ctrl+\: Toggle Sidebar
       else if (e.ctrlKey && e.key === "\\") {

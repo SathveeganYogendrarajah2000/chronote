@@ -2,6 +2,8 @@ import React, { useMemo } from "react";
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
+import { useDsmStore } from "@application/stores/useDsmStore";
+import { formatDateLabel, sortDsmEntries } from "@domain/dsm.utils";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 import { TagChip } from "../common/TagChip";
 
@@ -9,12 +11,23 @@ export const NavigationSidebar: React.FC = () => {
   const { sidebarCollapsed } = useUiStore();
   const { activeTabId, switchTab, openTab } = useTabsStore();
   const { workspace, recentNotes, setWorkspaceModalOpen } = useWorkspaceStore();
+  const { dsmDoc, jumpToDate } = useDsmStore();
 
   const isDsmActive = activeTabId === DSM_TAB_ID;
 
   const handleOpenDsm = () => {
     switchTab(DSM_TAB_ID);
   };
+
+  const handleJumpToDsmDate = (date: string) => {
+    switchTab(DSM_TAB_ID);
+    jumpToDate(date);
+  };
+
+  const recentDsmEntries = useMemo(() => {
+    if (!dsmDoc || !dsmDoc.entries) return [];
+    return sortDsmEntries(dsmDoc.entries, "desc").slice(0, 5);
+  }, [dsmDoc]);
 
   const handleOpenGeneralNote = (id: string, title: string) => {
     openTab({
@@ -27,15 +40,27 @@ export const NavigationSidebar: React.FC = () => {
 
   const dynamicTags = useMemo(() => {
     const map = new Map<string, number>();
+
+    // Aggregate tags from General Notes
     for (const note of recentNotes) {
       for (const tag of note.tags) {
         map.set(tag, (map.get(tag) ?? 0) + 1);
       }
     }
+
+    // Aggregate tags from DSM Entries
+    if (dsmDoc?.entries) {
+      for (const entry of dsmDoc.entries) {
+        for (const tag of entry.tags) {
+          map.set(tag, (map.get(tag) ?? 0) + 1);
+        }
+      }
+    }
+
     return Array.from(map.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [recentNotes]);
+  }, [recentNotes, dsmDoc]);
 
   return (
     <aside className={`navigation-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
@@ -57,6 +82,7 @@ export const NavigationSidebar: React.FC = () => {
       <div className="sidebar-section">
         <div className="sidebar-section-header">
           <span>Daily Stand-up</span>
+          <span style={{ fontSize: "11px" }}>{dsmDoc?.entries.length ?? 0}</span>
         </div>
         <button
           type="button"
@@ -67,8 +93,32 @@ export const NavigationSidebar: React.FC = () => {
             <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" />
           </svg>
           <span>DSM Journal</span>
-          <span className="nav-item-count">Continuous</span>
+          <span className="nav-item-count">Timeline</span>
         </button>
+
+        {/* Quick jump to recent dates in DSM */}
+        {recentDsmEntries.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: 4, paddingLeft: "var(--space-2)" }}>
+            {recentDsmEntries.map((entry) => {
+              const { dayOfWeek, isToday } = formatDateLabel(entry.date);
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  className="sidebar-nav-item"
+                  style={{ fontSize: "var(--font-size-xs)", padding: "3px 6px" }}
+                  onClick={() => handleJumpToDsmDate(entry.date)}
+                  title={`Jump to ${entry.date}`}
+                >
+                  <span style={{ fontFamily: "var(--font-mono)", opacity: 0.9 }}>{entry.date}</span>
+                  <span style={{ marginLeft: "auto", fontSize: "10px", color: isToday ? "var(--accent-hover)" : "var(--text-muted)" }}>
+                    {isToday ? "Today" : dayOfWeek.slice(0, 3)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* General Notes Section */}

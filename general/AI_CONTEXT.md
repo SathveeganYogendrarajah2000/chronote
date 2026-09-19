@@ -16,8 +16,8 @@
 
 ## 2. Current Phase & Status
 - **Current Phase:** **Phase 1 (Windows MVP Development)**.
-- **Status:** Milestone 1.2 (Workspace & Storage Engine) **COMPLETED**. Local workspace directory initialization, atomic persistence pipeline in Rust (`.tmp` -> `fsync` -> `rename`) with orphan sweep, SQLite index.db cache with WAL mode & FTS5 virtual tables (`fts_blocks`, `fts_code_trigram`), disaster recovery index rebuild from disk, Tauri IPC commands, and frontend WorkspaceModal integration. 24/24 Vitest unit tests and 12/12 Rust native tests passing with zero Clippy warnings.
-- **Next Milestone:** Milestone 1.3: Continuous Daily Stand-up (DSM) Journal (Continuous timeline view rendering sequential date entries, entry collapsing/expanding with auto-derived summaries, entry-level tag management, and date picker navigation).
+- **Status:** Milestone 1.3 (Continuous Daily Stand-up Journal) **COMPLETED**. Continuous DSM timeline stream rendering sequential date entries, entry collapsing/expanding with auto-derived summaries (120 chars), entry-level tag management with auto-normalization, date picker jump navigation, debounced atomic persistence to notes/dsm.json, and sidebar recent DSM entries & tag aggregation. 47/47 Vitest unit tests and 12/12 Rust native tests passing with zero Clippy warnings.
+- **Next Milestone:** Milestone 1.4: General Notes Subsystem (Standalone note creation, renaming, pinning, and deletion; multi-document tab bar with DSM pinning and session restore).
 
 ---
 
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Milestone 1.2 completed (Workspace layout initialization, atomic file persistence in Rust, SQLite FTS5 index cache, disaster recovery rebuild, and frontend WorkspaceModal).
-- **Next Recommended Task:** Milestone 1.3: Continuous Daily Stand-up (DSM) Journal (Continuous timeline view rendering sequential date entries, entry collapsing/expanding with auto-derived summaries, entry-level tag management, and date picker navigation).
+- **Current Work:** Milestone 1.3 completed (Continuous Daily Stand-up Journal with collapsible date entries, auto-derived summaries, entry tag management, and date picker navigation).
+- **Next Recommended Task:** Milestone 1.4: General Notes Subsystem (Standalone note creation, renaming, pinning, and deletion; multi-document tab bar with DSM pinning and session restore).
 
 ---
 

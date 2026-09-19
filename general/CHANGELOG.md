@@ -10,11 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for [0.1.0] - Phase 1 Windows MVP
-- Milestone 1.3: Continuous Daily Stand-up (DSM) journal with collapsible date entries.
 - Milestone 1.4: General Notes subsystem.
 - Milestone 1.5: Tiptap 3.x rich-text editor with instant Markdown shortcut input rules.
 - Milestone 1.6: Instant Search DSL & Resource Browser.
 - Milestone 1.7: Export Pipeline (Markdown, DOCX, PDF, Zip backup).
+
+---
+
+## [0.1.0-alpha.3] - 2026-09-19
+
+### Added
+- **Milestone 1.3: Continuous Daily Stand-up (DSM) Journal:**
+  - Implemented domain utilities (`dsm.utils.ts`) for date validation, UTC date labeling, ProseMirror serialization, and auto-derived summary previews (`deriveDsmEntryPreview`).
+  - Added strict Gregorian date validator rejecting invalid dates (`2026-02-30`).
+  - Created `useDsmStore` (Zustand 5) managing DSM document lifecycle, unique date entry invariants, collapsing/expanding, tag management, debounced autosave, and smooth date jumping.
+  - Built continuous timeline UI stream (`DsmTimeline`, `DsmEntryItem`, `DsmEntryHeader`, `DsmSummaryPreview`, `DsmEntryEditor`, `DsmDatePicker`).
+  - Added single-click/double-click entry collapsing with 120-character auto-derived preview summaries and tag chips.
+  - Implemented entry-level tag management with auto-normalization, removal, and inline tag creator.
+  - Built calendar quick-jump date picker modal supporting custom date jumping and preset offsets ("Today", "Yesterday", "2 Days Ago", "1 Week Ago").
+  - Connected `NavigationSidebar` to recent DSM entries and unified tag aggregation across general notes and DSM journal entries.
+  - Wired global accelerator `Ctrl+Shift+D` to jump directly to today's entry.
+  - Created `dsm.css` styles adhering strictly to the curated design tokens.
+  - Added 23 new unit tests across domain and application stores (47/47 Vitest tests passing, 12/12 Cargo tests passing, zero Clippy warnings).
 
 ---
 
