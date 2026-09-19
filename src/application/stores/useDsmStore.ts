@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { DsmDocument, DsmEntry } from "@domain/dsm.types";
+import type { ProseMirrorNode } from "@domain/document.types";
 import {
   createDefaultDsmDocument,
   createDefaultDsmEntry,
@@ -25,6 +26,7 @@ export interface DsmState {
   createOrGetEntry: (date: string, initialTags?: string[], initialText?: string) => DsmEntry;
   toggleEntryCollapse: (entryId: string) => void;
   setAllCollapse: (collapsed: boolean) => void;
+  updateEntryContent: (entryId: string, content: ProseMirrorNode) => void;
   updateEntryText: (entryId: string, text: string) => void;
   addEntryTag: (entryId: string, rawTag: string) => void;
   removeEntryTag: (entryId: string, tag: string) => void;
@@ -181,6 +183,35 @@ export const useDsmStore = create<DsmState>((set, get) => ({
       collapsed,
       updatedAt: new Date().toISOString(),
     }));
+
+    const updatedDoc: DsmDocument = {
+      ...dsmDoc,
+      entries: updatedEntries,
+      updatedAt: new Date().toISOString(),
+    };
+
+    set({ dsmDoc: updatedDoc, isDirty: true });
+
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(() => {
+      void get().saveDsm();
+    }, 800);
+  },
+
+  updateEntryContent: (entryId: string, content: ProseMirrorNode) => {
+    const { dsmDoc } = get();
+    if (!dsmDoc) return;
+
+    const updatedEntries = dsmDoc.entries.map((entry) => {
+      if (entry.id === entryId) {
+        return {
+          ...entry,
+          content,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return entry;
+    });
 
     const updatedDoc: DsmDocument = {
       ...dsmDoc,

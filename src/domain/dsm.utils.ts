@@ -172,6 +172,19 @@ export function textToProseMirrorDoc(text: string): ProseMirrorNode {
 }
 
 /**
+ * Recursively extracts plain text from an inline node or sub-tree.
+ */
+function extractInlineText(node: ProseMirrorNode): string {
+  if (node.text) {
+    return node.text;
+  }
+  if (node.content && Array.isArray(node.content)) {
+    return node.content.map(extractInlineText).join("");
+  }
+  return "";
+}
+
+/**
  * Converts a ProseMirror document tree back to readable multi-line plain text.
  */
 export function proseMirrorDocToText(node: ProseMirrorNode): string {
@@ -181,16 +194,29 @@ export function proseMirrorDocToText(node: ProseMirrorNode): string {
 
   const lines: string[] = [];
 
-  for (const block of node.content) {
-    let blockText = "";
-    if (block.content && Array.isArray(block.content)) {
-      for (const inlineNode of block.content) {
-        if (inlineNode.text) {
-          blockText += inlineNode.text;
+  function processBlock(blockNode: ProseMirrorNode) {
+    // If it's a list or container node with children blocks
+    if (
+      blockNode.type === "bulletList" ||
+      blockNode.type === "orderedList" ||
+      blockNode.type === "taskList" ||
+      blockNode.type === "listItem" ||
+      blockNode.type === "taskItem"
+    ) {
+      if (blockNode.content && Array.isArray(blockNode.content)) {
+        for (const child of blockNode.content) {
+          processBlock(child);
         }
       }
+      return;
     }
-    lines.push(blockText);
+
+    const text = extractInlineText(blockNode);
+    lines.push(text);
+  }
+
+  for (const block of node.content) {
+    processBlock(block);
   }
 
   return lines.join("\n");

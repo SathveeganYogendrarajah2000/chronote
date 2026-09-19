@@ -51,9 +51,9 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
   - [x] Standalone note creation, renaming, pinning, and deletion.
   - [x] Multi-document tab bar with DSM pinning and session restore.
 - **Milestone 1.5: Rich-Text Editor & Code Blocks**
-  - Tiptap 3.x integration with Markdown InputRules (`# `, `- `, ````, etc.).
-  - First-class code blocks with language selector, syntax highlighting, and copy button.
-  - Internal note linking (`[[Note Title]]`) with autocomplete and stable ID resolution.
+  - [x] Tiptap 3.x integration with Markdown InputRules (`# `, `- `, `1. `, `> `, ````, `---`, etc.).
+  - [x] First-class code blocks with language selector, syntax highlighting, and copy button.
+  - [x] Internal note linking (`[[Note Title]]`) with autocomplete and stable ID resolution.
 - **Milestone 1.6: Instant Search & Resource Browser**
   - Implement search DSL parser (`tag:`, `type:`, `date:`, `after:`, `before:`).
   - SQLite FTS5 query runner with BM25 ranking and highlighted snippet generation (< 50 ms).

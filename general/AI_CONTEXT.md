@@ -16,8 +16,8 @@
 
 ## 2. Current Phase & Status
 - **Current Phase:** **Phase 1 (Windows MVP Development)**.
-- **Status:** Milestone 1.4 (General Notes Subsystem) **COMPLETED**. Standalone note creation, renaming, pinning, and deletion; multi-document tab bar with DSM pinning and session restore; note tags management with auto-normalization; note search/filter in sidebar; tab right-click context menu; and confirmation deletion modal. 66/66 Vitest unit tests and 12/12 Rust native tests passing with zero Clippy warnings.
-- **Next Milestone:** Milestone 1.5: Rich-Text Editor & Code Blocks (Tiptap 3.x integration with Markdown InputRules, first-class code blocks with language selector, syntax highlighting, and copy button, internal note linking `[[Note Title]]`).
+- **Status:** Milestone 1.5 (Rich-Text Editor & Code Blocks) **COMPLETED**. Full Tiptap 3.x integration with Markdown InputRules (`# `, `- `, `1. `, `> `, ````, `---`), first-class code blocks with language selector, syntax highlighting (One Dark palette), and one-click copy button, internal note linking `[[Note Title]]` with autocomplete popover and alias support, quick insert slash command palette (`/`), and floating bubble formatting menu. 77/77 Vitest unit tests and 12/12 Rust native tests passing with zero errors.
+- **Next Milestone:** Milestone 1.6: Instant Search & Resource Browser (Search DSL parser `tag:`, `type:`, `date:`, `after:`, `before:`, SQLite FTS5 query runner with BM25 ranking and highlighted snippets, and Resource Browser index for Code, Images, Links, Attachments, and Backlinks).
 
 ---
 
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Milestone 1.4 completed (General Notes subsystem with standalone note creation, renaming, pinning, deletion, multi-document tab bar with DSM pinning, session restore, and tab context menu).
-- **Next Recommended Task:** Milestone 1.5: Rich-Text Editor & Code Blocks (Tiptap 3.x integration with Markdown InputRules, first-class code blocks with language selector, syntax highlighting, and copy button, internal note linking `[[Note Title]]`).
+- **Current Work:** Milestone 1.5 completed (Rich-text editor and first-class code block subsystem integrated with Tiptap 3.x, lowlight syntax highlighting, Markdown InputRules, [[Note]] autocomplete, slash commands, and unified editing across General Notes and DSM entries).
+- **Next Recommended Task:** Milestone 1.6: Instant Search & Resource Browser (Search DSL parser `tag:`, `type:`, `date:`, `after:`, `before:`, SQLite FTS5 query runner with BM25 ranking and highlighted snippets, and Resource Browser index for Code, Images, Links, Attachments, and Backlinks).
 
 ---
 

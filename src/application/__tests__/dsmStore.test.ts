@@ -95,6 +95,32 @@ describe("useDsmStore", () => {
     expect(useDsmStore.getState().isDirty).toBe(true);
   });
 
+  it("updates entry structured ProseMirror content", async () => {
+    const store = useDsmStore.getState();
+    await store.loadDsm();
+    const entry = store.createOrGetEntry("2026-09-15");
+
+    const richDoc = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 2 },
+          content: [{ type: "text", text: "DSM Stand-up Tasks" }],
+        },
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "Resolved prod database lock." }],
+        },
+      ],
+    };
+
+    store.updateEntryContent(entry.id, richDoc);
+    const updated = useDsmStore.getState().dsmDoc?.entries.find((e) => e.id === entry.id);
+    expect(updated?.content).toEqual(richDoc);
+    expect(useDsmStore.getState().isDirty).toBe(true);
+  });
+
   it("adds and removes normalized tags", async () => {
     const store = useDsmStore.getState();
     await store.loadDsm();

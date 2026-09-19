@@ -4,6 +4,7 @@ import "./styles/reset.css";
 import "./styles/layout.css";
 import "./styles/dsm.css";
 import "./styles/notes.css";
+import "./styles/editor.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";

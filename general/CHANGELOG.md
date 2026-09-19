@@ -10,9 +10,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for [0.1.0] - Phase 1 Windows MVP
-- Milestone 1.5: Tiptap 3.x rich-text editor with instant Markdown shortcut input rules.
 - Milestone 1.6: Instant Search DSL & Resource Browser.
 - Milestone 1.7: Export Pipeline (Markdown, DOCX, PDF, Zip backup).
+
+---
+
+## [0.1.0-alpha.5] - 2026-09-19
+
+### Added
+- **Milestone 1.5: Rich-Text Editor & Code Blocks:**
+  - Integrated **Tiptap 3.x / ProseMirror** core engine across Chronote (`@tiptap/core`, `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-underline`, `@tiptap/extension-link`, `@tiptap/extension-task-list`, `@tiptap/extension-task-item`, `@tiptap/extension-code-block-lowlight`, `@tiptap/extension-placeholder`).
+  - Implemented instant Markdown authoring shorthand (`InputRules`):
+    - `# `, `## `, `### ` + Space → Headings (levels 1–3).
+    - `- ` or `* ` + Space → Bullet list item.
+    - `1. ` + Space → Ordered list item.
+    - `> ` + Space → Styled blockquote with left accent border.
+    - ```` + Enter or ````lang + Enter → Structured code block with language pre-selection.
+    - `[ ] ` or `[] ` + Space → Interactive task item checkbox with strikethrough upon check.
+    - `---` + Enter → Horizontal rule divider.
+    - `**bold**`, `*italic*`, `~~strike~~`, `` `inline code` `` inline marks.
+  - Implemented **First-Class Code Blocks** (`CodeBlockExtension.ts`, `CodeBlockView.tsx`):
+    - Syntax highlighting powered by `lowlight` with 35+ common engineering languages (TypeScript, JavaScript, Python, Bash, SQL, Java, Rust, Go, C#, C++, C, JSON, YAML, HTML, CSS, Markdown, Dockerfile, Diff).
+    - Styled in high-contrast One Dark / JetBrains theme palette.
+    - Header bar with inline searchable/selectable language picker.
+    - One-click Copy button with "Copied!" feedback indicator.
+    - Auto-assigned stable block IDs (`blk_...`).
+  - Implemented **Internal Note Linking (`[[...]]`)** (`InternalLinkExtension.ts`, `InternalLinkSuggestion.ts`, `InternalLinkPopover.tsx`):
+    - Typing `[[` triggers an autocomplete popover filtering General Notes and recent DSM dates.
+    - Keyboard navigation (`↑`, `↓`, `Enter`, `Esc`) and alias format support (`[[Note Title|Custom Alias]]`).
+    - Internal link clicks immediately navigate/open note tabs in the workspace.
+    - Broken reference styling (`is-broken`) if target note was moved or deleted.
+  - Implemented **Quick Insert Slash Palette (`/`)** (`SlashCommandExtension.ts`, `SlashCommandMenu.tsx`):
+    - Typing `/` on an empty line or after space presents quick insert options (`/code`, `/h1`, `/h2`, `/h3`, `/bullet`, `/numbered`, `/todo`, `/quote`, `/divider`).
+  - Added **Contextual Bubble Formatting Bar** (`BubbleMenuBar.tsx`):
+    - Appears smoothly on text selection offering Bold, Italic, Underline, Strikethrough, Monospace Code, and Link controls.
+  - Unified editor integration across **General Notes** (`NoteEditorCanvas`) and **Daily Stand-up** entries (`DsmEntryEditor`).
+  - Extended `useNotesStore` and `useDsmStore` with `updateContent` and `updateEntryContent` preserving structured ProseMirror JSON trees with debounced autosave (800ms).
+  - Enhanced domain text extraction utilities (`dsm.utils.ts`) to recursively extract text from all block and list types.
+  - Added 11 new unit tests (77/77 Vitest tests passing, 12/12 Cargo tests passing, zero Clippy warnings).
 
 ---
 

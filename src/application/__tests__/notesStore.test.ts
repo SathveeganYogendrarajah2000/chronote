@@ -107,6 +107,38 @@ describe("useNotesStore", () => {
     expect(useNotesStore.getState().isDirty).toBe(false);
   });
 
+  it("updates structured ProseMirror content and saves on debounce", async () => {
+    const note = await useNotesStore.getState().createNote({
+      title: "Rich Content Note",
+    });
+
+    const richDoc = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 2 },
+          content: [{ type: "text", text: "Sprint Architecture" }],
+        },
+        {
+          type: "codeBlock",
+          attrs: { language: "typescript", id: "blk_123" },
+          content: [{ type: "text", text: "const x = 42;" }],
+        },
+      ],
+    };
+
+    useNotesStore.getState().updateContent(richDoc);
+    expect(useNotesStore.getState().isDirty).toBe(true);
+    expect(useNotesStore.getState().activeNote?.content).toEqual(richDoc);
+
+    await vi.runAllTimersAsync();
+    expect(useNotesStore.getState().isDirty).toBe(false);
+
+    const persisted = await mockIpcBridge.readGeneralNote(note.id);
+    expect(persisted.content).toEqual(richDoc);
+  });
+
   it("toggles note pinning and synchronizes tab pin status", async () => {
     const note = await useNotesStore.getState().createNote({
       title: "Pin Note",

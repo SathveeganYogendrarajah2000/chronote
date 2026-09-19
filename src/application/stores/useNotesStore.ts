@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { GeneralNote } from "@domain/note.types";
+import type { ProseMirrorNode } from "@domain/document.types";
 import {
   createDefaultGeneralNote,
   textToProseMirrorDoc,
@@ -28,6 +29,7 @@ export interface NotesState {
   }) => Promise<GeneralNote>;
   saveCurrentNote: () => Promise<void>;
   updateTitle: (title: string) => void;
+  updateContent: (content: ProseMirrorNode) => void;
   updateContentText: (text: string) => void;
   addTag: (rawTag: string) => void;
   removeTag: (tag: string) => void;
@@ -142,6 +144,25 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     useTabsStore.getState().updateTabTitle(activeNote.id, trimmedTitle || "Untitled Note");
 
     // Debounced disk save
+    if (noteSaveDebounceTimer) {
+      clearTimeout(noteSaveDebounceTimer);
+    }
+    noteSaveDebounceTimer = setTimeout(() => {
+      void get().saveCurrentNote();
+    }, 800);
+  },
+
+  updateContent: (content: ProseMirrorNode) => {
+    const { activeNote } = get();
+    if (!activeNote) return;
+
+    const updatedNote: GeneralNote = {
+      ...activeNote,
+      content,
+    };
+
+    set({ activeNote: updatedNote, isDirty: true });
+
     if (noteSaveDebounceTimer) {
       clearTimeout(noteSaveDebounceTimer);
     }
