@@ -1,0 +1,95 @@
+/**
+ * Chronote Design System Tokens (UX_SPEC.md Section 4).
+ * Clean, developer-native ergonomics with high-contrast surfaces and accessible typography.
+ */
+
+:root {
+  /* Common Geometry & Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 9999px;
+
+  --header-height: 48px;
+  --tab-height: 36px;
+  --sidebar-width: 260px;
+  --resource-width: 290px;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+}
+
+/* Dark Theme Tokens (Default) */
+:root,
+:root[data-theme="dark"] {
+  /* Surfaces */
+  --bg-app: #121418;             /* Darkest background behind sidebars */
+  --bg-canvas: #181b20;          /* Main editor canvas */
+  --bg-surface: #20242b;         /* Cards, tabs, dialogs */
+  --bg-surface-hover: #2a2f38;   /* Hover states */
+  --bg-surface-active: #333a46;  /* Active/pressed states */
+
+  /* Text colors */
+  --text-primary: #e6edf3;       /* High-contrast readable prose */
+  --text-secondary: #8b949e;     /* Subtitles, dates, meta */
+  --text-muted: #6e7681;         /* Placeholders, shortcuts */
+
+  /* Accents */
+  --accent-primary: #3b82f6;     /* Primary brand blue */
+  --accent-hover: #60a5fa;
+  --accent-tag: #1e3a5f;         /* Tag chip background */
+  --accent-tag-text: #93c5fd;    /* Tag chip text */
+  --accent-code-bg: #0d1117;     /* Monospace code block background */
+
+  /* Borders */
+  --border-subtle: #30363d;
+  --border-focus: #3b82f6;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Light Theme Tokens */
+:root[data-theme="light"] {
+  --bg-app: #f4f5f7;
+  --bg-canvas: #ffffff;
+  --bg-surface: #eaecef;
+  --bg-surface-hover: #dfe2e6;
+  --bg-surface-active: #d0d4da;
+
+  --text-primary: #1f2328;
+  --text-secondary: #57606a;
+  --text-muted: #8c959f;
+
+  --accent-primary: #1d6fee;
+  --accent-hover: #0959ce;
+  --accent-tag: #ddf4ff;
+  --accent-tag-text: #0969da;
+  --accent-code-bg: #f6f8fa;
+
+  --border-subtle: #d0d7de;
+  --border-focus: #1d6fee;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}

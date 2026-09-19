@@ -15,9 +15,9 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Phase 0 (Documentation & Architecture Foundation)**.
-- **Status:** Architecture and documentation foundation completed. **NO application code has been written yet.**
-- **Next Milestone:** Phase 1 — Windows MVP initialization (Tauri 2.x + React 19 + TypeScript + Vite + Rust + SQLite FTS5).
+- **Current Phase:** **Phase 2 (Stabilization, Hardening & Distribution)** — Completed. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
+- **Status:** Phase 2 **COMPLETED**. Synthetic large-scale workspace generator (`scripts/generate_test_workspace.ts`) generating 5,000+ notes & 20,000+ blocks, batched SQLite transaction optimization achieving 274 ms rebuilds (< 350 ms budget) and 3–5 ms FTS5 / trigram code search queries. In-app Performance Profiler (`performanceProfiler.ts`), native process RSS memory introspection via Windows `K32GetProcessMemoryInfo`, and live Diagnostics Modal (`PerformanceModal.tsx`, `Ctrl+Shift+P`). Windows NSIS and WiX MSI bundle configurations with multi-runner GitHub Actions CI/release automation (`ci.yml`, `release.yml`). Resilient external sync conflict detection (`conflict.rs`, `useConflictStore.ts`, `ConflictModal.tsx`) supporting Dropbox, OneDrive, Syncthing, and Google Drive with safe 3-way resolution. 118/118 Vitest unit tests and 21/21 native Rust tests passing with zero errors.
+- **Next Milestone:** Phase 3: Cloud Integrations & Advanced Navigation (direct Google Drive / OneDrive OAuth sync adapters, interactive 3-way conflict resolution wizard for concurrent edits, and interactive visual backlinks graph).
 
 ---
 
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Completed comprehensive documentation foundation (Phase 0).
-- **Next Recommended Task:** Initialize the Tauri 2.x project scaffolding with React 19, TypeScript, Vite, and Rust native shell following the structure defined in [general/ARCHITECTURE.md](file:///e:/workspace/chronote/general/ARCHITECTURE.md).
+- **Current Work:** Phase 2 completed (Synthetic workspace generator, SQLite batched transaction rebuild in 274 ms, FTS5 sub-5ms search, Windows RSS introspection, Performance Diagnostics modal, Windows NSIS/MSI bundle configs, GitHub Actions CI/release pipelines, external sync conflict scanner & modal).
+- **Next Recommended Task:** Phase 3: Cloud Integrations & Advanced Navigation (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---
 

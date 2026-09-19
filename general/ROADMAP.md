@@ -48,31 +48,31 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
   - Implement entry collapsing/expanding with auto-derived summaries.
   - Implement entry-level tag management and date picker navigation.
 - **Milestone 1.4: General Notes Subsystem**
-  - Standalone note creation, renaming, pinning, and deletion.
-  - Multi-document tab bar with DSM pinning and session restore.
+  - [x] Standalone note creation, renaming, pinning, and deletion.
+  - [x] Multi-document tab bar with DSM pinning and session restore.
 - **Milestone 1.5: Rich-Text Editor & Code Blocks**
-  - Tiptap 3.x integration with Markdown InputRules (`# `, `- `, ````, etc.).
-  - First-class code blocks with language selector, syntax highlighting, and copy button.
-  - Internal note linking (`[[Note Title]]`) with autocomplete and stable ID resolution.
+  - [x] Tiptap 3.x integration with Markdown InputRules (`# `, `- `, `1. `, `> `, ````, `---`, etc.).
+  - [x] First-class code blocks with language selector, syntax highlighting, and copy button.
+  - [x] Internal note linking (`[[Note Title]]`) with autocomplete and stable ID resolution.
 - **Milestone 1.6: Instant Search & Resource Browser**
-  - Implement search DSL parser (`tag:`, `type:`, `date:`, `after:`, `before:`).
-  - SQLite FTS5 query runner with BM25 ranking and highlighted snippet generation (< 50 ms).
-  - Resource Browser index (Code, Images, Links, Attachments, Backlinks).
+  - [x] Implement search DSL parser (`tag:`, `type:`, `date:`, `after:`, `before:`).
+  - [x] SQLite FTS5 query runner with BM25 ranking and highlighted snippet generation (< 50 ms).
+  - [x] Resource Browser index (Code, Images, Links, Attachments, Backlinks).
 - **Milestone 1.7: Export Pipeline**
-  - Export to standard GitHub Flavored Markdown (`.md`).
-  - Export to Microsoft Word (`.docx`).
-  - Export to PDF (`.pdf`).
-  - One-click full workspace `.zip` backup.
+  - [x] Export to standard GitHub Flavored Markdown (`.md`).
+  - [x] Export to Microsoft Word (`.docx`).
+  - [x] Export to PDF (`.pdf`).
+  - [x] One-click full workspace `.zip` backup.
 
 ---
 
 ### Phase 2: Stabilization, Hardening & Distribution
 *Goal: Real-world stress testing, benchmark validation, and smooth installer packaging.*
 
-- Large workspace stress testing (5,000+ notes, 20,000+ code blocks).
-- Startup latency profiling to guarantee cold boot < 800 ms and idle RAM < 90 MB.
-- Windows NSIS / MSI installer generation via Tauri GitHub Actions workflow.
-- External sync conflict detection and user notification dialogs.
+- [x] Large workspace stress testing (5,000+ notes, 20,000+ code blocks).
+- [x] Startup latency profiling to guarantee cold boot < 800 ms and idle RAM < 90 MB.
+- [x] Windows NSIS / MSI installer generation via Tauri GitHub Actions workflow.
+- [x] External sync conflict detection and user notification dialogs.
 
 ---
 

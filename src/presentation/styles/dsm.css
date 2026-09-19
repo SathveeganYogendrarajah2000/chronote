@@ -1,0 +1,456 @@
+/* ==========================================================================
+   Chronote DSM Journal Styles (dsm.css)
+   Continuous Daily Stand-up Timeline View (ADR-006, UX_SPEC Section 3.4)
+   ========================================================================== */
+
+.dsm-timeline-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-8);
+  scroll-behavior: smooth;
+}
+
+/* Timeline Header */
+.dsm-header-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dsm-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dsm-title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.dsm-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.dsm-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.dsm-save-status {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--space-2);
+}
+
+.dsm-save-status.saving {
+  color: var(--accent-primary);
+}
+
+.dsm-save-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--accent-primary);
+  display: inline-block;
+  animation: pulse-dot 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Timeline Stream */
+.dsm-timeline-stream {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  position: relative;
+}
+
+/* Timeline Entry Card */
+.dsm-entry-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  position: relative;
+}
+
+.dsm-entry-card:hover {
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+.dsm-entry-card.is-today {
+  border-left: 3px solid var(--accent-primary);
+}
+
+.dsm-entry-card.is-highlighted {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+  animation: highlight-glow 2.5s ease-out;
+}
+
+@keyframes highlight-glow {
+  0% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* Entry Header Strip */
+.dsm-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background-color: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border-subtle);
+  user-select: none;
+  gap: var(--space-2);
+}
+
+.dsm-entry-card.is-collapsed .dsm-entry-header {
+  border-bottom: none;
+}
+
+.dsm-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  flex: 1;
+}
+
+.dsm-chevron-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background-color 0.15s ease;
+  padding: 0;
+}
+
+.dsm-chevron-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-hover);
+}
+
+.dsm-date-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dsm-day-badge {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+.dsm-relative-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dsm-relative-pill.today {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: var(--accent-tag-text);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.dsm-relative-pill.yesterday {
+  background-color: rgba(148, 163, 184, 0.15);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.dsm-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Tag Management */
+.dsm-tags-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.dsm-tag-add-btn {
+  background: transparent;
+  border: 1px dashed var(--border-subtle);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+}
+
+.dsm-tag-add-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.dsm-tag-input {
+  background: var(--bg-app);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  width: 90px;
+  outline: none;
+}
+
+.dsm-entry-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.4;
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.dsm-entry-card:hover .dsm-entry-delete-btn {
+  opacity: 0.8;
+}
+
+.dsm-entry-delete-btn:hover {
+  opacity: 1;
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Collapsed Summary Preview */
+.dsm-summary-preview {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  background-color: rgba(0, 0, 0, 0.05);
+  transition: background-color 0.15s ease;
+}
+
+.dsm-summary-preview:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.dsm-preview-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.dsm-preview-expand-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.dsm-summary-preview:hover .dsm-preview-expand-hint {
+  opacity: 1;
+}
+
+/* Expanded Content Canvas */
+.dsm-content-area {
+  padding: var(--space-4);
+}
+
+.dsm-textarea-editor {
+  width: 100%;
+  min-height: 130px;
+  background: transparent;
+  border: none;
+  resize: vertical;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.dsm-textarea-editor::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Date Picker Dialog / Popover */
+.dsm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.dsm-date-picker-dialog {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  width: 360px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+}
+
+.dsm-picker-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.dsm-picker-desc {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.dsm-picker-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.dsm-date-input {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  padding: var(--space-2) var(--space-3);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.dsm-date-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.dsm-quick-dates-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.dsm-quick-date-btn {
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dsm-quick-date-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.dsm-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* Empty State */
+.dsm-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background-color: rgba(255, 255, 255, 0.01);
+  text-align: center;
+}
+
+.dsm-empty-icon {
+  font-size: 36px;
+  margin-bottom: var(--space-3);
+  opacity: 0.6;
+}
+
+.dsm-empty-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.dsm-empty-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  max-width: 360px;
+  margin-bottom: var(--space-4);
+  line-height: 1.5;
+}

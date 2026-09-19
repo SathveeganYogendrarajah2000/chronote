@@ -1,0 +1,549 @@
+/**
+ * Chronote Rich-Text Editor Styles (UX_SPEC.md & EDITOR_SPEC.md).
+ * Premium developer ergonomics with high-contrast surfaces, One Dark code blocks,
+ * and fluid Markdown authoring.
+ */
+
+.chronote-editor-container {
+  position: relative;
+  width: 100%;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  line-height: 1.65;
+}
+
+.chronote-editor-content .ProseMirror {
+  outline: none;
+  min-height: 180px;
+  cursor: text;
+}
+
+.chronote-editor-content .ProseMirror > *:first-child {
+  margin-top: 0;
+}
+
+.chronote-editor-content .ProseMirror > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Paragraphs */
+.chronote-editor-content .ProseMirror p {
+  margin: 0.5em 0;
+}
+
+/* Headings */
+.chronote-editor-content .ProseMirror h1 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 1.2em 0 0.4em 0;
+  line-height: 1.3;
+}
+
+.chronote-editor-content .ProseMirror h2 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1em 0 0.35em 0;
+  line-height: 1.35;
+}
+
+.chronote-editor-content .ProseMirror h3 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0.9em 0 0.3em 0;
+}
+
+/* Lists */
+.chronote-editor-content .ProseMirror ul,
+.chronote-editor-content .ProseMirror ol {
+  padding-left: var(--space-6);
+  margin: 0.5em 0;
+}
+
+.chronote-editor-content .ProseMirror li {
+  margin: 0.25em 0;
+}
+
+.chronote-editor-content .ProseMirror li > p {
+  margin: 0;
+}
+
+/* Task List */
+.chronote-editor-content .ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.5em 0;
+}
+
+.chronote-editor-content .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0.3em 0;
+}
+
+.chronote-editor-content .ProseMirror ul[data-type="taskList"] li > label {
+  user-select: none;
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.chronote-editor-content .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+  width: 15px;
+  height: 15px;
+}
+
+.chronote-editor-content .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.chronote-editor-content .ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+/* Blockquote */
+.chronote-editor-content .ProseMirror blockquote {
+  border-left: 3px solid var(--accent-primary);
+  padding: var(--space-1) 0 var(--space-1) var(--space-4);
+  margin: 0.8em 0;
+  color: var(--text-secondary);
+  font-style: italic;
+  background: rgba(59, 130, 246, 0.04);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Horizontal Rule */
+.chronote-editor-content .ProseMirror hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 1.5em 0;
+}
+
+/* Inline Code */
+.chronote-editor-content .ProseMirror code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-surface);
+  color: #e5c07b;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+/* External Link */
+.chronote-editor-content .ProseMirror a.editor-external-link {
+  color: var(--accent-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition-fast);
+}
+
+.chronote-editor-content .ProseMirror a.editor-external-link:hover {
+  color: var(--accent-hover);
+}
+
+/* Internal Wiki Link Mark */
+.chronote-editor-content .ProseMirror span.internal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+  color: var(--accent-hover);
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  margin: 0 1px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.chronote-editor-content .ProseMirror span.internal-link:hover {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: var(--accent-primary);
+}
+
+.chronote-editor-content .ProseMirror span.internal-link.is-broken {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  text-decoration: line-through;
+}
+
+/* Code Block Wrapper */
+.code-block-wrapper {
+  margin: 1em 0;
+  background: var(--accent-code-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.code-block-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.code-block-lang-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+}
+
+.code-block-lang-select {
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.code-block-lang-select:hover,
+.code-block-lang-select:focus {
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+}
+
+.code-block-lang-select option {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.code-block-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-sans);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.code-block-copy-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+}
+
+.code-block-copy-btn.is-copied {
+  color: #3fb950;
+  border-color: #2ea043;
+  background: rgba(46, 160, 67, 0.15);
+}
+
+.code-block-pre {
+  margin: 0;
+  padding: 12px 16px;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+
+.code-block-pre code {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  color: var(--text-primary);
+}
+
+/* Syntax Highlighting Tokens (One Dark Palette) */
+.hljs-keyword,
+.hljs-operator,
+.hljs-selector-tag {
+  color: #c678dd;
+}
+
+.hljs-string,
+.hljs-template-variable,
+.hljs-attribute {
+  color: #98c379;
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #d19a66;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.hljs-title,
+.hljs-function,
+.hljs-title.function_ {
+  color: #61afef;
+}
+
+.hljs-variable,
+.hljs-params,
+.hljs-attr {
+  color: #e5c07b;
+}
+
+.hljs-type,
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #e5c07b;
+}
+
+.hljs-tag,
+.hljs-name {
+  color: #e06c75;
+}
+
+/* Internal Link Autocomplete Popover */
+.internal-link-popover {
+  width: 320px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: popoverFadeIn 120ms ease;
+}
+
+.internal-link-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-surface-hover);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.popover-shortcut-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.internal-link-popover-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.internal-link-popover-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.internal-link-popover-item:hover,
+.internal-link-popover-item.is-selected {
+  background: var(--bg-surface-hover);
+}
+
+.internal-link-popover-item .item-icon {
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+}
+
+.internal-link-popover-item .item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.internal-link-popover-item .item-title {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.internal-link-popover-item .item-tags {
+  display: flex;
+  gap: 4px;
+}
+
+.internal-link-popover-item .item-tag-pill {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--accent-tag-text);
+  background: var(--accent-tag);
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+}
+
+/* Slash Command Menu */
+.slash-command-menu {
+  width: 280px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: popoverFadeIn 120ms ease;
+}
+
+.slash-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-surface-hover);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.slash-menu-list {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.slash-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.slash-menu-item:hover,
+.slash-menu-item.is-selected {
+  background: var(--bg-surface-hover);
+}
+
+.slash-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--bg-surface-active);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--accent-hover);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.slash-item-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.slash-item-title {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.slash-item-description {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Floating Bubble Menu */
+.bubble-menu-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 3px;
+  animation: popoverFadeIn 100ms ease;
+}
+
+.bubble-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: 0 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.bubble-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.bubble-btn.is-active {
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+.bubble-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-subtle);
+  margin: 0 3px;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
