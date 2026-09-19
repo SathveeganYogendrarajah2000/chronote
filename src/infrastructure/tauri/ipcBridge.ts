@@ -36,6 +36,9 @@ export interface IpcBridge {
   searchWorkspace(query: string): Promise<SearchResultItem[]>;
   getResources(options?: { documentId?: string; resourceType?: ResourceType }): Promise<ResourceReference[]>;
   getBacklinks(targetNoteId: string): Promise<BacklinkReference[]>;
+  pickExportFilePath(defaultName: string, extension: string, filterName: string): Promise<string | null>;
+  saveExportedFile(path: string, content: Uint8Array | string): Promise<void>;
+  exportWorkspaceBackup(outputPath?: string): Promise<string>;
 }
 
 export class TauriIpcBridge implements IpcBridge {
@@ -145,6 +148,27 @@ export class TauriIpcBridge implements IpcBridge {
   async getBacklinks(targetNoteId: string): Promise<BacklinkReference[]> {
     if (!this.isTauriAvailable()) return mockIpcBridge.getBacklinks(targetNoteId);
     return await invoke<BacklinkReference[]>("get_backlinks", { targetNoteId });
+  }
+
+  async pickExportFilePath(defaultName: string, extension: string, filterName: string): Promise<string | null> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.pickExportFilePath(defaultName, extension, filterName);
+    try {
+      return await invoke<string | null>("pick_export_file_path", { defaultName, extension, filterName });
+    } catch (err) {
+      console.error("pick_export_file_path error:", err);
+      return null;
+    }
+  }
+
+  async saveExportedFile(path: string, content: Uint8Array | string): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.saveExportedFile(path, content);
+    const bytes = typeof content === "string" ? Array.from(new TextEncoder().encode(content)) : Array.from(content);
+    return await invoke<void>("save_exported_file", { path, content: bytes });
+  }
+
+  async exportWorkspaceBackup(outputPath?: string): Promise<string> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.exportWorkspaceBackup(outputPath);
+    return await invoke<string>("export_workspace_backup", { outputPath: outputPath || null });
   }
 }
 

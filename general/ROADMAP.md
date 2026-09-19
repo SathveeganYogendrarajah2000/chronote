@@ -59,10 +59,10 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
   - [x] SQLite FTS5 query runner with BM25 ranking and highlighted snippet generation (< 50 ms).
   - [x] Resource Browser index (Code, Images, Links, Attachments, Backlinks).
 - **Milestone 1.7: Export Pipeline**
-  - Export to standard GitHub Flavored Markdown (`.md`).
-  - Export to Microsoft Word (`.docx`).
-  - Export to PDF (`.pdf`).
-  - One-click full workspace `.zip` backup.
+  - [x] Export to standard GitHub Flavored Markdown (`.md`).
+  - [x] Export to Microsoft Word (`.docx`).
+  - [x] Export to PDF (`.pdf`).
+  - [x] One-click full workspace `.zip` backup.
 
 ---
 

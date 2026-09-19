@@ -9,10 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for [0.1.0] - Phase 1 Windows MVP
-- Milestone 1.7: Export Pipeline (Markdown, DOCX, PDF, Zip backup).
+### Planned for [0.1.0] - Phase 2 Stabilization & Distribution
+- Large workspace stress testing (5,000+ notes, 20,000+ code blocks).
+- Startup latency profiling (< 800 ms cold boot, < 90 MB RAM).
+- Windows installer packaging (NSIS/MSI).
 
 ---
+
+## [0.1.0-alpha.7] - 2026-09-19
+
+### Added
+- **Milestone 1.7: Export Pipeline:**
+  - Implemented pure TypeScript **CommonMark / GitHub Flavored Markdown (GFM) Exporter** (`markdownExporter.ts`):
+    - Converts ProseMirror JSON nodes into standard GFM syntax (headings 1-6, paragraphs, code blocks with language, blockquotes, horizontal rules, task lists, bullet/ordered lists, and GFM tables).
+    - Degrades internal links (`[[Note Title]]`) gracefully to relative markdown paths (`[Note Title](./note_title.md)`) or preserves raw wiki-link syntax based on user preference.
+    - Supports single DSM date entry, DSM date range, and workspace bundle exports.
+    - One-click copy directly to system clipboard.
+  - Implemented native **Microsoft Word (.docx) OpenXML Exporter** (`docxExporter.ts`):
+    - Produces clean Word documents with Aptos/Calibri typography.
+    - Monospace code blocks styled as shaded single-cell boxes (`#F4F6F8` background, `#D0D7DE` border, Consolas font, preserved whitespace).
+    - Blockquotes with 3pt blue accent border (`#3B82F6`) and slight indent.
+    - Formatted Word tables with header shading and borders.
+  - Implemented **Print & Vector PDF Export** (`print.css`):
+    - Clean `@media print` layout hiding sidebar, header, tabs, and modals.
+    - Strict `page-break-inside: avoid` on code blocks and tables, and `page-break-after: avoid` on headings.
+  - Implemented native **Workspace Backup Archive (.zip)** in Rust (`backup.rs`, `export.rs`):
+    - Lossless one-click `.zip` archive generation.
+    - Auto-generates `manifest.json` with metadata, timestamps, and entity counts.
+    - Strictly excludes disposable `.chronote/index.db` SQLite cache and temporary files.
+  - Implemented **Export Modal UI** (`ExportModal.tsx`, `export.css`):
+    - Global keyboard shortcut `Ctrl+E`.
+    - Format cards for Markdown, Word, PDF, and Backup Archive.
+    - Scope selection for Active Document, Single DSM Entry, Sprint Date Range, and Full Workspace.
+    - Context menu integration ("Export Note...") on tabs and top header action button.
+  - Test coverage expanded to **113/113 passing Vitest tests** and **16/16 passing Rust native tests**.
 
 ## [0.1.0-alpha.6] - 2026-09-19
 

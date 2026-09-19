@@ -6,6 +6,8 @@ import "./styles/dsm.css";
 import "./styles/notes.css";
 import "./styles/editor.css";
 import "./styles/search.css";
+import "./styles/export.css";
+import "./styles/print.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";
@@ -15,6 +17,7 @@ import { ResourcePane } from "./components/layout/ResourcePane";
 import { WorkspaceModal } from "./components/workspace/WorkspaceModal";
 import { NoteDeleteModal } from "./components/notes/NoteDeleteModal";
 import { SearchModal } from "./components/search/SearchModal";
+import { ExportModal } from "./components/export/ExportModal";
 
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
@@ -24,7 +27,7 @@ import { useNotesStore } from "@application/stores/useNotesStore";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 
 export const App: React.FC = () => {
-  const { toggleSidebar, setSearchModalOpen } = useUiStore();
+  const { toggleSidebar, setSearchModalOpen, setExportModalOpen } = useUiStore();
   const { tabs, activeTabId, switchTab, closeTab, reopenClosedTab } = useTabsStore();
   const { init: initWorkspace } = useWorkspaceStore();
 
@@ -40,6 +43,11 @@ export const App: React.FC = () => {
       if (e.ctrlKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
         setSearchModalOpen(true);
+      }
+      // Ctrl+E: Export Dialog
+      else if (e.ctrlKey && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        setExportModalOpen(true);
       }
       // Ctrl+N: New Note
       else if (e.ctrlKey && e.key.toLowerCase() === "n") {
@@ -99,6 +107,7 @@ export const App: React.FC = () => {
     reopenClosedTab,
     toggleSidebar,
     setSearchModalOpen,
+    setExportModalOpen,
   ]);
 
   return (
@@ -115,6 +124,7 @@ export const App: React.FC = () => {
       <WorkspaceModal />
       <NoteDeleteModal />
       <SearchModal />
+      <ExportModal />
     </div>
   );
 };

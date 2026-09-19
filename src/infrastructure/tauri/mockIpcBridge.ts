@@ -351,6 +351,37 @@ export class MockIpcBridge implements IpcBridge {
 
     return allBacklinks;
   }
+
+  async pickExportFilePath(defaultName: string, _extension: string, _filterName: string): Promise<string | null> {
+    return `/mock/exports/${defaultName}`;
+  }
+
+  async saveExportedFile(path: string, content: Uint8Array | string): Promise<void> {
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
+      try {
+        const filename = path.split(/[/\\]/).pop() || "export";
+        const blob =
+          typeof content === "string"
+            ? new Blob([content], { type: "text/plain;charset=utf-8" })
+            : new Blob([content as Uint8Array<ArrayBuffer>], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch {
+        // Fallback for non-browser/test environments
+      }
+    }
+  }
+
+  async exportWorkspaceBackup(outputPath?: string): Promise<string> {
+    const dest = outputPath || "/mock/exports/chronote-backup.zip";
+    return dest;
+  }
 }
 
 export const mockIpcBridge = new MockIpcBridge();

@@ -22,6 +22,9 @@ pub enum StorageError {
 
     #[error("Data corruption error: {0}")]
     Corrupted(String),
+
+    #[error("Zip compression error: {0}")]
+    Zip(String),
 }
 
 impl serde::Serialize for StorageError {

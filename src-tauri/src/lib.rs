@@ -4,6 +4,7 @@ pub mod search;
 pub mod state;
 pub mod storage;
 
+use commands::export::{export_workspace_backup, pick_export_file_path, save_exported_file};
 use commands::note::{
     delete_general_note, list_general_notes, read_dsm_document, read_general_note,
     save_dsm_document, save_general_note,
@@ -48,6 +49,9 @@ pub fn run() {
             search_workspace,
             get_resources,
             get_backlinks,
+            pick_export_file_path,
+            save_exported_file,
+            export_workspace_backup,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

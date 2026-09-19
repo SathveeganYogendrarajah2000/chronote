@@ -3,6 +3,7 @@ import type { TabItem } from "@domain/tabs.types";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 import { useTabsStore } from "@application/stores/useTabsStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
+import { useUiStore } from "@application/stores/useUiStore";
 
 export interface TabContextMenuProps {
   tab: TabItem;
@@ -84,6 +85,21 @@ export const TabContextMenu: React.FC<TabContextMenuProps> = ({ tab, x, y, onClo
           <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z" />
         </svg>
         <span>{tab.isPinned ? "Unpin Tab" : "Pin Tab"}</span>
+      </button>
+
+      <button
+        type="button"
+        className="tab-context-menu-item"
+        onClick={() => {
+          useUiStore.getState().setExportModalOpen(true, "activeDocument");
+          onClose();
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V10.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
+        </svg>
+        <span>Export Note...</span>
       </button>
 
       <div className="tab-context-menu-separator" />

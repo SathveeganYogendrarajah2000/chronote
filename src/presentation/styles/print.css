@@ -1,0 +1,88 @@
+/**
+ * Chronote Print & Vector PDF Export Stylesheet (EXPORT_SPEC.md Section 5).
+ */
+
+@media print {
+  @page {
+    margin: 1in;
+    size: auto;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+    font-size: 11pt;
+    line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  }
+
+  /* Hide all chrome and interactive shell elements */
+  .app-header,
+  .navigation-sidebar,
+  .tab-bar,
+  .resource-pane,
+  .export-modal-backdrop,
+  .search-modal-backdrop,
+  .workspace-modal-backdrop,
+  .delete-modal-backdrop,
+  .bubble-menu-bar,
+  .slash-menu,
+  .tab-context-menu,
+  .btn-primary-action,
+  .header-actions,
+  .note-tag-bar,
+  .dsm-entry-actions,
+  .sidebar-note-actions {
+    display: none !important;
+  }
+
+  /* Expand main editor canvas to full printable width */
+  .app-container,
+  .app-body,
+  .main-workspace,
+  .main-content-area,
+  .dsm-timeline,
+  .note-editor-canvas,
+  .chronote-editor {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Code blocks: avoid page break inside and force high-contrast print colors */
+  pre,
+  code,
+  .code-block-wrapper,
+  table {
+    background: #f6f8fa !important;
+    color: #24292f !important;
+    border: 1px solid #d0d7de !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Prevent awkward page break after headings */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #1a1a1a !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Links */
+  a {
+    color: #0969da !important;
+    text-decoration: underline !important;
+  }
+}

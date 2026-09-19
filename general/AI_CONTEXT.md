@@ -15,9 +15,9 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Phase 1 (Windows MVP Development)**.
-- **Status:** Milestone 1.6 (Instant Search & Resource Browser) **COMPLETED**. Full Search DSL parser supporting filter predicates (`tag:`, `type:`, `lang:`, `date:`, `after:`, `before:`), SQLite FTS5 query runner with BM25 ranking, trigram code matching, and highlighted snippet generation (< 50 ms), Resource Browser index for Code, Images, Links, Attachments, and Backlinks with document/workspace scope switching, Quick Search Modal with keyboard navigation (`Ctrl+F`), and deep block jump with pulse animation. 95/95 Vitest unit tests and 15/15 Rust native tests passing with zero errors.
-- **Next Milestone:** Milestone 1.7: Export Pipeline (Export to standard GitHub Flavored Markdown `.md`, Microsoft Word `.docx`, PDF `.pdf`, and one-click full workspace `.zip` backup).
+- **Current Phase:** **Phase 1 (Windows MVP Development)** — Completed. Transitioning to Phase 2 (Stabilization, Hardening & Distribution).
+- **Status:** Milestone 1.7 (Export Pipeline) **COMPLETED**. Full GFM Markdown serializer supporting wiki-link and relative link modes, OpenXML Microsoft Word (`.docx`) exporter with styled monospace code boxes and callout borders, vector-rendered print-ready PDF pipeline (`@media print`), and native one-click workspace `.zip` backup engine in Rust. Sleek Export Modal (`Ctrl+E`) with format/scope selectors, clipboard copy, and status toasts. 113/113 Vitest unit tests and 16/16 Rust native tests passing with zero errors.
+- **Next Milestone:** Phase 2: Stabilization, Hardening & Distribution (large workspace stress testing, startup latency profiling < 800 ms / idle RAM < 90 MB, Windows installer packaging).
 
 ---
 
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Milestone 1.6 completed (Instant Search DSL parser, SQLite FTS5 query runner with BM25 ranking, trigram code matching, highlighted snippets, Resource Browser with Code, Images, Links, Attachments, Backlinks, and Quick Search modal).
-- **Next Recommended Task:** Milestone 1.7: Export Pipeline (Export to standard GitHub Flavored Markdown `.md`, Microsoft Word `.docx`, PDF `.pdf`, and one-click full workspace `.zip` backup).
+- **Current Work:** Milestone 1.7 completed (Export Pipeline: GFM Markdown serializer, OpenXML DOCX generator, vector-rendered PDF printing, native workspace ZIP backup in Rust, and Export Modal UI).
+- **Next Recommended Task:** Phase 2: Performance profiling, large workspace stress testing, and Windows NSIS/MSI installer packaging.
 
 ---
 
