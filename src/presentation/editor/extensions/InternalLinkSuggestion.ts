@@ -1,7 +1,10 @@
 import { Extension } from "@tiptap/core";
+import { PluginKey } from "@tiptap/pm/state";
 import Suggestion from "@tiptap/suggestion";
 import { parseInternalLinkText, getInternalLinkDisplayText } from "@domain/internalLink.utils";
 import type { LinkCandidate } from "../components/InternalLinkPopover";
+
+export const InternalLinkPluginKey = new PluginKey("internalLink");
 
 export interface InternalLinkSuggestionOptions {
   getCandidates: () => LinkCandidate[];
@@ -28,6 +31,7 @@ export const InternalLinkSuggestion = Extension.create<InternalLinkSuggestionOpt
   addProseMirrorPlugins() {
     return [
       Suggestion({
+        pluginKey: InternalLinkPluginKey,
         editor: this.editor,
         char: "[[",
         allowSpaces: true,

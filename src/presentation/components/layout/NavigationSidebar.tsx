@@ -98,9 +98,26 @@ export const NavigationSidebar: React.FC = () => {
 
   return (
     <aside className={`navigation-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
-      {/* Workspace Indicator banner if no workspace is active */}
-      {!workspace && (
-        <div style={{ padding: "var(--space-3)", borderBottom: "1px solid var(--border-subtle)" }}>
+      {/* Workspace Indicator banner */}
+      <div className="sidebar-workspace-banner">
+        {workspace ? (
+          <button
+            type="button"
+            className="sidebar-workspace-card"
+            onClick={() => setWorkspaceModalOpen(true)}
+            title={`Active Workspace: ${workspace.name}\nPath: ${workspace.path}\nClick to switch workspace`}
+          >
+            <div className="sidebar-workspace-card-icon">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9zM2.5 3a.5.5 0 0 0-.5.5V4h5.236a2.03 2.03 0 0 1-.318-.426C6.541 3.14 5.922 3 5.264 3H2.5z" />
+              </svg>
+            </div>
+            <div className="sidebar-workspace-card-text">
+              <span className="sidebar-workspace-card-name">{workspace.name}</span>
+              <span className="sidebar-workspace-card-path">{workspace.path}</span>
+            </div>
+          </button>
+        ) : (
           <button
             type="button"
             className="btn-primary"
@@ -109,8 +126,8 @@ export const NavigationSidebar: React.FC = () => {
           >
             Open Workspace
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* DSM Journal Section */}
       <div className="sidebar-section">

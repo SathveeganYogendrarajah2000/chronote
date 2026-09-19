@@ -98,6 +98,8 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
     () => [
       StarterKit.configure({
         codeBlock: false,
+        link: false,
+        underline: false,
         heading: {
           levels: [1, 2, 3],
         },
