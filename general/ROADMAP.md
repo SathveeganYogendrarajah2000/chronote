@@ -55,9 +55,9 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
   - [x] First-class code blocks with language selector, syntax highlighting, and copy button.
   - [x] Internal note linking (`[[Note Title]]`) with autocomplete and stable ID resolution.
 - **Milestone 1.6: Instant Search & Resource Browser**
-  - Implement search DSL parser (`tag:`, `type:`, `date:`, `after:`, `before:`).
-  - SQLite FTS5 query runner with BM25 ranking and highlighted snippet generation (< 50 ms).
-  - Resource Browser index (Code, Images, Links, Attachments, Backlinks).
+  - [x] Implement search DSL parser (`tag:`, `type:`, `date:`, `after:`, `before:`).
+  - [x] SQLite FTS5 query runner with BM25 ranking and highlighted snippet generation (< 50 ms).
+  - [x] Resource Browser index (Code, Images, Links, Attachments, Backlinks).
 - **Milestone 1.7: Export Pipeline**
   - Export to standard GitHub Flavored Markdown (`.md`).
   - Export to Microsoft Word (`.docx`).

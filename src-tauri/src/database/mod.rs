@@ -119,8 +119,85 @@ struct ExtractedBlock {
     content: String,
 }
 
-fn extract_blocks(node: &serde_json::Value) -> Vec<ExtractedBlock> {
+struct ExtractedResourceItem {
+    id: String,
+    resource_type: String,
+    block_id: String,
+    title: String,
+    language: Option<String>,
+    target_url: Option<String>,
+}
+
+fn extract_inline_resources(
+    block_id: &str,
+    node: &serde_json::Value,
+    resources: &mut Vec<ExtractedResourceItem>,
+    backlinks: &mut Vec<String>,
+) {
+    if let Some(marks) = node.get("marks").and_then(|m| m.as_array()) {
+        for mark in marks {
+            let mark_type = mark.get("type").and_then(|t| t.as_str()).unwrap_or("");
+            if mark_type == "link" {
+                if let Some(href) = mark
+                    .get("attrs")
+                    .and_then(|a| a.get("href"))
+                    .and_then(|h| h.as_str())
+                {
+                    let text = node
+                        .get("text")
+                        .and_then(|t| t.as_str())
+                        .unwrap_or(href);
+                    resources.push(ExtractedResourceItem {
+                        id: format!("res_lnk_{}_{}", block_id, resources.len()),
+                        resource_type: "link".to_string(),
+                        block_id: block_id.to_string(),
+                        title: text.to_string(),
+                        language: None,
+                        target_url: Some(href.to_string()),
+                    });
+                }
+            } else if mark_type == "internalLink" {
+                if let Some(target_id) = mark
+                    .get("attrs")
+                    .and_then(|a| a.get("targetNoteId"))
+                    .and_then(|id| id.as_str())
+                {
+                    let text = mark
+                        .get("attrs")
+                        .and_then(|a| a.get("originalTitle"))
+                        .and_then(|t| t.as_str())
+                        .or_else(|| node.get("text").and_then(|t| t.as_str()))
+                        .unwrap_or("Note");
+                    resources.push(ExtractedResourceItem {
+                        id: format!("res_bkl_{}_{}", block_id, resources.len()),
+                        resource_type: "backlink".to_string(),
+                        block_id: block_id.to_string(),
+                        title: text.to_string(),
+                        language: None,
+                        target_url: Some(target_id.to_string()),
+                    });
+                    if !backlinks.contains(&target_id.to_string()) {
+                        backlinks.push(target_id.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some(children) = node.get("content").and_then(|c| c.as_array()) {
+        for child in children {
+            extract_inline_resources(block_id, child, resources, backlinks);
+        }
+    }
+}
+
+fn extract_blocks_and_resources(
+    node: &serde_json::Value,
+) -> (Vec<ExtractedBlock>, Vec<ExtractedResourceItem>, Vec<String>) {
     let mut blocks = Vec::new();
+    let mut resources = Vec::new();
+    let mut backlinks = Vec::new();
+
     if let Some(content_array) = node.get("content").and_then(|c| c.as_array()) {
         for (i, child) in content_array.iter().enumerate() {
             let block_type = child
@@ -145,15 +222,65 @@ fn extract_blocks(node: &serde_json::Value) -> Vec<ExtractedBlock> {
             let mut text = String::new();
             extract_text_recursive(child, &mut text);
 
+            let content_str = text.trim().to_string();
+
+            // Code block resource
+            if block_type == "codeBlock" || block_type == "code" {
+                let first_line = content_str
+                    .lines()
+                    .next()
+                    .unwrap_or("Code snippet")
+                    .chars()
+                    .take(80)
+                    .collect::<String>();
+                resources.push(ExtractedResourceItem {
+                    id: format!("res_code_{}", block_id),
+                    resource_type: "code".to_string(),
+                    block_id: block_id.clone(),
+                    title: if first_line.is_empty() {
+                        "Code snippet".to_string()
+                    } else {
+                        first_line
+                    },
+                    language: Some(language.clone().unwrap_or_else(|| "plaintext".to_string())),
+                    target_url: None,
+                });
+            }
+
+            // Image resource
+            if block_type == "image" {
+                let src = child
+                    .get("attrs")
+                    .and_then(|a| a.get("src"))
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("");
+                let alt = child
+                    .get("attrs")
+                    .and_then(|a| a.get("alt"))
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("Screenshot");
+                resources.push(ExtractedResourceItem {
+                    id: format!("res_img_{}", block_id),
+                    resource_type: "image".to_string(),
+                    block_id: block_id.clone(),
+                    title: alt.to_string(),
+                    language: None,
+                    target_url: Some(src.to_string()),
+                });
+            }
+
+            // Extract inline links and backlinks
+            extract_inline_resources(&block_id, child, &mut resources, &mut backlinks);
+
             blocks.push(ExtractedBlock {
                 block_id,
                 block_type,
                 language,
-                content: text.trim().to_string(),
+                content: content_str,
             });
         }
     }
-    blocks
+    (blocks, resources, backlinks)
 }
 
 fn extract_text_recursive(node: &serde_json::Value, buffer: &mut String) {
@@ -183,14 +310,15 @@ pub fn index_dsm(conn: &mut Connection, doc: &DsmDocument) -> Result<(), Storage
         params![doc.id, doc.title, doc.schema_version, doc.created_at, doc.updated_at],
     )?;
 
-    // 2. Clean previous entries and FTS blocks for dsm_master
+    // 2. Clean previous entries, backlinks, and FTS blocks for dsm_master
     tx.execute("DELETE FROM dsm_entries WHERE document_id = ?1", params![doc.id])?;
     tx.execute("DELETE FROM tags WHERE document_id = ?1", params![doc.id])?;
     tx.execute("DELETE FROM resources WHERE parent_document_id = ?1", params![doc.id])?;
+    tx.execute("DELETE FROM backlinks WHERE source_document_id = ?1", params![doc.id])?;
     tx.execute("DELETE FROM fts_blocks WHERE document_id = ?1", params![doc.id])?;
     tx.execute("DELETE FROM fts_code_trigram WHERE document_id = ?1", params![doc.id])?;
 
-    // 3. Re-insert DSM entries and blocks
+    // 3. Re-insert DSM entries, resources, and blocks
     for entry in &doc.entries {
         tx.execute(
             "INSERT INTO dsm_entries (id, document_id, entry_date, collapsed, created_at, updated_at)
@@ -213,7 +341,36 @@ pub fn index_dsm(conn: &mut Connection, doc: &DsmDocument) -> Result<(), Storage
             )?;
         }
 
-        let blocks = extract_blocks(&entry.content);
+        let (blocks, resources, backlinks) = extract_blocks_and_resources(&entry.content);
+
+        // Insert extracted backlinks
+        for target_id in backlinks {
+            tx.execute(
+                "INSERT OR IGNORE INTO backlinks (source_document_id, source_entry_id, target_note_id)
+                 VALUES (?1, ?2, ?3)",
+                params![doc.id, entry.id, target_id],
+            )?;
+        }
+
+        // Insert extracted resources
+        for res in resources {
+            tx.execute(
+                "INSERT OR REPLACE INTO resources (id, resource_type, parent_document_id, entry_id, block_id, title, language, target_url, asset_id)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL)",
+                params![
+                    res.id,
+                    res.resource_type,
+                    doc.id,
+                    entry.id,
+                    res.block_id,
+                    res.title,
+                    res.language,
+                    res.target_url
+                ],
+            )?;
+        }
+
+        // Insert FTS blocks
         for blk in blocks {
             tx.execute(
                 "INSERT INTO fts_blocks (block_id, document_id, document_type, entry_id, entry_date, block_type, language, tags, content)
@@ -239,20 +396,6 @@ pub fn index_dsm(conn: &mut Connection, doc: &DsmDocument) -> Result<(), Storage
                         doc.id,
                         blk.language.as_deref().unwrap_or(""),
                         blk.content
-                    ],
-                )?;
-
-                let res_id = format!("res_{}", blk.block_id);
-                tx.execute(
-                    "INSERT OR REPLACE INTO resources (id, resource_type, parent_document_id, entry_id, block_id, title, language, target_url, asset_id)
-                     VALUES (?1, 'code', ?2, ?3, ?4, ?5, ?6, NULL, NULL)",
-                    params![
-                        res_id,
-                        doc.id,
-                        entry.id,
-                        blk.block_id,
-                        "Code snippet",
-                        blk.language.as_deref().unwrap_or("text")
                     ],
                 )?;
             }
@@ -289,9 +432,10 @@ pub fn index_general_note(conn: &mut Connection, note: &GeneralNote) -> Result<(
         ],
     )?;
 
-    // 2. Clean previous indices for this note
+    // 2. Clean previous indices and backlinks for this note
     tx.execute("DELETE FROM tags WHERE document_id = ?1", params![note.id])?;
     tx.execute("DELETE FROM resources WHERE parent_document_id = ?1", params![note.id])?;
+    tx.execute("DELETE FROM backlinks WHERE source_document_id = ?1", params![note.id])?;
     tx.execute("DELETE FROM fts_blocks WHERE document_id = ?1", params![note.id])?;
     tx.execute("DELETE FROM fts_code_trigram WHERE document_id = ?1", params![note.id])?;
 
@@ -304,8 +448,36 @@ pub fn index_general_note(conn: &mut Connection, note: &GeneralNote) -> Result<(
         )?;
     }
 
-    // 4. Re-index blocks
-    let blocks = extract_blocks(&note.content);
+    // 4. Extract blocks, resources, and backlinks
+    let (blocks, resources, backlinks) = extract_blocks_and_resources(&note.content);
+
+    // Insert extracted backlinks
+    for target_id in backlinks {
+        tx.execute(
+            "INSERT OR IGNORE INTO backlinks (source_document_id, source_entry_id, target_note_id)
+             VALUES (?1, NULL, ?2)",
+            params![note.id, target_id],
+        )?;
+    }
+
+    // Insert extracted resources
+    for res in resources {
+        tx.execute(
+            "INSERT OR REPLACE INTO resources (id, resource_type, parent_document_id, entry_id, block_id, title, language, target_url, asset_id)
+             VALUES (?1, ?2, ?3, NULL, ?4, ?5, ?6, ?7, NULL)",
+            params![
+                res.id,
+                res.resource_type,
+                note.id,
+                res.block_id,
+                res.title,
+                res.language,
+                res.target_url
+            ],
+        )?;
+    }
+
+    // Insert FTS blocks
     for blk in blocks {
         tx.execute(
             "INSERT INTO fts_blocks (block_id, document_id, document_type, entry_id, entry_date, block_type, language, tags, content)
@@ -329,19 +501,6 @@ pub fn index_general_note(conn: &mut Connection, note: &GeneralNote) -> Result<(
                     note.id,
                     blk.language.as_deref().unwrap_or(""),
                     blk.content
-                ],
-            )?;
-
-            let res_id = format!("res_{}", blk.block_id);
-            tx.execute(
-                "INSERT OR REPLACE INTO resources (id, resource_type, parent_document_id, entry_id, block_id, title, language, target_url, asset_id)
-                 VALUES (?1, 'code', ?2, NULL, ?3, ?4, ?5, NULL, NULL)",
-                params![
-                    res_id,
-                    note.id,
-                    blk.block_id,
-                    note.title,
-                    blk.language.as_deref().unwrap_or("text")
                 ],
             )?;
         }

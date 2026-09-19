@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod database;
+pub mod search;
 pub mod state;
 pub mod storage;
 
@@ -7,6 +8,7 @@ use commands::note::{
     delete_general_note, list_general_notes, read_dsm_document, read_general_note,
     save_dsm_document, save_general_note,
 };
+use commands::search::{get_backlinks, get_resources, search_workspace};
 use commands::system::{get_app_info, ping};
 use commands::workspace::{
     create_workspace, get_active_workspace, open_workspace, pick_workspace_directory,
@@ -43,6 +45,9 @@ pub fn run() {
             save_general_note,
             list_general_notes,
             delete_general_note,
+            search_workspace,
+            get_resources,
+            get_backlinks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

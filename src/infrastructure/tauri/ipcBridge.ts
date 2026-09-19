@@ -2,6 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import type { DsmDocument } from "@domain/dsm.types";
 import type { GeneralNote, NoteMetadata } from "@domain/note.types";
+import type { SearchResultItem } from "@domain/search.types";
+import type { ResourceReference, BacklinkReference, ResourceType } from "@domain/resource.types";
 import { mockIpcBridge } from "./mockIpcBridge";
 
 export interface IndexStats {
@@ -31,6 +33,9 @@ export interface IpcBridge {
   saveGeneralNote(note: GeneralNote): Promise<void>;
   listGeneralNotes(): Promise<NoteMetadata[]>;
   deleteGeneralNote(id: string): Promise<void>;
+  searchWorkspace(query: string): Promise<SearchResultItem[]>;
+  getResources(options?: { documentId?: string; resourceType?: ResourceType }): Promise<ResourceReference[]>;
+  getBacklinks(targetNoteId: string): Promise<BacklinkReference[]>;
 }
 
 export class TauriIpcBridge implements IpcBridge {
@@ -119,6 +124,27 @@ export class TauriIpcBridge implements IpcBridge {
   async deleteGeneralNote(id: string): Promise<void> {
     if (!this.isTauriAvailable()) return mockIpcBridge.deleteGeneralNote(id);
     return await invoke<void>("delete_general_note", { id });
+  }
+
+  async searchWorkspace(query: string): Promise<SearchResultItem[]> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.searchWorkspace(query);
+    return await invoke<SearchResultItem[]>("search_workspace", { query });
+  }
+
+  async getResources(options?: {
+    documentId?: string;
+    resourceType?: ResourceType;
+  }): Promise<ResourceReference[]> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.getResources(options);
+    return await invoke<ResourceReference[]>("get_resources", {
+      documentId: options?.documentId || null,
+      resourceType: options?.resourceType || null,
+    });
+  }
+
+  async getBacklinks(targetNoteId: string): Promise<BacklinkReference[]> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.getBacklinks(targetNoteId);
+    return await invoke<BacklinkReference[]>("get_backlinks", { targetNoteId });
   }
 }
 

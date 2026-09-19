@@ -5,6 +5,7 @@ import "./styles/layout.css";
 import "./styles/dsm.css";
 import "./styles/notes.css";
 import "./styles/editor.css";
+import "./styles/search.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";
@@ -13,6 +14,7 @@ import { MainContentArea } from "./components/layout/MainContentArea";
 import { ResourcePane } from "./components/layout/ResourcePane";
 import { WorkspaceModal } from "./components/workspace/WorkspaceModal";
 import { NoteDeleteModal } from "./components/notes/NoteDeleteModal";
+import { SearchModal } from "./components/search/SearchModal";
 
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
@@ -112,6 +114,7 @@ export const App: React.FC = () => {
       </div>
       <WorkspaceModal />
       <NoteDeleteModal />
+      <SearchModal />
     </div>
   );
 };

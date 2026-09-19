@@ -10,8 +10,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for [0.1.0] - Phase 1 Windows MVP
-- Milestone 1.6: Instant Search DSL & Resource Browser.
 - Milestone 1.7: Export Pipeline (Markdown, DOCX, PDF, Zip backup).
+
+---
+
+## [0.1.0-alpha.6] - 2026-09-19
+
+### Added
+- **Milestone 1.6: Instant Search & Resource Browser:**
+  - Implemented pure TypeScript **Search DSL Parser** (`search.parser.ts`, `search.types.ts`):
+    - Supports filter tokens: `tag:<tag>`, `type:<code>`, `type:<image>`, `type:<dsm>`, `type:<note>`, `lang:<language>`, `date:<YYYY-MM-DD>`, `after:<YYYY-MM-DD>`, `before:<YYYY-MM-DD>`.
+    - Supports exact quoted phrases (`"exact phrase"`), prefix tokens (`prefix*`), and unkeyed full-text keywords.
+    - Tag normalization via `normalizeTag()`.
+  - Implemented **SQLite FTS5 Query Runner (< 50 ms)** in Rust backend (`src-tauri/src/search/mod.rs`):
+    - BM25 relevance ranking with column weighting (`content: 10.0`, `tags: 5.0`).
+    - Contextual excerpt generation with `<mark>` highlight tags via SQLite `snippet()`.
+    - Trigram code index matching for symbols and function signatures.
+  - Implemented **Resource & Backlink Indexer** (`src-tauri/src/database/mod.rs`, `resourceExtractor.ts`):
+    - Automatically extracts code blocks, embedded images, external HTTP(S) URLs, and incoming backlinks from ProseMirror document trees into `resources` and `backlinks` SQLite tables.
+    - Disaster-recovery rebuilds populate resources and backlinks seamlessly.
+  - Implemented **Quick Search Modal UI** (`SearchModal.tsx`, `search.css`):
+    - Keyboard-first desktop interaction (`Ctrl+F` global accelerator, `↑`/`↓` navigation, `Enter` to open, `Escape` to close).
+    - Suggestion pills for quick filter insertion (`tag:`, `type:code`, `type:dsm`, `type:note`, `lang:`, `after:`, `before:`).
+    - Recent searches history with one-click replay.
+    - Deep block navigation: opening document, switching tabs, expanding target DSM date, smoothly scrolling to target block, and triggering a temporary CSS pulse glow (`@keyframes blockHighlightPulse`).
+  - Implemented **Resource Browser Inspector** (`ResourcePane.tsx`):
+    - Indexed inspector with tabs: **Code**, **Images**, **Links**, **Files**, and **Backlinks**.
+    - Scope toggle between "This Note" (active document) and "All Notes" (workspace-wide).
+    - Inline filter search to quickly filter resources by keyword or language.
+    - Code cards with language badge, one-click copy snippet, and jump to block.
+    - External links with URL domain badge, browser launcher, and jump to editor block.
+    - Backlinks inspector displaying all notes and DSM dates linking to the active note.
+  - Added full test coverage: 95/95 passing Vitest tests and 15/15 passing Rust native tests.
 
 ---
 

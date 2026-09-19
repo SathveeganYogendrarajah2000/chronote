@@ -16,8 +16,8 @@
 
 ## 2. Current Phase & Status
 - **Current Phase:** **Phase 1 (Windows MVP Development)**.
-- **Status:** Milestone 1.5 (Rich-Text Editor & Code Blocks) **COMPLETED**. Full Tiptap 3.x integration with Markdown InputRules (`# `, `- `, `1. `, `> `, ````, `---`), first-class code blocks with language selector, syntax highlighting (One Dark palette), and one-click copy button, internal note linking `[[Note Title]]` with autocomplete popover and alias support, quick insert slash command palette (`/`), and floating bubble formatting menu. 77/77 Vitest unit tests and 12/12 Rust native tests passing with zero errors.
-- **Next Milestone:** Milestone 1.6: Instant Search & Resource Browser (Search DSL parser `tag:`, `type:`, `date:`, `after:`, `before:`, SQLite FTS5 query runner with BM25 ranking and highlighted snippets, and Resource Browser index for Code, Images, Links, Attachments, and Backlinks).
+- **Status:** Milestone 1.6 (Instant Search & Resource Browser) **COMPLETED**. Full Search DSL parser supporting filter predicates (`tag:`, `type:`, `lang:`, `date:`, `after:`, `before:`), SQLite FTS5 query runner with BM25 ranking, trigram code matching, and highlighted snippet generation (< 50 ms), Resource Browser index for Code, Images, Links, Attachments, and Backlinks with document/workspace scope switching, Quick Search Modal with keyboard navigation (`Ctrl+F`), and deep block jump with pulse animation. 95/95 Vitest unit tests and 15/15 Rust native tests passing with zero errors.
+- **Next Milestone:** Milestone 1.7: Export Pipeline (Export to standard GitHub Flavored Markdown `.md`, Microsoft Word `.docx`, PDF `.pdf`, and one-click full workspace `.zip` backup).
 
 ---
 
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Milestone 1.5 completed (Rich-text editor and first-class code block subsystem integrated with Tiptap 3.x, lowlight syntax highlighting, Markdown InputRules, [[Note]] autocomplete, slash commands, and unified editing across General Notes and DSM entries).
-- **Next Recommended Task:** Milestone 1.6: Instant Search & Resource Browser (Search DSL parser `tag:`, `type:`, `date:`, `after:`, `before:`, SQLite FTS5 query runner with BM25 ranking and highlighted snippets, and Resource Browser index for Code, Images, Links, Attachments, and Backlinks).
+- **Current Work:** Milestone 1.6 completed (Instant Search DSL parser, SQLite FTS5 query runner with BM25 ranking, trigram code matching, highlighted snippets, Resource Browser with Code, Images, Links, Attachments, Backlinks, and Quick Search modal).
+- **Next Recommended Task:** Milestone 1.7: Export Pipeline (Export to standard GitHub Flavored Markdown `.md`, Microsoft Word `.docx`, PDF `.pdf`, and one-click full workspace `.zip` backup).
 
 ---
 

@@ -3,6 +3,11 @@ import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import { DEFAULT_WORKSPACE_SETTINGS } from "@domain/workspace.types";
 import type { DsmDocument } from "@domain/dsm.types";
 import type { GeneralNote, NoteMetadata } from "@domain/note.types";
+import type { SearchResultItem } from "@domain/search.types";
+import type { ResourceReference, BacklinkReference, ResourceType } from "@domain/resource.types";
+import { parseSearchQuery } from "@domain/search.parser";
+import { extractResourcesFromDoc } from "@domain/resourceExtractor";
+import { proseMirrorDocToText } from "@domain/dsm.utils";
 
 export class MockIpcBridge implements IpcBridge {
   private activeWorkspace: Workspace | null = null;
@@ -134,6 +139,217 @@ export class MockIpcBridge implements IpcBridge {
 
   async deleteGeneralNote(id: string): Promise<void> {
     this.notes.delete(id);
+  }
+
+  async searchWorkspace(query: string): Promise<SearchResultItem[]> {
+    const ast = parseSearchQuery(query);
+    const results: SearchResultItem[] = [];
+
+    // Helper to highlight matches in text
+    const highlight = (text: string, terms: string[]): string => {
+      let res = text;
+      for (const term of terms) {
+        if (!term) continue;
+        const clean = term.replace(/\*/g, "");
+        if (!clean) continue;
+        const reg = new RegExp(`(${clean})`, "gi");
+        res = res.replace(reg, "<mark>$1</mark>");
+      }
+      return res;
+    };
+
+    const allSearchTerms = [...ast.textTokens, ...ast.exactPhrases];
+
+    // 1. Search General Notes
+    if (ast.documentTypes.length === 0 || ast.documentTypes.includes("general")) {
+      for (const note of this.notes.values()) {
+        // Check tags filter
+        if (ast.tags.length > 0 && !ast.tags.every((t) => note.tags.includes(t))) {
+          continue;
+        }
+
+        // Search through blocks in note.content
+        if (note.content?.content && Array.isArray(note.content.content)) {
+          for (let i = 0; i < note.content.content.length; i++) {
+            const block = note.content.content[i];
+            if (!block) continue;
+            const blockType = (block.type as string) || "paragraph";
+            const blockId = (block.attrs?.id as string) || `blk_${note.id}_${i}`;
+            const lang = (block.attrs?.language as string) || undefined;
+
+            if (ast.blockTypes.length > 0 && !ast.blockTypes.includes(blockType) && !(ast.blockTypes.includes("code") && (blockType === "codeBlock" || blockType === "code"))) {
+              continue;
+            }
+            if (ast.languages.length > 0 && (!lang || !ast.languages.includes(lang.toLowerCase()))) {
+              continue;
+            }
+
+            const plainText = proseMirrorDocToText({ type: "doc", content: [block] });
+            const lowerText = plainText.toLowerCase();
+
+            // Match text tokens and phrases
+            let matches = allSearchTerms.length === 0;
+            if (allSearchTerms.length > 0) {
+              matches = allSearchTerms.every((t) => {
+                const clean = t.toLowerCase().replace(/\*/g, "");
+                return lowerText.includes(clean) || note.tags.some((tag) => tag.includes(clean));
+              });
+            }
+
+            if (matches) {
+              const snippetText = plainText.slice(0, 160);
+              results.push({
+                blockId,
+                documentId: note.id,
+                documentType: "general",
+                documentTitle: note.title,
+                blockType,
+                language: lang,
+                tags: note.tags,
+                excerpt: highlight(snippetText, allSearchTerms),
+                score: 1.0,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Search DSM entries
+    if (ast.documentTypes.length === 0 || ast.documentTypes.includes("dsm")) {
+      for (const entry of this.dsmDoc.entries) {
+        // Date filters
+        if (ast.exactDate && entry.date !== ast.exactDate) continue;
+        if (ast.afterDate && entry.date < ast.afterDate) continue;
+        if (ast.beforeDate && entry.date > ast.beforeDate) continue;
+
+        // Tags filter
+        if (ast.tags.length > 0 && !ast.tags.every((t) => entry.tags.includes(t))) {
+          continue;
+        }
+
+        if (entry.content?.content && Array.isArray(entry.content.content)) {
+          for (let i = 0; i < entry.content.content.length; i++) {
+            const block = entry.content.content[i];
+            if (!block) continue;
+            const blockType = (block.type as string) || "paragraph";
+            const blockId = (block.attrs?.id as string) || `blk_${entry.id}_${i}`;
+            const lang = (block.attrs?.language as string) || undefined;
+
+            if (ast.blockTypes.length > 0 && !ast.blockTypes.includes(blockType) && !(ast.blockTypes.includes("code") && (blockType === "codeBlock" || blockType === "code"))) {
+              continue;
+            }
+            if (ast.languages.length > 0 && (!lang || !ast.languages.includes(lang.toLowerCase()))) {
+              continue;
+            }
+
+            const plainText = proseMirrorDocToText({ type: "doc", content: [block] });
+            const lowerText = plainText.toLowerCase();
+
+            let matches = allSearchTerms.length === 0;
+            if (allSearchTerms.length > 0) {
+              matches = allSearchTerms.every((t) => {
+                const clean = t.toLowerCase().replace(/\*/g, "");
+                return lowerText.includes(clean) || entry.tags.some((tag) => tag.includes(clean));
+              });
+            }
+
+            if (matches) {
+              const snippetText = plainText.slice(0, 160);
+              results.push({
+                blockId,
+                documentId: this.dsmDoc.id,
+                documentType: "dsm",
+                documentTitle: `DSM Stand-up (${entry.date})`,
+                entryId: entry.id,
+                entryDate: entry.date,
+                blockType,
+                language: lang,
+                tags: entry.tags,
+                excerpt: highlight(snippetText, allSearchTerms),
+                score: 1.0,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return results;
+  }
+
+  async getResources(options?: {
+    documentId?: string;
+    resourceType?: ResourceType;
+  }): Promise<ResourceReference[]> {
+    const allResources: ResourceReference[] = [];
+
+    // Collect from General Notes
+    for (const note of this.notes.values()) {
+      if (options?.documentId && note.id !== options.documentId) continue;
+      const { resources } = extractResourcesFromDoc(note.content, {
+        parentDocumentId: note.id,
+        parentDocumentType: "general",
+        parentDocumentTitle: note.title,
+      });
+      allResources.push(...resources);
+    }
+
+    // Collect from DSM entries
+    if (!options?.documentId || options.documentId === this.dsmDoc.id) {
+      for (const entry of this.dsmDoc.entries) {
+        const { resources } = extractResourcesFromDoc(entry.content, {
+          parentDocumentId: this.dsmDoc.id,
+          parentDocumentType: "dsm",
+          parentDocumentTitle: `DSM Stand-up (${entry.date})`,
+          entryId: entry.id,
+          entryDate: entry.date,
+        });
+        allResources.push(...resources);
+      }
+    }
+
+    if (options?.resourceType) {
+      return allResources.filter((r) => r.resourceType === options.resourceType);
+    }
+
+    return allResources;
+  }
+
+  async getBacklinks(targetNoteId: string): Promise<BacklinkReference[]> {
+    const allBacklinks: BacklinkReference[] = [];
+
+    // From notes
+    for (const note of this.notes.values()) {
+      const { backlinks } = extractResourcesFromDoc(note.content, {
+        parentDocumentId: note.id,
+        parentDocumentType: "general",
+        parentDocumentTitle: note.title,
+      });
+      for (const b of backlinks) {
+        if (b.targetNoteId === targetNoteId) {
+          allBacklinks.push(b);
+        }
+      }
+    }
+
+    // From DSM entries
+    for (const entry of this.dsmDoc.entries) {
+      const { backlinks } = extractResourcesFromDoc(entry.content, {
+        parentDocumentId: this.dsmDoc.id,
+        parentDocumentType: "dsm",
+        parentDocumentTitle: `DSM Stand-up (${entry.date})`,
+        entryId: entry.id,
+        entryDate: entry.date,
+      });
+      for (const b of backlinks) {
+        if (b.targetNoteId === targetNoteId) {
+          allBacklinks.push(b);
+        }
+      }
+    }
+
+    return allBacklinks;
   }
 }
 

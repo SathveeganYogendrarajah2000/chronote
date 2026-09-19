@@ -25,6 +25,7 @@ import {
   type SlashCommandItem,
 } from "./components/SlashCommandMenu";
 import { BubbleMenuBar } from "./components/BubbleMenuBar";
+import { BlockId } from "./extensions/BlockIdExtension";
 
 export interface ChronoteEditorProps {
   content: ProseMirrorNode;
@@ -128,6 +129,7 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
         onOpen: (state) => setSlashMenuState(state),
         onClose: () => setSlashMenuState(null),
       }),
+      BlockId,
     ],
     [getCandidates, placeholder]
   );
