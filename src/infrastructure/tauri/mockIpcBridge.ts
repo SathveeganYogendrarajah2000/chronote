@@ -1,4 +1,4 @@
-import type { IpcBridge, AppInfo, IndexStats } from "./ipcBridge";
+import type { IpcBridge, AppInfo, IndexStats, PerformanceMetrics, SyncConflictInfo } from "./ipcBridge";
 import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import { DEFAULT_WORKSPACE_SETTINGS } from "@domain/workspace.types";
 import type { DsmDocument } from "@domain/dsm.types";
@@ -20,6 +20,20 @@ export class MockIpcBridge implements IpcBridge {
     entries: [],
   };
   private notes: Map<string, GeneralNote> = new Map();
+
+  reset(): void {
+    this.activeWorkspace = null;
+    this.notes.clear();
+    this.mockConflicts = [];
+    this.dsmDoc = {
+      id: "dsm_master",
+      schemaVersion: 1,
+      title: "Daily Stand-up Journal",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      entries: [],
+    };
+  }
 
   async getAppInfo(): Promise<AppInfo> {
     return {
@@ -381,6 +395,35 @@ export class MockIpcBridge implements IpcBridge {
   async exportWorkspaceBackup(outputPath?: string): Promise<string> {
     const dest = outputPath || "/mock/exports/chronote-backup.zip";
     return dest;
+  }
+
+  async getPerformanceMetrics(): Promise<PerformanceMetrics> {
+    return {
+      memoryRssBytes: 52428800,
+      memoryRssMb: 50.0,
+      dbSizeBytes: 1048576,
+      totalDocuments: this.notes.size + 1,
+      totalBlocks: (this.notes.size + 1) * 3,
+      totalTags: 12,
+      uptimeSeconds: 120,
+    };
+  }
+
+  private mockConflicts: SyncConflictInfo[] = [];
+
+  setMockConflicts(conflicts: SyncConflictInfo[]): void {
+    this.mockConflicts = [...conflicts];
+  }
+
+  async getSyncConflicts(): Promise<SyncConflictInfo[]> {
+    return [...this.mockConflicts];
+  }
+
+  async resolveConflict(
+    conflictFilePath: string,
+    _resolution: "keep_local" | "use_conflicted" | "keep_both"
+  ): Promise<void> {
+    this.mockConflicts = this.mockConflicts.filter((c) => c.conflictFilePath !== conflictFilePath);
   }
 }
 

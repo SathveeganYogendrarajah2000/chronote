@@ -12,6 +12,7 @@ interface UiState {
   searchModalOpen: boolean;
   exportModalOpen: boolean;
   exportInitialScope?: ExportScope | undefined;
+  performanceModalOpen: boolean;
 
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
@@ -21,6 +22,7 @@ interface UiState {
   setTheme: (theme: ThemeMode) => void;
   setSearchModalOpen: (open: boolean) => void;
   setExportModalOpen: (open: boolean, scope?: ExportScope | undefined) => void;
+  setPerformanceModalOpen: (open: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -31,6 +33,7 @@ export const useUiStore = create<UiState>((set) => ({
   searchModalOpen: false,
   exportModalOpen: false,
   exportInitialScope: undefined,
+  performanceModalOpen: false,
 
   toggleSidebar: () =>
     set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
@@ -46,5 +49,6 @@ export const useUiStore = create<UiState>((set) => ({
   setSearchModalOpen: (searchModalOpen) => set({ searchModalOpen }),
   setExportModalOpen: (exportModalOpen, exportInitialScope) =>
     set({ exportModalOpen, exportInitialScope }),
+  setPerformanceModalOpen: (performanceModalOpen) => set({ performanceModalOpen }),
 }));
 

@@ -18,6 +18,30 @@ export interface AppInfo {
   description: string;
 }
 
+export interface PerformanceMetrics {
+  memoryRssBytes: number;
+  memoryRssMb: number;
+  dbSizeBytes: number;
+  totalDocuments: number;
+  totalBlocks: number;
+  totalTags: number;
+  uptimeSeconds: number;
+}
+
+export interface SyncConflictInfo {
+  conflictFilePath: string;
+  conflictFileName: string;
+  originalFileName: string;
+  targetId: string;
+  documentType: "general" | "dsm";
+  title: string;
+  syncSource: string;
+  conflictDetectedAt: string;
+  localUpdatedAt?: string | null;
+  conflictedUpdatedAt?: string | null;
+  previewText: string;
+}
+
 export interface IpcBridge {
   getAppInfo(): Promise<AppInfo>;
   ping(): Promise<string>;
@@ -39,6 +63,9 @@ export interface IpcBridge {
   pickExportFilePath(defaultName: string, extension: string, filterName: string): Promise<string | null>;
   saveExportedFile(path: string, content: Uint8Array | string): Promise<void>;
   exportWorkspaceBackup(outputPath?: string): Promise<string>;
+  getPerformanceMetrics(): Promise<PerformanceMetrics>;
+  getSyncConflicts(): Promise<SyncConflictInfo[]>;
+  resolveConflict(conflictFilePath: string, resolution: "keep_local" | "use_conflicted" | "keep_both"): Promise<void>;
 }
 
 export class TauriIpcBridge implements IpcBridge {
@@ -169,6 +196,33 @@ export class TauriIpcBridge implements IpcBridge {
   async exportWorkspaceBackup(outputPath?: string): Promise<string> {
     if (!this.isTauriAvailable()) return mockIpcBridge.exportWorkspaceBackup(outputPath);
     return await invoke<string>("export_workspace_backup", { outputPath: outputPath || null });
+  }
+
+  async getPerformanceMetrics(): Promise<PerformanceMetrics> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.getPerformanceMetrics();
+    try {
+      return await invoke<PerformanceMetrics>("get_performance_metrics");
+    } catch {
+      return mockIpcBridge.getPerformanceMetrics();
+    }
+  }
+
+  async getSyncConflicts(): Promise<SyncConflictInfo[]> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.getSyncConflicts();
+    try {
+      return await invoke<SyncConflictInfo[]>("get_sync_conflicts");
+    } catch (err) {
+      console.error("get_sync_conflicts error:", err);
+      return [];
+    }
+  }
+
+  async resolveConflict(
+    conflictFilePath: string,
+    resolution: "keep_local" | "use_conflicted" | "keep_both"
+  ): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.resolveConflict(conflictFilePath, resolution);
+    return await invoke<void>("resolve_conflict", { conflictFilePath, resolution });
   }
 }
 

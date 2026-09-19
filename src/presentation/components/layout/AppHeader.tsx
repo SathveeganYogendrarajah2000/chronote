@@ -2,6 +2,7 @@ import React from "react";
 import { useUiStore } from "@application/stores/useUiStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
+import { useConflictStore } from "@application/stores/useConflictStore";
 import { IconButton } from "../common/IconButton";
 
 export const AppHeader: React.FC = () => {
@@ -14,8 +15,10 @@ export const AppHeader: React.FC = () => {
     setTheme,
     setSearchModalOpen,
     setExportModalOpen,
+    setPerformanceModalOpen,
   } = useUiStore();
 
+  const { conflicts, setConflictModalOpen } = useConflictStore();
   const { workspace, setWorkspaceModalOpen } = useWorkspaceStore();
   const { createNote } = useNotesStore();
 
@@ -62,6 +65,20 @@ export const AppHeader: React.FC = () => {
       </button>
 
       <div className="header-actions">
+        {conflicts.length > 0 && (
+          <button
+            type="button"
+            className="header-conflict-trigger"
+            onClick={() => setConflictModalOpen(true)}
+            title="External sync conflicts detected! Click to review and resolve."
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575L6.457 1.047zM8 5a.75.75 0 0 0-.75.75v3.5a.75.75 0 0 0 1.5 0v-3.5A.75.75 0 0 0 8 5zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
+            </svg>
+            <span>{conflicts.length} Sync Conflict{conflicts.length > 1 ? "s" : ""}</span>
+          </button>
+        )}
+
         <button
           type="button"
           className="header-workspace-btn"
@@ -101,6 +118,17 @@ export const AppHeader: React.FC = () => {
           </svg>
           <span>New Note</span>
         </button>
+
+        <IconButton
+          label="Performance Diagnostics (Ctrl+Shift+P)"
+          icon={
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 1a7 7 0 1 0 7 7A7.008 7.008 0 0 0 8 1zm0 13a6 6 0 1 1 6-6 6.006 6.006 0 0 1-6 6z" />
+              <path d="M8 4a.5.5 0 0 1 .5.5v3.293l2.146 2.147a.5.5 0 0 1-.708.708l-2.5-2.5A.5.5 0 0 1 7.5 8V4.5A.5.5 0 0 1 8 4z" />
+            </svg>
+          }
+          onClick={() => setPerformanceModalOpen(true)}
+        />
 
         <IconButton
           label={`Toggle ${theme === "dark" ? "Light" : "Dark"} Mode`}

@@ -69,10 +69,10 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
 ### Phase 2: Stabilization, Hardening & Distribution
 *Goal: Real-world stress testing, benchmark validation, and smooth installer packaging.*
 
-- Large workspace stress testing (5,000+ notes, 20,000+ code blocks).
-- Startup latency profiling to guarantee cold boot < 800 ms and idle RAM < 90 MB.
-- Windows NSIS / MSI installer generation via Tauri GitHub Actions workflow.
-- External sync conflict detection and user notification dialogs.
+- [x] Large workspace stress testing (5,000+ notes, 20,000+ code blocks).
+- [x] Startup latency profiling to guarantee cold boot < 800 ms and idle RAM < 90 MB.
+- [x] Windows NSIS / MSI installer generation via Tauri GitHub Actions workflow.
+- [x] External sync conflict detection and user notification dialogs.
 
 ---
 

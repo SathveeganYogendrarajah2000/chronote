@@ -1,0 +1,48 @@
+name: Chronote CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  test-and-verify:
+    name: Build & Test Suite (Frontend & Rust Native)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Setup Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Frontend Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck and Build Frontend Bundle
+        run: pnpm run build
+
+      - name: Run Vitest Unit & Stress Suite
+        run: pnpm test
+
+      - name: Run Native Rust Unit & Stress Tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml -- --nocapture

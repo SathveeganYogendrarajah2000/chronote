@@ -4,11 +4,13 @@ pub mod search;
 pub mod state;
 pub mod storage;
 
+use commands::conflict::{get_sync_conflicts, resolve_conflict};
 use commands::export::{export_workspace_backup, pick_export_file_path, save_exported_file};
 use commands::note::{
     delete_general_note, list_general_notes, read_dsm_document, read_general_note,
     save_dsm_document, save_general_note,
 };
+use commands::performance::get_performance_metrics;
 use commands::search::{get_backlinks, get_resources, search_workspace};
 use commands::system::{get_app_info, ping};
 use commands::workspace::{
@@ -52,6 +54,9 @@ pub fn run() {
             pick_export_file_path,
             save_exported_file,
             export_workspace_backup,
+            get_performance_metrics,
+            get_sync_conflicts,
+            resolve_conflict,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
