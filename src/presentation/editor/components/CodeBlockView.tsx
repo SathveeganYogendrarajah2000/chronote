@@ -34,9 +34,11 @@ export const CodeBlockView: React.FC<NodeViewProps> = ({
   const handleCopy = async () => {
     try {
       const text = node.textContent;
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch (err) {
       console.error("Failed to copy code to clipboard:", err);
     }

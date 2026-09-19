@@ -61,23 +61,41 @@ describe("ExportService", () => {
 
   it("copies active document Markdown to clipboard", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: {
-        writeText: writeTextMock,
+    const originalNavigator = (globalThis as any).navigator;
+
+    Object.defineProperty(globalThis, "navigator", {
+      value: {
+        clipboard: {
+          writeText: writeTextMock,
+        },
       },
+      writable: true,
+      configurable: true,
     });
 
-    const result = await exportService.executeExport({
-      format: "markdown",
-      scope: "activeDocument",
-      copyToClipboard: true,
-    });
+    try {
+      const result = await exportService.executeExport({
+        format: "markdown",
+        scope: "activeDocument",
+        copyToClipboard: true,
+      });
 
-    expect(result.success).toBe(true);
-    expect(result.copiedToClipboard).toBe(true);
-    expect(writeTextMock).toHaveBeenCalled();
-    const copiedText = writeTextMock.mock.calls[0][0];
-    expect(copiedText).toContain("# Spring Boot 3.3 Virtual Threads Investigation");
+      expect(result.success).toBe(true);
+      expect(result.copiedToClipboard).toBe(true);
+      expect(writeTextMock).toHaveBeenCalled();
+      const copiedText = writeTextMock.mock.calls[0][0];
+      expect(copiedText).toContain("# Spring Boot 3.3 Virtual Threads Investigation");
+    } finally {
+      if (originalNavigator !== undefined) {
+        Object.defineProperty(globalThis, "navigator", {
+          value: originalNavigator,
+          writable: true,
+          configurable: true,
+        });
+      } else {
+        delete (globalThis as any).navigator;
+      }
+    }
   });
 
   it("exports active GeneralNote to DOCX buffer", async () => {
