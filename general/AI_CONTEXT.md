@@ -16,8 +16,8 @@
 
 ## 2. Current Phase & Status
 - **Current Phase:** **Phase 1 (Windows MVP Development)**.
-- **Status:** Milestone 1.3 (Continuous Daily Stand-up Journal) **COMPLETED**. Continuous DSM timeline stream rendering sequential date entries, entry collapsing/expanding with auto-derived summaries (120 chars), entry-level tag management with auto-normalization, date picker jump navigation, debounced atomic persistence to notes/dsm.json, and sidebar recent DSM entries & tag aggregation. 47/47 Vitest unit tests and 12/12 Rust native tests passing with zero Clippy warnings.
-- **Next Milestone:** Milestone 1.4: General Notes Subsystem (Standalone note creation, renaming, pinning, and deletion; multi-document tab bar with DSM pinning and session restore).
+- **Status:** Milestone 1.4 (General Notes Subsystem) **COMPLETED**. Standalone note creation, renaming, pinning, and deletion; multi-document tab bar with DSM pinning and session restore; note tags management with auto-normalization; note search/filter in sidebar; tab right-click context menu; and confirmation deletion modal. 66/66 Vitest unit tests and 12/12 Rust native tests passing with zero Clippy warnings.
+- **Next Milestone:** Milestone 1.5: Rich-Text Editor & Code Blocks (Tiptap 3.x integration with Markdown InputRules, first-class code blocks with language selector, syntax highlighting, and copy button, internal note linking `[[Note Title]]`).
 
 ---
 
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Milestone 1.3 completed (Continuous Daily Stand-up Journal with collapsible date entries, auto-derived summaries, entry tag management, and date picker navigation).
-- **Next Recommended Task:** Milestone 1.4: General Notes Subsystem (Standalone note creation, renaming, pinning, and deletion; multi-document tab bar with DSM pinning and session restore).
+- **Current Work:** Milestone 1.4 completed (General Notes subsystem with standalone note creation, renaming, pinning, deletion, multi-document tab bar with DSM pinning, session restore, and tab context menu).
+- **Next Recommended Task:** Milestone 1.5: Rich-Text Editor & Code Blocks (Tiptap 3.x integration with Markdown InputRules, first-class code blocks with language selector, syntax highlighting, and copy button, internal note linking `[[Note Title]]`).
 
 ---
 

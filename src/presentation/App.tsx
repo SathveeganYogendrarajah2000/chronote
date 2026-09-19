@@ -3,6 +3,7 @@ import "./styles/tokens.css";
 import "./styles/reset.css";
 import "./styles/layout.css";
 import "./styles/dsm.css";
+import "./styles/notes.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";
@@ -10,17 +11,18 @@ import { TabBar } from "./components/layout/TabBar";
 import { MainContentArea } from "./components/layout/MainContentArea";
 import { ResourcePane } from "./components/layout/ResourcePane";
 import { WorkspaceModal } from "./components/workspace/WorkspaceModal";
+import { NoteDeleteModal } from "./components/notes/NoteDeleteModal";
 
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { useDsmStore, getTodayIsoDate } from "@application/stores/useDsmStore";
+import { useNotesStore } from "@application/stores/useNotesStore";
 import { DSM_TAB_ID } from "@domain/tabs.types";
-import { generateId } from "@domain/id.utils";
 
 export const App: React.FC = () => {
   const { toggleSidebar, setSearchModalOpen } = useUiStore();
-  const { tabs, activeTabId, switchTab, closeTab, reopenClosedTab, openTab } = useTabsStore();
+  const { tabs, activeTabId, switchTab, closeTab, reopenClosedTab } = useTabsStore();
   const { init: initWorkspace } = useWorkspaceStore();
 
   // Initialize workspace from background on startup
@@ -39,13 +41,7 @@ export const App: React.FC = () => {
       // Ctrl+N: New Note
       else if (e.ctrlKey && e.key.toLowerCase() === "n") {
         e.preventDefault();
-        const newId = generateId("not");
-        openTab({
-          id: `tab_${newId}`,
-          documentId: newId,
-          documentType: "general",
-          title: "Untitled Note",
-        });
+        void useNotesStore.getState().createNote();
       }
       // Ctrl+Shift+D: Jump to DSM Today
       else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
@@ -98,7 +94,6 @@ export const App: React.FC = () => {
     switchTab,
     closeTab,
     reopenClosedTab,
-    openTab,
     toggleSidebar,
     setSearchModalOpen,
   ]);
@@ -115,6 +110,7 @@ export const App: React.FC = () => {
         <ResourcePane />
       </div>
       <WorkspaceModal />
+      <NoteDeleteModal />
     </div>
   );
 };

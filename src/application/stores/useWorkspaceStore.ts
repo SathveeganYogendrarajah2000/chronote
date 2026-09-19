@@ -3,6 +3,7 @@ import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import type { NoteMetadata } from "@domain/note.types";
 import { ipcBridge, type IndexStats } from "@infrastructure/tauri/ipcBridge";
 import { useDsmStore } from "./useDsmStore";
+import { useTabsStore } from "./useTabsStore";
 
 export interface RecentWorkspaceItem {
   path: string;
@@ -13,18 +14,31 @@ export interface RecentWorkspaceItem {
 const STORAGE_KEY_RECENT_WORKSPACES = "chronote_recent_workspaces";
 const STORAGE_KEY_LAST_WORKSPACE = "chronote_last_workspace_path";
 
-function getLocalStorage(): Storage | null {
+class MemoryStorage implements Storage {
+  private map = new Map<string, string>();
+  get length(): number { return this.map.size; }
+  clear(): void { this.map.clear(); }
+  getItem(key: string): string | null { return this.map.get(key) ?? null; }
+  key(index: number): string | null { return Array.from(this.map.keys())[index] ?? null; }
+  removeItem(key: string): void { this.map.delete(key); }
+  setItem(key: string, value: string): void { this.map.set(key, value); }
+}
+
+const memoryStorage = new MemoryStorage();
+
+function getLocalStorage(): Storage {
   try {
     if (typeof window !== "undefined" && window.localStorage) {
       return window.localStorage;
     }
     if (typeof localStorage !== "undefined") {
+      localStorage.getItem("__test__");
       return localStorage;
     }
   } catch {
-    return null;
+    return memoryStorage;
   }
-  return null;
+  return memoryStorage;
 }
 
 function loadRecentWorkspaces(): RecentWorkspaceItem[] {
@@ -84,6 +98,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       if (active) {
         set({ workspace: active, isLoading: false, isWorkspaceModalOpen: false });
         await get().refreshNotes();
+        const validNoteIds = new Set(get().recentNotes.map((n) => n.id));
+        useTabsStore.getState().restoreSession(active.id, validNoteIds);
         return;
       }
 
@@ -95,6 +111,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           const ws = await ipcBridge.openWorkspace(lastPath);
           set({ workspace: ws, isLoading: false, isWorkspaceModalOpen: false });
           await get().refreshNotes();
+          const validNoteIds = new Set(get().recentNotes.map((n) => n.id));
+          useTabsStore.getState().restoreSession(ws.id, validNoteIds);
           return;
         } catch {
           // Fall back to opening modal if last workspace cannot be opened
@@ -133,6 +151,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         recentWorkspaces: updatedRecents,
       });
       await get().refreshNotes();
+      useTabsStore.getState().resetTabs();
+      useTabsStore.getState().setActiveWorkspaceId(workspace.id);
       return workspace;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -161,6 +181,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         recentWorkspaces: updatedRecents,
       });
       await get().refreshNotes();
+      const validNoteIds = new Set(get().recentNotes.map((n) => n.id));
+      useTabsStore.getState().restoreSession(workspace.id, validNoteIds);
       return workspace;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

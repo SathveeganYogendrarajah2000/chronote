@@ -48,8 +48,8 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
   - Implement entry collapsing/expanding with auto-derived summaries.
   - Implement entry-level tag management and date picker navigation.
 - **Milestone 1.4: General Notes Subsystem**
-  - Standalone note creation, renaming, pinning, and deletion.
-  - Multi-document tab bar with DSM pinning and session restore.
+  - [x] Standalone note creation, renaming, pinning, and deletion.
+  - [x] Multi-document tab bar with DSM pinning and session restore.
 - **Milestone 1.5: Rich-Text Editor & Code Blocks**
   - Tiptap 3.x integration with Markdown InputRules (`# `, `- `, ````, etc.).
   - First-class code blocks with language selector, syntax highlighting, and copy button.

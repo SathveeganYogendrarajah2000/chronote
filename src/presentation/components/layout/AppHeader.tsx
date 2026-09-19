@@ -1,9 +1,8 @@
 import React from "react";
 import { useUiStore } from "@application/stores/useUiStore";
-import { useTabsStore } from "@application/stores/useTabsStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
+import { useNotesStore } from "@application/stores/useNotesStore";
 import { IconButton } from "../common/IconButton";
-import { generateId } from "@domain/id.utils";
 
 export const AppHeader: React.FC = () => {
   const {
@@ -17,16 +16,14 @@ export const AppHeader: React.FC = () => {
   } = useUiStore();
 
   const { workspace, setWorkspaceModalOpen } = useWorkspaceStore();
-  const { openTab } = useTabsStore();
+  const { createNote } = useNotesStore();
 
-  const handleCreateNote = () => {
-    const newNoteId = generateId("not");
-    openTab({
-      id: `tab_${newNoteId}`,
-      documentId: newNoteId,
-      documentType: "general",
-      title: "Untitled Note",
-    });
+  const handleCreateNote = async () => {
+    try {
+      await createNote();
+    } catch (err) {
+      console.error("Failed to create note:", err);
+    }
   };
 
   const toggleTheme = () => {

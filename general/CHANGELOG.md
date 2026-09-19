@@ -10,10 +10,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for [0.1.0] - Phase 1 Windows MVP
-- Milestone 1.4: General Notes subsystem.
 - Milestone 1.5: Tiptap 3.x rich-text editor with instant Markdown shortcut input rules.
 - Milestone 1.6: Instant Search DSL & Resource Browser.
 - Milestone 1.7: Export Pipeline (Markdown, DOCX, PDF, Zip backup).
+
+---
+
+## [0.1.0-alpha.4] - 2026-09-19
+
+### Added
+- **Milestone 1.4: General Notes Subsystem:**
+  - Implemented domain utilities (`note.utils.ts`) for canonical note entity generation (`createDefaultGeneralNote`), note sorting with pinned precedence (`sortNotes`), and case-insensitive query filtering across titles and tags (`filterNotes`).
+  - Created `useNotesStore` (Zustand 5) providing complete standalone note lifecycle: note creation, load, debounced autosave (800ms), title updating with instant tab synchronization, tag management, pin toggling, and deletion.
+  - Built note presentation components (`NoteEditorCanvas`, `NoteEditorHeader`, `NoteTagBar`, `NoteDeleteModal`) with auto-focusing title renaming, tag chips with inline creator, word & character statistics, and confirmation deletion dialog.
+  - Upgraded multi-document `TabBar` and `useTabsStore`:
+    - Permanent DSM journal tab pinning (`★ DSM`) locked to the left.
+    - Dynamic tabs for General Notes with pin/unpin toggles.
+    - Right-click context menu (`TabContextMenu`) supporting *Pin/Unpin Tab*, *Close Tab*, *Close Other Tabs*, and *Close Tabs to the Right*.
+    - Workspace tab session persistence and restore across sessions with disk validation against existing notes.
+  - Enhanced `NavigationSidebar`:
+    - Dedicated live note search/filter input (`Filter notes...`).
+    - Pinned notes section on top (`PINNED`), followed by all notes.
+    - Inline "New Note" (+) trigger in section header.
+    - Quick hover action buttons for note items (Pin toggle 📌, Delete 🗑️).
+    - Active note highlighting synchronized with active tab.
+  - Added `notes.css` styling adhering strictly to dark/light design system tokens.
+  - Added 19 new unit tests across domain and store layers (66/66 Vitest tests passing, 12/12 Cargo tests passing, zero Clippy warnings).
 
 ---
 
