@@ -13,10 +13,12 @@ export const NavigationSidebar: React.FC = () => {
   const { sidebarCollapsed } = useUiStore();
   const { activeTabId, switchTab, openTab } = useTabsStore();
   const { workspace, recentNotes, setWorkspaceModalOpen } = useWorkspaceStore();
-  const { dsmDoc, jumpToDate } = useDsmStore();
+  const { dsmDoc, jumpToDate, selectedTag: dsmSelectedTag, setSelectedTag: setDsmSelectedTag } = useDsmStore();
   const {
     filterQuery,
     setFilterQuery,
+    selectedTag,
+    setSelectedTag,
     createNote,
     loadNote,
     togglePin,
@@ -59,10 +61,20 @@ export const NavigationSidebar: React.FC = () => {
     }
   };
 
+  const handleTagClick = (tag: string) => {
+    if (isDsmActive) {
+      setDsmSelectedTag(dsmSelectedTag === tag ? null : tag);
+    } else {
+      setSelectedTag(selectedTag === tag ? null : tag);
+    }
+  };
+
   // Filter and group general notes into pinned and non-pinned
   const filteredNotes = useMemo(() => {
-    return filterNotes(recentNotes, filterQuery);
-  }, [recentNotes, filterQuery]);
+    const base = filterNotes(recentNotes, filterQuery);
+    if (!selectedTag) return base;
+    return base.filter((n) => n.tags.includes(selectedTag));
+  }, [recentNotes, filterQuery, selectedTag]);
 
   const pinnedNotes = useMemo(() => {
     return filteredNotes.filter((n) => n.pinned);
@@ -215,6 +227,41 @@ export const NavigationSidebar: React.FC = () => {
           </div>
         )}
 
+        {/* Active Tag Filter Indicator */}
+        {selectedTag && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "3px 8px",
+              margin: "2px 8px 6px",
+              background: "rgba(99, 102, 241, 0.12)",
+              border: "1px solid rgba(99, 102, 241, 0.3)",
+              borderRadius: "4px",
+              fontSize: "11px",
+            }}
+          >
+            <span>Tag: <strong style={{ color: "var(--accent-primary, #6366f1)" }}>#{selectedTag}</strong></span>
+            <button
+              type="button"
+              onClick={() => setSelectedTag(null)}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-muted)",
+                fontSize: "12px",
+                lineHeight: 1,
+                padding: "0 2px",
+              }}
+              title="Clear tag filter"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {recentNotes.length === 0 ? (
             <div style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--font-size-xs)", color: "var(--text-muted)" }}>
@@ -355,10 +402,28 @@ export const NavigationSidebar: React.FC = () => {
             No tags found.
           </div>
         ) : (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {dynamicTags.map((item) => (
-              <TagChip key={item.tag} tag={item.tag} count={item.count} />
-            ))}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 4px" }}>
+            {dynamicTags.map((item) => {
+              const isSelected = isDsmActive
+                ? dsmSelectedTag === item.tag
+                : selectedTag === item.tag;
+              return (
+                <span
+                  key={item.tag}
+                  style={{
+                    borderRadius: "4px",
+                    boxShadow: isSelected ? "0 0 0 1.5px var(--accent-primary, #6366f1)" : "none",
+                    display: "inline-flex",
+                  }}
+                >
+                  <TagChip
+                    tag={item.tag}
+                    count={item.count}
+                    onClick={handleTagClick}
+                  />
+                </span>
+              );
+            })}
           </div>
         )}
       </div>

@@ -9,6 +9,7 @@ import {
 } from "@domain/dsm.utils";
 import { normalizeTag, isValidTag, normalizeTagList } from "@domain/tagNormalizer";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
+import { useResourceStore } from "./useResourceStore";
 
 let saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -19,6 +20,7 @@ export interface DsmState {
   isDirty: boolean;
   highlightedDate: string | null;
   searchFilter: string;
+  selectedTag: string | null;
 
   // Actions
   loadDsm: () => Promise<void>;
@@ -33,6 +35,7 @@ export interface DsmState {
   deleteEntry: (entryId: string) => Promise<void>;
   jumpToDate: (date: string) => DsmEntry | null;
   setSearchFilter: (filter: string) => void;
+  setSelectedTag: (tag: string | null) => void;
   clearHighlightedDate: () => void;
 }
 
@@ -51,6 +54,7 @@ export const useDsmStore = create<DsmState>((set, get) => ({
   isDirty: false,
   highlightedDate: null,
   searchFilter: "",
+  selectedTag: null,
 
   loadDsm: async () => {
     set({ isLoading: true });
@@ -102,6 +106,7 @@ export const useDsmStore = create<DsmState>((set, get) => ({
       };
       await ipcBridge.saveDsmDocument(updatedDoc);
       set({ dsmDoc: updatedDoc, isSaving: false, isDirty: false });
+      void useResourceStore.getState().refresh("dsm_master");
     } catch (err) {
       console.error("Failed to save DSM document:", err);
       set({ isSaving: false });
@@ -331,6 +336,7 @@ export const useDsmStore = create<DsmState>((set, get) => ({
 
     set({ dsmDoc: updatedDoc, isDirty: false });
     await ipcBridge.saveDsmDocument(updatedDoc);
+    void useResourceStore.getState().refresh("dsm_master");
   },
 
   jumpToDate: (date: string) => {
@@ -368,5 +374,6 @@ export const useDsmStore = create<DsmState>((set, get) => ({
   },
 
   setSearchFilter: (filter: string) => set({ searchFilter: filter }),
+  setSelectedTag: (tag: string | null) => set({ selectedTag: tag }),
   clearHighlightedDate: () => set({ highlightedDate: null }),
 }));

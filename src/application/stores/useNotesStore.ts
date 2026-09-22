@@ -9,6 +9,7 @@ import { normalizeTag, isValidTag } from "@domain/tagNormalizer";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import { useTabsStore } from "./useTabsStore";
 import { useWorkspaceStore } from "./useWorkspaceStore";
+import { useResourceStore } from "./useResourceStore";
 
 let noteSaveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -18,6 +19,7 @@ export interface NotesState {
   isSaving: boolean;
   isDirty: boolean;
   filterQuery: string;
+  selectedTag: string | null;
   deleteCandidateId: string | null;
 
   // Actions
@@ -37,6 +39,7 @@ export interface NotesState {
   setDeleteCandidateId: (id: string | null) => void;
   deleteNote: (id: string) => Promise<void>;
   setFilterQuery: (query: string) => void;
+  setSelectedTag: (tag: string | null) => void;
   clearActiveNote: () => void;
 }
 
@@ -46,6 +49,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   isSaving: false,
   isDirty: false,
   filterQuery: "",
+  selectedTag: null,
   deleteCandidateId: null,
 
   loadNote: async (id: string) => {
@@ -122,6 +126,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
       // Refresh recentNotes metadata in workspace store asynchronously
       void useWorkspaceStore.getState().refreshNotes();
+
+      // Refresh resource inspector in real-time
+      void useResourceStore.getState().refresh(updatedNote.id);
     } catch (err) {
       console.error(`Failed to save note ${activeNote.id}:`, err);
       set({ isSaving: false });
@@ -302,6 +309,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       // Refresh workspace notes
       await useWorkspaceStore.getState().refreshNotes();
 
+      // Refresh resource inspector
+      void useResourceStore.getState().refresh();
+
       set({ deleteCandidateId: null });
     } catch (err) {
       console.error(`Failed to delete general note ${id}:`, err);
@@ -311,6 +321,10 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   setFilterQuery: (query: string) => {
     set({ filterQuery: query });
+  },
+
+  setSelectedTag: (selectedTag: string | null) => {
+    set({ selectedTag });
   },
 
   clearActiveNote: () => {

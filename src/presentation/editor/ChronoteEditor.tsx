@@ -13,6 +13,8 @@ import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { useDsmStore } from "@application/stores/useDsmStore";
 
 import { CustomCodeBlock } from "./extensions/CodeBlockExtension";
+import { CustomImage } from "./extensions/ImageExtension";
+import { AttachmentExtension } from "./extensions/AttachmentExtension";
 import { InternalLink } from "./extensions/InternalLinkExtension";
 import { InternalLinkSuggestion } from "./extensions/InternalLinkSuggestion";
 import {
@@ -26,6 +28,8 @@ import {
 } from "./components/SlashCommandMenu";
 import { BubbleMenuBar } from "./components/BubbleMenuBar";
 import { BlockId } from "./extensions/BlockIdExtension";
+import { processFileAsset } from "@infrastructure/tauri/assetHelper";
+import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 
 export interface ChronoteEditorProps {
   content: ProseMirrorNode;
@@ -124,6 +128,8 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
         placeholder,
       }),
       CustomCodeBlock,
+      CustomImage,
+      AttachmentExtension,
       InternalLink.configure({
         getCandidates,
       }),
@@ -147,7 +153,75 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
     editable,
     autofocus: autoFocus,
     editorProps: {
+      handlePaste: (view, event) => {
+        const files = event.clipboardData?.files;
+        if (files && files.length > 0) {
+          const imageFiles = Array.from(files).filter(
+            (f) => f.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(f.name)
+          );
+          if (imageFiles.length > 0) {
+            event.preventDefault();
+            for (const file of imageFiles) {
+              void processFileAsset(file).then((asset) => {
+                const node = view.state.schema.nodes.image?.create({
+                  src: asset.src,
+                  alt: asset.fileName,
+                  assetId: asset.assetId,
+                  title: asset.fileName,
+                });
+                if (node) {
+                  const tr = view.state.tr.replaceSelectionWith(node);
+                  view.dispatch(tr);
+                }
+              });
+            }
+            return true;
+          }
+        }
+        return false;
+      },
       handleDrop: (view, event) => {
+        // 1. Files dropped from OS explorer / folder
+        const files = event.dataTransfer?.files;
+        if (files && files.length > 0) {
+          event.preventDefault();
+          const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          let insertPos = coordinates ? coordinates.pos : view.state.selection.from;
+
+          for (const file of Array.from(files)) {
+            void processFileAsset(file).then((asset) => {
+              if (asset.isImage) {
+                const node = view.state.schema.nodes.image?.create({
+                  src: asset.src,
+                  alt: asset.fileName,
+                  assetId: asset.assetId,
+                  title: asset.fileName,
+                });
+                if (node) {
+                  const tr = view.state.tr.insert(insertPos, node);
+                  view.dispatch(tr);
+                  insertPos += node.nodeSize;
+                }
+              } else {
+                const node = view.state.schema.nodes.attachment?.create({
+                  src: asset.src,
+                  fileName: asset.fileName,
+                  fileSize: asset.fileSize,
+                  mimeType: asset.mimeType,
+                  assetId: asset.assetId,
+                });
+                if (node) {
+                  const tr = view.state.tr.insert(insertPos, node);
+                  view.dispatch(tr);
+                  insertPos += node.nodeSize;
+                }
+              }
+            });
+          }
+          return true;
+        }
+
+        // 2. Note drag-and-drop
         const rawNoteData = event.dataTransfer?.getData("application/x-chronote-note");
         if (rawNoteData) {
           try {
@@ -179,6 +253,29 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
       },
       handleClick: (_view, _pos, event) => {
         const target = event.target as HTMLElement;
+
+        // Attachment card click -> reveal in file explorer
+        const attachmentEl = target.closest<HTMLElement>("[data-type='attachment']");
+        if (attachmentEl) {
+          const src = attachmentEl.getAttribute("data-asset-src");
+          if (src) {
+            event.preventDefault();
+            event.stopPropagation();
+            void ipcBridge.revealInExplorer(src);
+            return true;
+          }
+        }
+
+        // External link click -> open in default OS browser
+        const extLink = target.closest<HTMLAnchorElement>("a.editor-external-link, a[href]");
+        if (extLink && extLink.href) {
+          event.preventDefault();
+          event.stopPropagation();
+          void ipcBridge.openExternalUrl(extLink.href);
+          return true;
+        }
+
+        // Internal note link click
         const linkEl = target.closest<HTMLElement>("[data-internal-link='true']");
         if (linkEl) {
           const targetNoteId = linkEl.getAttribute("data-target-note-id");
@@ -228,7 +325,10 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    if (e.dataTransfer.types.includes("application/x-chronote-note")) {
+    if (
+      e.dataTransfer.types.includes("application/x-chronote-note") ||
+      e.dataTransfer.types.includes("Files")
+    ) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "copy";
       if (!isDragOver) setIsDragOver(true);
@@ -244,6 +344,47 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
   const handleContainerDrop = (e: React.DragEvent<HTMLDivElement>) => {
     setIsDragOver(false);
     if (e.defaultPrevented || !editor) return;
+
+    // Handle dropped files onto container padding
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      e.preventDefault();
+      for (const file of Array.from(e.dataTransfer.files)) {
+        void processFileAsset(file).then((asset) => {
+          const docEnd = editor.state.doc.content.size;
+          if (asset.isImage) {
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(docEnd, {
+                type: "image",
+                attrs: {
+                  src: asset.src,
+                  alt: asset.fileName,
+                  assetId: asset.assetId,
+                  title: asset.fileName,
+                },
+              })
+              .run();
+          } else {
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(docEnd, {
+                type: "attachment",
+                attrs: {
+                  src: asset.src,
+                  fileName: asset.fileName,
+                  fileSize: asset.fileSize,
+                  mimeType: asset.mimeType,
+                  assetId: asset.assetId,
+                },
+              })
+              .run();
+          }
+        });
+      }
+      return;
+    }
 
     const rawNoteData = e.dataTransfer.getData("application/x-chronote-note");
     if (rawNoteData) {

@@ -4,6 +4,7 @@ pub mod search;
 pub mod state;
 pub mod storage;
 
+use commands::asset::{get_asset_path, pick_asset_file, save_asset_binary};
 use commands::conflict::{get_sync_conflicts, resolve_conflict};
 use commands::export::{export_workspace_backup, pick_export_file_path, save_exported_file};
 use commands::note::{
@@ -12,7 +13,7 @@ use commands::note::{
 };
 use commands::performance::get_performance_metrics;
 use commands::search::{get_backlinks, get_resources, search_workspace};
-use commands::system::{get_app_info, ping};
+use commands::system::{get_app_info, open_external_url, ping, reveal_in_explorer};
 use commands::workspace::{
     create_workspace, get_active_workspace, open_workspace, pick_workspace_directory,
     rebuild_index, save_workspace_settings,
@@ -36,6 +37,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_app_info,
             ping,
+            open_external_url,
+            reveal_in_explorer,
+            pick_asset_file,
+            save_asset_binary,
+            get_asset_path,
             pick_workspace_directory,
             create_workspace,
             open_workspace,

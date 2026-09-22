@@ -7,6 +7,8 @@ import { useDsmStore } from "@application/stores/useDsmStore";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 import type { ResourceType, ResourceReference, BacklinkReference } from "@domain/resource.types";
 import { IconButton } from "../common/IconButton";
+import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 export const ResourcePane: React.FC = () => {
   const { resourcePaneCollapsed, toggleResourcePane } = useUiStore();
@@ -27,6 +29,9 @@ export const ResourcePane: React.FC = () => {
   const { loadNote } = useNotesStore();
   const { jumpToDate } = useDsmStore();
 
+  const noteUpdatedAt = useNotesStore((s) => s.activeNote?.updatedAt);
+  const dsmUpdatedAt = useDsmStore((s) => s.dsmDoc?.updatedAt);
+
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Active document ID
@@ -36,10 +41,15 @@ export const ResourcePane: React.FC = () => {
     return current.documentType === "dsm" ? "dsm_master" : current.documentId;
   }, [activeTabId, tabs]);
 
-  // Refresh resources when active tab changes or scope changes
+  const activeTabTitle = useMemo(() => {
+    const current = tabs.find((t) => t.id === activeTabId);
+    return current?.title || "Note";
+  }, [activeTabId, tabs]);
+
+  // Refresh resources when active tab, scope, or document updates
   useEffect(() => {
     void refresh(activeDocumentId);
-  }, [activeDocumentId, refresh]);
+  }, [activeDocumentId, noteUpdatedAt, dsmUpdatedAt, refresh]);
 
   // Navigate to block and trigger pulse animation
   const handleJumpToResource = (item: ResourceReference) => {
@@ -100,9 +110,73 @@ export const ResourcePane: React.FC = () => {
 
   const handleOpenExternalUrl = (e: React.MouseEvent, url: string) => {
     e.stopPropagation();
-    if (typeof window !== "undefined") {
-      window.open(url, "_blank", "noopener,noreferrer");
+    void ipcBridge.openExternalUrl(url);
+  };
+
+  const handleRevealInExplorer = (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    void ipcBridge.revealInExplorer(path);
+  };
+
+  const handleInsertImage = async () => {
+    const asset = await ipcBridge.pickAssetFile("image");
+    if (!asset) return;
+    const current = tabs.find((t) => t.id === activeTabId);
+    if (current?.documentType === "general") {
+      const note = useNotesStore.getState().activeNote;
+      if (note) {
+        let src = asset.relativePath;
+        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window && asset.absolutePath) {
+          try {
+            src = convertFileSrc(asset.absolutePath);
+          } catch {
+            src = asset.relativePath;
+          }
+        }
+        const newBlock = {
+          type: "image",
+          attrs: {
+            src,
+            alt: asset.fileName,
+            assetId: asset.id,
+            title: asset.fileName,
+          },
+        };
+        const currentBlocks = (note.content.content as any[]) || [];
+        useNotesStore.getState().updateContent({
+          ...note.content,
+          content: [...currentBlocks, newBlock],
+        });
+      }
     }
+    void refresh(activeDocumentId);
+  };
+
+  const handleAttachFile = async () => {
+    const asset = await ipcBridge.pickAssetFile("file");
+    if (!asset) return;
+    const current = tabs.find((t) => t.id === activeTabId);
+    if (current?.documentType === "general") {
+      const note = useNotesStore.getState().activeNote;
+      if (note) {
+        const newBlock = {
+          type: "attachment",
+          attrs: {
+            src: asset.absolutePath || asset.relativePath,
+            fileName: asset.fileName,
+            fileSize: asset.fileSize,
+            mimeType: asset.mimeType,
+            assetId: asset.id,
+          },
+        };
+        const currentBlocks = (note.content.content as any[]) || [];
+        useNotesStore.getState().updateContent({
+          ...note.content,
+          content: [...currentBlocks, newBlock],
+        });
+      }
+    }
+    void refresh(activeDocumentId);
   };
 
   // Filter items
@@ -140,8 +214,14 @@ export const ResourcePane: React.FC = () => {
   }, [resources, cleanFilter]);
 
   const attachmentItems = useMemo(() => {
-    return resources.filter((r) => r.resourceType === "attachment");
-  }, [resources]);
+    return resources.filter(
+      (r) =>
+        r.resourceType === "attachment" &&
+        (!cleanFilter ||
+          r.title.toLowerCase().includes(cleanFilter) ||
+          r.targetUrl?.toLowerCase().includes(cleanFilter))
+    );
+  }, [resources, cleanFilter]);
 
   const filteredBacklinks = useMemo(() => {
     return backlinks.filter(
@@ -174,11 +254,30 @@ export const ResourcePane: React.FC = () => {
         >
           Resource Inspector
         </span>
-        <IconButton
-          label="Collapse Resource Pane"
-          icon={<span>×</span>}
-          onClick={toggleResourcePane}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => void refresh(activeDocumentId)}
+            title="Refresh Resources"
+            style={{
+              fontSize: "12px",
+              padding: "2px 5px",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--text-secondary)",
+              borderRadius: "var(--radius-sm)",
+            }}
+          >
+            🔄
+          </button>
+          <IconButton
+            label="Collapse Resource Pane"
+            icon={<span>×</span>}
+            onClick={toggleResourcePane}
+          />
+        </div>
       </div>
 
       {/* Scope Switcher */}
@@ -280,9 +379,26 @@ export const ResourcePane: React.FC = () => {
         {/* Images Tab */}
         {!isLoading && activeTab === "image" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleInsertImage}
+              style={{
+                fontSize: "var(--font-size-xs)",
+                padding: "4px 8px",
+                alignSelf: "flex-start",
+                marginBottom: 4,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+              title="Upload or insert image from computer"
+            >
+              <span>+ Insert Image</span>
+            </button>
             {imageItems.length === 0 ? (
               <div style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", textAlign: "center", padding: "var(--space-4) 0" }}>
-                No embedded images found.
+                No embedded images found. Drag & drop or paste an image into any note.
               </div>
             ) : (
               imageItems.map((item) => (
@@ -350,17 +466,81 @@ export const ResourcePane: React.FC = () => {
 
         {/* Attachments Tab */}
         {!isLoading && activeTab === "attachment" && (
-          <div style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", textAlign: "center", padding: "var(--space-4) 0" }}>
-            No attached files in this document.
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleAttachFile}
+              style={{
+                fontSize: "var(--font-size-xs)",
+                padding: "4px 8px",
+                alignSelf: "flex-start",
+                marginBottom: 4,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+              title="Attach a file to this note"
+            >
+              <span>+ Attach File</span>
+            </button>
+            {attachmentItems.length === 0 ? (
+              <div style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", textAlign: "center", padding: "var(--space-4) 0" }}>
+                No attached files in this document. Click "+ Attach File" or drag & drop files from your desktop.
+              </div>
+            ) : (
+              attachmentItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="resource-card"
+                  onClick={() => handleJumpToResource(item)}
+                  title="Click to jump to file in note"
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+                      <span style={{ fontSize: "16px" }}>📎</span>
+                      <span className="resource-title-text">{item.title}</span>
+                    </div>
+                    {item.targetUrl && (
+                      <button
+                        type="button"
+                        className="resource-copy-btn"
+                        onClick={(e) => handleRevealInExplorer(e, item.targetUrl || "")}
+                        title="Reveal file in File Explorer"
+                      >
+                        Folder ↗
+                      </button>
+                    )}
+                  </div>
+                  {item.targetUrl && (
+                    <div style={{ color: "var(--text-muted)", fontSize: "10px", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {item.targetUrl}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
 
         {/* Backlinks Tab */}
         {!isLoading && activeTab === "backlink" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <div
+              style={{
+                padding: "6px 8px",
+                backgroundColor: "rgba(59, 130, 246, 0.08)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "11px",
+                color: "var(--text-secondary)",
+                lineHeight: 1.4,
+              }}
+            >
+              💡 <strong>Backlinks</strong> show all notes and daily stand-ups that reference this document via <code>[[Note Title]]</code>.
+            </div>
             {filteredBacklinks.length === 0 ? (
-              <div style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", textAlign: "center", padding: "var(--space-4) 0" }}>
-                No incoming backlinks to this document.
+              <div style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", textAlign: "center", padding: "var(--space-4) var(--space-2)", lineHeight: 1.5 }}>
+                No incoming backlinks to this document. Link to it from any note using <code>[[{activeTabTitle}]]</code>.
               </div>
             ) : (
               filteredBacklinks.map((bkl, idx) => (

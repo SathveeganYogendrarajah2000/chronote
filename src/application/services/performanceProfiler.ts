@@ -49,8 +49,11 @@ class PerformanceProfiler {
 
     if (name === "workspace_ready") {
       this.workspaceLoadedAt = time;
-    } else if (name === "timeline_rendered" && this.startupCompletedAt === null) {
-      this.startupCompletedAt = time;
+      if (this.startupCompletedAt === null) {
+        this.startupCompletedAt = Math.max(1, Math.round(time - this.appStartTime));
+      }
+    } else if ((name === "timeline_rendered" || name === "canvas_rendered") && (this.startupCompletedAt === null || this.startupCompletedAt === 0)) {
+      this.startupCompletedAt = Math.max(1, Math.round(time - this.appStartTime));
     }
   }
 
@@ -64,8 +67,13 @@ class PerformanceProfiler {
   }
 
   getReport(): ProfilerReport {
-    const coldStartup = this.startupCompletedAt !== null ? this.startupCompletedAt : performance.now() - this.appStartTime;
-    const wsLoad = this.workspaceLoadedAt !== null ? this.workspaceLoadedAt - this.appStartTime : 0;
+    const coldStartup =
+      this.startupCompletedAt !== null
+        ? this.startupCompletedAt
+        : this.workspaceLoadedAt !== null
+        ? Math.round(this.workspaceLoadedAt - this.appStartTime)
+        : Math.round(performance.now() - this.appStartTime);
+    const wsLoad = this.workspaceLoadedAt !== null ? Math.round(this.workspaceLoadedAt - this.appStartTime) : 0;
 
     const avgKeystroke =
       this.keystrokeSamples.length > 0

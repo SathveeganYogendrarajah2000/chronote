@@ -1,6 +1,8 @@
 import { Extension } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
 import Suggestion from "@tiptap/suggestion";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import type { SlashCommandItem } from "../components/SlashCommandMenu";
 
 export const SlashCommandPluginKey = new PluginKey("slashCommand");
@@ -39,6 +41,18 @@ const COMMAND_ITEMS: SlashCommandItem[] = [
     title: "Code Block",
     description: "Syntax highlighted code snippet with language selector",
     icon: "</>",
+  },
+  {
+    id: "image",
+    title: "Insert Image",
+    description: "Upload or insert an image from your computer",
+    icon: "🖼️",
+  },
+  {
+    id: "file",
+    title: "Attach File",
+    description: "Attach a PDF, archive, document, or data file",
+    icon: "📎",
   },
   {
     id: "bullet",
@@ -199,6 +213,49 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
               break;
             case "code":
               chain.setCodeBlock().run();
+              break;
+            case "image":
+              chain.run();
+              void ipcBridge.pickAssetFile("image").then((asset) => {
+                if (asset) {
+                  let src = asset.relativePath;
+                  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window && asset.absolutePath) {
+                    try {
+                      src = convertFileSrc(asset.absolutePath);
+                    } catch {
+                      src = asset.relativePath;
+                    }
+                  }
+                  (editor.chain().focus() as any).setImage({
+                    src,
+                    alt: asset.fileName,
+                    assetId: asset.id,
+                    title: asset.fileName,
+                  }).run();
+                }
+              });
+              break;
+            case "file":
+              chain.run();
+              void ipcBridge.pickAssetFile("file").then((asset) => {
+                if (asset) {
+                  let src = asset.relativePath;
+                  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window && asset.absolutePath) {
+                    try {
+                      src = convertFileSrc(asset.absolutePath);
+                    } catch {
+                      src = asset.relativePath;
+                    }
+                  }
+                  (editor.chain().focus() as any).setAttachment({
+                    src,
+                    fileName: asset.fileName,
+                    fileSize: asset.fileSize,
+                    mimeType: asset.mimeType,
+                    assetId: asset.id,
+                  }).run();
+                }
+              });
               break;
             case "bullet":
               chain.toggleBulletList().run();
