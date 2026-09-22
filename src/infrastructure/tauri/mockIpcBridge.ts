@@ -1,4 +1,4 @@
-import type { IpcBridge, AppInfo, IndexStats, PerformanceMetrics, SyncConflictInfo } from "./ipcBridge";
+import type { IpcBridge, AppInfo, IndexStats, PerformanceMetrics, SyncConflictInfo, AssetInfo } from "./ipcBridge";
 import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import { DEFAULT_WORKSPACE_SETTINGS } from "@domain/workspace.types";
 import type { DsmDocument } from "@domain/dsm.types";
@@ -20,6 +20,7 @@ export class MockIpcBridge implements IpcBridge {
     entries: [],
   };
   private notes: Map<string, GeneralNote> = new Map();
+  private mockConflicts: SyncConflictInfo[] = [];
 
   reset(): void {
     this.activeWorkspace = null;
@@ -38,13 +39,58 @@ export class MockIpcBridge implements IpcBridge {
   async getAppInfo(): Promise<AppInfo> {
     return {
       name: "Chronote (Mock Environment)",
-      version: "0.1.0-mock",
+      version: "0.1.3-mock",
       description: "Mock IPC Bridge for development and testing",
     };
   }
 
   async ping(): Promise<string> {
     return "pong";
+  }
+
+  async openExternalUrl(url: string): Promise<void> {
+    if (typeof window !== "undefined") {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  async revealInExplorer(path: string): Promise<void> {
+    console.log(`[Mock] revealInExplorer: ${path}`);
+  }
+
+  async openFile(path: string): Promise<void> {
+    console.log(`[Mock] openFile: ${path}`);
+  }
+
+  async pickAssetFile(assetType: "image" | "file"): Promise<AssetInfo | null> {
+    const isImage = assetType === "image";
+    const id = `${isImage ? "img" : "att"}_mock_${Date.now()}`;
+    const fileName = isImage ? "mock_screenshot.png" : "mock_document.pdf";
+    return {
+      id,
+      fileName,
+      relativePath: `assets/${isImage ? "images" : "files"}/${id}_${fileName}`,
+      absolutePath: `/mock/workspace/assets/${isImage ? "images" : "files"}/${id}_${fileName}`,
+      mimeType: isImage ? "image/png" : "application/pdf",
+      fileSize: isImage ? 142500 : 256000,
+    };
+  }
+
+  async saveAssetBinary(
+    assetType: "image" | "file",
+    fileName: string,
+    data: Uint8Array
+  ): Promise<AssetInfo> {
+    const isImage = assetType === "image";
+    const id = `${isImage ? "img" : "att"}_mock_${Date.now()}`;
+    return {
+      id,
+      fileName,
+      relativePath: `assets/${isImage ? "images" : "files"}/${id}_${fileName}`,
+      absolutePath: `/mock/workspace/assets/${isImage ? "images" : "files"}/${id}_${fileName}`,
+      mimeType: isImage ? "image/png" : "application/octet-stream",
+      fileSize: data.length,
+    };
   }
 
   async pickWorkspaceDirectory(): Promise<string | null> {
@@ -408,8 +454,6 @@ export class MockIpcBridge implements IpcBridge {
       uptimeSeconds: 120,
     };
   }
-
-  private mockConflicts: SyncConflictInfo[] = [];
 
   setMockConflicts(conflicts: SyncConflictInfo[]): void {
     this.mockConflicts = [...conflicts];

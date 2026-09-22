@@ -15,8 +15,8 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Phase 2 (Stabilization, Hardening & Distribution)** — Completed. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
-- **Status:** Phase 2 **COMPLETED**. Synthetic large-scale workspace generator (`scripts/generate_test_workspace.ts`) generating 5,000+ notes & 20,000+ blocks, batched SQLite transaction optimization achieving 274 ms rebuilds (< 350 ms budget) and 3–5 ms FTS5 / trigram code search queries. In-app Performance Profiler (`performanceProfiler.ts`), native process RSS memory introspection via Windows `K32GetProcessMemoryInfo`, and live Diagnostics Modal (`PerformanceModal.tsx`, `Ctrl+Shift+P`). Windows NSIS and WiX MSI bundle configurations with multi-runner GitHub Actions CI/release automation (`ci.yml`, `release.yml`). Resilient external sync conflict detection (`conflict.rs`, `useConflictStore.ts`, `ConflictModal.tsx`) supporting Dropbox, OneDrive, Syncthing, and Google Drive with safe 3-way resolution. 118/118 Vitest unit tests and 21/21 native Rust tests passing with zero errors.
+- **Current Phase:** **Release 0.1.0 (Production Ready)** — Completed. Ready for release tagging. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
+- **Status:** Release **0.1.0 COMPLETED**. Includes full OS drag-and-drop & clipboard paste for media and attachments with native Rust storage (`pick_asset_file`, `save_asset_binary`), real-time Resource Inspector synchronization, isolated iframe vector PDF/print generation (`htmlExporter.ts`), DSM timeline & navigation sidebar interactive tag filtering, external browser URL launcher, startup latency timer fix in Performance Profiler, synthetic large-scale workspace generator (5,000+ notes & 20,000+ blocks), batched SQLite transaction optimization (274 ms index rebuild, 3–5 ms FTS5 / trigram code search), native process RSS memory introspection (< 90 MB memory budget), Windows NSIS & WiX MSI packaging with GitHub Actions CI/release automation, and sync conflict resolution engine. **129/129 Vitest tests** and **21/21 native Rust tests** passing with zero errors.
 - **Next Milestone:** Phase 3: Cloud Integrations & Advanced Navigation (direct Google Drive / OneDrive OAuth sync adapters, interactive 3-way conflict resolution wizard for concurrent edits, and interactive visual backlinks graph).
 
 ---
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Phase 2 completed (Synthetic workspace generator, SQLite batched transaction rebuild in 274 ms, FTS5 sub-5ms search, Windows RSS introspection, Performance Diagnostics modal, Windows NSIS/MSI bundle configs, GitHub Actions CI/release pipelines, external sync conflict scanner & modal).
-- **Next Recommended Task:** Phase 3: Cloud Integrations & Advanced Navigation (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
+- **Current Work:** Release 0.1.0 completed (File attachments & image drag/drop/paste, isolated iframe PDF printing, real-time Resource Inspector sync, DSM timeline & sidebar tag filtering, browser link opener, startup latency fix, 129 Vitest + 21 Rust tests passing).
+- **Next Recommended Task:** Create git release tag `v0.1.0` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---
 

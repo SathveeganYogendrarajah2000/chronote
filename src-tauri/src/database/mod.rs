@@ -269,6 +269,28 @@ fn extract_blocks_and_resources(
                 });
             }
 
+            // Attachment resource
+            if block_type == "attachment" || block_type == "fileAttachment" {
+                let file_name = child
+                    .get("attrs")
+                    .and_then(|a| a.get("fileName").or_else(|| a.get("title")).or_else(|| a.get("alt")))
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("Attachment");
+                let src = child
+                    .get("attrs")
+                    .and_then(|a| a.get("filePath").or_else(|| a.get("src")).or_else(|| a.get("targetUrl")).or_else(|| a.get("relativePath")))
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("");
+                resources.push(ExtractedResourceItem {
+                    id: format!("res_att_{}", block_id),
+                    resource_type: "attachment".to_string(),
+                    block_id: block_id.clone(),
+                    title: file_name.to_string(),
+                    language: None,
+                    target_url: Some(src.to_string()),
+                });
+            }
+
             // Extract inline links and backlinks
             extract_inline_resources(&block_id, child, &mut resources, &mut backlinks);
 

@@ -21,6 +21,13 @@ import {
   buildDsmRangeDocx,
   packDocxToUint8Array,
 } from "@domain/export/docxExporter";
+import {
+  exportNoteToHtml,
+  exportDsmEntryToHtml,
+  exportDsmRangeToHtml,
+  exportFullDsmToHtml,
+  buildCompletePrintableHtml,
+} from "@domain/export/htmlExporter";
 
 export class ExportService {
   /**
@@ -33,7 +40,7 @@ export class ExportService {
       }
 
       if (params.format === "pdf") {
-        return await this.executePdfPrint();
+        return await this.executePdfPrint(params);
       }
 
       if (params.format === "markdown") {
@@ -77,20 +84,183 @@ export class ExportService {
   }
 
   /**
-   * Triggers the clean print view and invokes system print pipeline.
+   * Generates a clean printable HTML document for the given scope and invokes
+   * the print pipeline inside an isolated hidden iframe.
    */
-  private async executePdfPrint(): Promise<ExportResult> {
-    if (typeof window !== "undefined" && typeof window.print === "function") {
-      window.print();
+  private async executePdfPrint(params: ExportExecutionParams): Promise<ExportResult> {
+    try {
+      const { html, title } = await this.renderHtmlContent(params);
+      const fullHtml = buildCompletePrintableHtml(title, html);
+
+      await this.printHtmlInIsolatedIframe(fullHtml);
+
       return {
         success: true,
         message: "Print dialog opened. Select 'Save as PDF' to export.",
       };
+    } catch (err) {
+      return {
+        success: false,
+        message: err instanceof Error ? err.message : String(err),
+      };
     }
-    return {
-      success: false,
-      message: "Print pipeline is not supported in this environment.",
-    };
+  }
+
+  /**
+   * Prints HTML in an isolated invisible iframe so the main UI, modals,
+   * and sidebars are excluded from the printed document.
+   */
+  private printHtmlInIsolatedIframe(htmlContent: string): Promise<void> {
+    return new Promise((resolve) => {
+      if (typeof document === "undefined") {
+        if (typeof window !== "undefined" && typeof window.print === "function") {
+          window.print();
+        }
+        resolve();
+        return;
+      }
+
+      try {
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "none";
+        iframe.style.visibility = "hidden";
+        iframe.setAttribute("aria-hidden", "true");
+
+        document.body.appendChild(iframe);
+
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          iframeDoc.open();
+          iframeDoc.write(htmlContent);
+          iframeDoc.close();
+        }
+
+        const triggerPrint = () => {
+          try {
+            if (iframe.contentWindow && typeof iframe.contentWindow.print === "function") {
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+            } else if (typeof window !== "undefined" && typeof window.print === "function") {
+              window.print();
+            }
+          } catch (e) {
+            console.error("Print error:", e);
+            if (typeof window !== "undefined" && typeof window.print === "function") {
+              window.print();
+            }
+          } finally {
+            setTimeout(() => {
+              if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+              }
+              resolve();
+            }, 300);
+          }
+        };
+
+        if (iframe.contentWindow) {
+          iframe.contentWindow.onload = () => setTimeout(triggerPrint, 100);
+          setTimeout(triggerPrint, 300);
+        } else {
+          setTimeout(triggerPrint, 300);
+        }
+      } catch {
+        if (typeof window !== "undefined" && typeof window.print === "function") {
+          window.print();
+        }
+        resolve();
+      }
+    });
+  }
+
+  /**
+   * Internal helper: renders clean HTML string based on scope.
+   */
+  private async renderHtmlContent(
+    params: ExportExecutionParams
+  ): Promise<{ html: string; title: string }> {
+    const { scope, dateRange, selectedEntryDate } = params;
+    const { activeTabId } = useTabsStore.getState();
+    const { dsmDoc } = useDsmStore.getState();
+    const { activeNote } = useNotesStore.getState();
+
+    // 1. Single DSM entry
+    if (scope === "dsmEntry" && selectedEntryDate) {
+      const entry = dsmDoc?.entries.find((e) => e.date === selectedEntryDate);
+      if (!entry) throw new Error(`DSM entry for date ${selectedEntryDate} not found.`);
+      return {
+        html: exportDsmEntryToHtml(entry, { includeTags: true, includeTitle: true }),
+        title: `DSM Stand-up — ${selectedEntryDate}`,
+      };
+    }
+
+    // 2. DSM Date range
+    if (scope === "dsmRange" && dsmDoc) {
+      const title = dateRange
+        ? `DSM Journal (${dateRange.from} to ${dateRange.to})`
+        : "DSM Journal";
+      return {
+        html: exportDsmRangeToHtml(dsmDoc.entries, dateRange, { includeTags: true }),
+        title,
+      };
+    }
+
+    // 3. Active document
+    if (scope === "activeDocument") {
+      if (activeTabId === DSM_TAB_ID) {
+        if (!dsmDoc) throw new Error("DSM journal is not loaded.");
+        return {
+          html: exportFullDsmToHtml(dsmDoc, { includeTags: true }),
+          title: "Daily Stand-up Journal",
+        };
+      }
+
+      if (activeNote) {
+        return {
+          html: exportNoteToHtml(activeNote, { includeTags: true, includeTitle: true }),
+          title: activeNote.title,
+        };
+      }
+
+      const tab = useTabsStore.getState().tabs.find((t) => t.id === activeTabId);
+      if (tab?.documentType === "general") {
+        const note = await ipcBridge.readGeneralNote(tab.documentId);
+        return {
+          html: exportNoteToHtml(note, { includeTags: true, includeTitle: true }),
+          title: note.title,
+        };
+      }
+
+      throw new Error("No active document available to export.");
+    }
+
+    // 4. Complete workspace
+    if (scope === "workspace") {
+      const notes = await ipcBridge.listGeneralNotes();
+      const parts: string[] = [];
+
+      if (dsmDoc && dsmDoc.entries.length > 0) {
+        parts.push(exportFullDsmToHtml(dsmDoc, { includeTags: true }));
+      }
+
+      for (let i = 0; i < notes.length; i++) {
+        const fullNote = await ipcBridge.readGeneralNote(notes[i].id);
+        if (parts.length > 0) parts.push('<div class="page-break"></div>');
+        parts.push(exportNoteToHtml(fullNote, { includeTags: true, includeTitle: true }));
+      }
+
+      return {
+        html: parts.join("\n"),
+        title: "Chronote Workspace Export",
+      };
+    }
+
+    throw new Error(`Invalid export scope: ${scope}`);
   }
 
   /**

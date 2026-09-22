@@ -18,6 +18,8 @@ export interface ResourceReference {
   targetUrl?: string | undefined;
   assetId?: string | undefined;
   targetNoteId?: string | undefined;
+  fileSize?: number | undefined;
+  fileName?: string | undefined;
 }
 
 export interface BacklinkReference {

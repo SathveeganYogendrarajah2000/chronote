@@ -58,6 +58,7 @@ export function extractResourcesFromDoc(
     else if (block.type === "image") {
       const src = (block.attrs?.src as string) || "";
       const alt = (block.attrs?.alt as string) || "Screenshot";
+      const assetId = (block.attrs?.assetId as string) || undefined;
 
       resources.push({
         id: `res_img_${blockId}`,
@@ -69,6 +70,39 @@ export function extractResourcesFromDoc(
         blockId,
         title: alt,
         targetUrl: src,
+        assetId,
+      });
+    }
+
+    // 3. File Attachment block
+    else if (block.type === "attachment" || block.type === "fileAttachment") {
+      const fileName =
+        (block.attrs?.fileName as string) ||
+        (block.attrs?.title as string) ||
+        (block.attrs?.alt as string) ||
+        "Attachment";
+      const src =
+        (block.attrs?.filePath as string) ||
+        (block.attrs?.src as string) ||
+        (block.attrs?.targetUrl as string) ||
+        (block.attrs?.relativePath as string) ||
+        "";
+      const assetId = (block.attrs?.assetId as string) || undefined;
+      const fileSize = typeof block.attrs?.fileSize === "number" ? block.attrs.fileSize : undefined;
+
+      resources.push({
+        id: `res_att_${blockId}`,
+        resourceType: "attachment",
+        parentDocumentId: context.parentDocumentId,
+        parentDocumentType: context.parentDocumentType,
+        entryId: context.entryId,
+        entryDate: context.entryDate,
+        blockId,
+        title: fileName,
+        targetUrl: src,
+        assetId,
+        fileName,
+        fileSize,
       });
     }
 

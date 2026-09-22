@@ -1,3 +1,4 @@
+pub mod asset;
 pub mod conflict;
 pub mod export;
 pub mod note;

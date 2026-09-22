@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { TagChip } from "../common/TagChip";
 import { formatDateLabel } from "@domain/dsm.utils";
+import { useDsmStore } from "@application/stores/useDsmStore";
 
 interface DsmEntryHeaderProps {
   date: string;
@@ -72,6 +73,10 @@ export const DsmEntryHeader: React.FC<DsmEntryHeaderProps> = ({
             <TagChip
               key={tag}
               tag={tag}
+              onClick={() => {
+                const current = useDsmStore.getState().selectedTag;
+                useDsmStore.getState().setSelectedTag(current === tag ? null : tag);
+              }}
               onRemove={() => onRemoveTag(tag)}
             />
           ))}

@@ -16,7 +16,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0-alpha.8] - 2026-09-19
+## [0.1.0] - 2026-09-22
+
+### Added
+- **File Attachments, Image Embedding & Drag-and-Drop:**
+  - Full desktop drag-and-drop support: drag files and images directly from OS file explorer into any note or stand-up entry.
+  - Clipboard image paste support (`handlePaste`): pasting screenshot/image data automatically persists local copies into workspace `.chronote/assets/` storage.
+  - Native Rust asset management commands (`pick_asset_file`, `save_asset_binary`, `get_asset_path`, `reveal_in_explorer`).
+  - Custom TipTap extensions: `CustomImage` and `AttachmentExtension` with interactive cards showing file name, formatted size, and reveal in explorer action.
+  - Slash command extensions `/image` and `/file` for quick media insertion.
+  - Action buttons in Resource Inspector: `+ Attach File` and `+ Insert Image` with instant insertion into the active document.
+- **Clean Vector PDF / Print Generation:**
+  - Dedicated isolated `<iframe>` print pipeline replacing naive full-window printing, ensuring app UI chrome, sidebars, and modals are never printed.
+  - Pure semantic HTML exporter (`htmlExporter.ts`) generating print-optimized layouts with Aptos/system-ui typography, code block syntax styling, task lists, GFM tables, and `@page` margin control.
+  - Multi-scope PDF support: active note, single stand-up entry, date range journal, or full workspace bundle.
+- **Tag Filtering in DSM Timeline and Sidebar:**
+  - DSM Journal tag filter bar: filter daily stand-up timeline to entries matching specific tags with dynamic entry counters.
+  - Clickable tag chips in DSM entry headers to filter timeline instantly.
+  - General Notes tag filter in navigation sidebar with active tag badge and clear button.
+  - Interactive workspace tag chips in sidebar for rapid filtering across notes and stand-ups.
+- **External URL Browser Launcher:**
+  - Native Rust command `open_external_url` with protocol validation (`http:`, `https:`, `mailto:`) and OS launcher for external links in editor and Resource Inspector.
+- **Backlinks Guidance:**
+  - Educational explanation banner and contextual empty states in the Resource Inspector Backlinks tab explaining bidirectional wiki-links (`[[Note Title]]`).
+
+### Changed
+- **Resource Inspector Real-Time Synchronization:**
+  - Resource Inspector now updates reactively on note and stand-up document saves/deletes without requiring app restart.
+  - Added manual `Refresh` button in inspector header for instant re-indexing.
+  - SQLite resource indexer extracts both images and file attachments into the workspace resources index.
+
+### Fixed
+- **Tauri Asset Protocol & Embedded Image Visibility:**
+  - Enabled Tauri `protocol-asset` feature and configured `assetProtocol` scopes in `tauri.conf.json`, resolving 403 Forbidden errors when loading local images via `asset://` / `http://asset.localhost/`.
+- **File Attachment Launch & Explorer Reveal:**
+  - Added native `open_file` command to open attached files with their OS default application on click.
+  - Added dedicated explorer reveal button (`📁`) on attachment cards and hardened `reveal_in_explorer` to resolve local filesystem paths from URLs and prevent accidental web browser launches with `asset.localhost`.
+- **Cold Startup Latency runaway:**
+  - Resolved runaway latency timer in Performance & Architecture Diagnostics by marking `timeline_rendered` lifecycle milestone upon DSM timeline mount and adding fallback latch on `workspace_ready`.
+- **Duplicate class member in MockIpcBridge:**
+  - Cleaned up duplicate `mockConflicts` declaration in development test harness.
+
+---
 
 ### Added
 - **Phase 2: Stabilization, Hardening & Distribution:**

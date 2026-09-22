@@ -42,9 +42,23 @@ export interface SyncConflictInfo {
   previewText: string;
 }
 
+export interface AssetInfo {
+  id: string;
+  fileName: string;
+  relativePath: string;
+  absolutePath: string;
+  mimeType: string;
+  fileSize: number;
+}
+
 export interface IpcBridge {
   getAppInfo(): Promise<AppInfo>;
   ping(): Promise<string>;
+  openExternalUrl(url: string): Promise<void>;
+  revealInExplorer(path: string): Promise<void>;
+  openFile(path: string): Promise<void>;
+  pickAssetFile(assetType: "image" | "file"): Promise<AssetInfo | null>;
+  saveAssetBinary(assetType: "image" | "file", fileName: string, data: Uint8Array): Promise<AssetInfo>;
   pickWorkspaceDirectory(): Promise<string | null>;
   createWorkspace(path: string, name: string): Promise<Workspace>;
   openWorkspace(path: string): Promise<Workspace>;
@@ -89,6 +103,61 @@ export class TauriIpcBridge implements IpcBridge {
     } catch {
       return "pong (fallback)";
     }
+  }
+
+  async openExternalUrl(url: string): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.openExternalUrl(url);
+    try {
+      await invoke<void>("open_external_url", { url });
+    } catch (err) {
+      console.error("open_external_url error:", err);
+      // Fallback in case of invoke issue
+      if (typeof window !== "undefined") {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+    }
+  }
+
+  async revealInExplorer(path: string): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.revealInExplorer(path);
+    try {
+      await invoke<void>("reveal_in_explorer", { path });
+    } catch (err) {
+      console.error("reveal_in_explorer error:", err);
+    }
+  }
+
+  async openFile(path: string): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.openFile(path);
+    try {
+      await invoke<void>("open_file", { path });
+    } catch (err) {
+      console.error("open_file error, falling back to reveal in explorer:", err);
+      await this.revealInExplorer(path);
+    }
+  }
+
+  async pickAssetFile(assetType: "image" | "file"): Promise<AssetInfo | null> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.pickAssetFile(assetType);
+    try {
+      return await invoke<AssetInfo | null>("pick_asset_file", { assetType });
+    } catch (err) {
+      console.error("pick_asset_file error:", err);
+      return null;
+    }
+  }
+
+  async saveAssetBinary(
+    assetType: "image" | "file",
+    fileName: string,
+    data: Uint8Array
+  ): Promise<AssetInfo> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.saveAssetBinary(assetType, fileName, data);
+    return await invoke<AssetInfo>("save_asset_binary", {
+      assetType,
+      fileName,
+      data: Array.from(data),
+    });
   }
 
   async pickWorkspaceDirectory(): Promise<string | null> {
