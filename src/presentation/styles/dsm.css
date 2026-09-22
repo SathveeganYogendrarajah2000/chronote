@@ -109,6 +109,12 @@
   animation: highlight-glow 2.5s ease-out;
 }
 
+.dsm-entry-card.is-drag-over {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary);
+  background-color: rgba(59, 130, 246, 0.03);
+}
+
 @keyframes highlight-glow {
   0% {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6);
