@@ -60,9 +60,9 @@ describe("htmlExporter", () => {
     const note: GeneralNote = {
       id: "note_123",
       schemaVersion: 1,
-      title: "Release Notes v0.1.0",
+      title: "Release Notes v0.1.3",
       pinned: true,
-      tags: ["release", "v0.1.0"],
+      tags: ["release", "v0.1.3"],
       createdAt: "2026-09-22T10:00:00Z",
       updatedAt: "2026-09-22T12:00:00Z",
       content: {
@@ -77,9 +77,9 @@ describe("htmlExporter", () => {
     };
 
     const html = exportNoteToHtml(note);
-    expect(html).toContain('<h1 class="document-title">Release Notes v0.1.0</h1>');
+    expect(html).toContain('<h1 class="document-title">Release Notes v0.1.3</h1>');
     expect(html).toContain('<span class="tag-pill">#release</span>');
-    expect(html).toContain('<span class="tag-pill">#v0.1.0</span>');
+    expect(html).toContain('<span class="tag-pill">#v0.1.3</span>');
     expect(html).toContain("<p>Initial public release with local SQLite storage.</p>");
   });
 
