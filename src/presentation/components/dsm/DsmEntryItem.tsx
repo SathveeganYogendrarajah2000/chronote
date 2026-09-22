@@ -1,13 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import type { DsmEntry } from "@domain/dsm.types";
+import type { ProseMirrorNode } from "@domain/document.types";
 import { DsmEntryHeader } from "./DsmEntryHeader";
 import { DsmSummaryPreview } from "./DsmSummaryPreview";
 import { DsmEntryEditor } from "./DsmEntryEditor";
 import { useDsmStore, getTodayIsoDate } from "@application/stores/useDsmStore";
-import { useTabsStore } from "@application/stores/useTabsStore";
-import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
-import { useNotesStore } from "@application/stores/useNotesStore";
-import { DSM_TAB_ID } from "@domain/tabs.types";
+import { navigateToNoteOrDsm } from "@application/navigationHelper";
 
 interface DsmEntryItemProps {
   entry: DsmEntry;
@@ -21,30 +19,80 @@ export const DsmEntryItem: React.FC<DsmEntryItemProps> = ({ entry }) => {
     removeEntryTag,
     deleteEntry,
     updateEntryContent,
-    updateEntryText,
   } = useDsmStore();
+
+  const [isCardDragOver, setIsCardDragOver] = useState(false);
 
   const isToday = entry.date === getTodayIsoDate();
   const isHighlighted = highlightedDate === entry.date;
 
   const handleNavigateToNote = (targetNoteId: string) => {
-    if (targetNoteId.startsWith("dsm:")) {
-      const date = targetNoteId.replace("dsm:", "");
-      useTabsStore.getState().switchTab(DSM_TAB_ID);
-      useDsmStore.getState().jumpToDate(date);
-      return;
+    void navigateToNoteOrDsm(targetNoteId);
+  };
+
+  const handleCardDragOver = (e: React.DragEvent<HTMLElement>) => {
+    if (e.dataTransfer.types.includes("application/x-chronote-note")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      if (!isCardDragOver) setIsCardDragOver(true);
     }
+  };
 
-    const noteMeta = useWorkspaceStore.getState().recentNotes.find((n) => n.id === targetNoteId);
-    const title = noteMeta ? noteMeta.title : "Note";
+  const handleCardDragLeave = (e: React.DragEvent<HTMLElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsCardDragOver(false);
+    }
+  };
 
-    useTabsStore.getState().openTab({
-      id: `tab_${targetNoteId}`,
-      documentId: targetNoteId,
-      documentType: "general",
-      title,
-    });
-    void useNotesStore.getState().loadNote(targetNoteId);
+  const handleCardDrop = (e: React.DragEvent<HTMLElement>) => {
+    setIsCardDragOver(false);
+    if (e.defaultPrevented) return;
+
+    const rawNoteData = e.dataTransfer.getData("application/x-chronote-note");
+    if (rawNoteData) {
+      try {
+        const { id, title } = JSON.parse(rawNoteData);
+        if (id && title) {
+          e.preventDefault();
+          if (entry.collapsed) {
+            toggleEntryCollapse(entry.id);
+          }
+
+          const newParagraph: ProseMirrorNode = {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: title,
+                marks: [
+                  {
+                    type: "internalLink",
+                    attrs: {
+                      targetNoteId: id,
+                      originalTitle: title,
+                    },
+                  },
+                ],
+              },
+              {
+                type: "text",
+                text: " ",
+              },
+            ],
+          };
+
+          const existingContent = entry.content?.content ? [...entry.content.content] : [];
+          const updatedContent: ProseMirrorNode = {
+            type: "doc",
+            content: [...existingContent, newParagraph],
+          };
+
+          updateEntryContent(entry.id, updatedContent);
+        }
+      } catch (err) {
+        console.error("Failed to drop note onto DSM entry card:", err);
+      }
+    }
   };
 
   return (
@@ -52,7 +100,10 @@ export const DsmEntryItem: React.FC<DsmEntryItemProps> = ({ entry }) => {
       id={`dsm-entry-${entry.date}`}
       className={`dsm-entry-card ${entry.collapsed ? "is-collapsed" : "is-expanded"} ${
         isToday ? "is-today" : ""
-      } ${isHighlighted ? "is-highlighted" : ""}`}
+      } ${isHighlighted ? "is-highlighted" : ""} ${isCardDragOver ? "is-drag-over" : ""}`}
+      onDragOver={handleCardDragOver}
+      onDragLeave={handleCardDragLeave}
+      onDrop={handleCardDrop}
     >
       <DsmEntryHeader
         date={entry.date}
@@ -73,7 +124,6 @@ export const DsmEntryItem: React.FC<DsmEntryItemProps> = ({ entry }) => {
         <DsmEntryEditor
           content={entry.content}
           onUpdateContent={(content) => updateEntryContent(entry.id, content)}
-          onUpdateText={(text) => updateEntryText(entry.id, text)}
           onNavigateToNote={handleNavigateToNote}
         />
       )}

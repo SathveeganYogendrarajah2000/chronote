@@ -1,14 +1,11 @@
 import React, { useMemo } from "react";
 import { useNotesStore } from "@application/stores/useNotesStore";
-import { useTabsStore } from "@application/stores/useTabsStore";
-import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
-import { useDsmStore } from "@application/stores/useDsmStore";
-import { DSM_TAB_ID } from "@domain/tabs.types";
 import { proseMirrorDocToText } from "@domain/note.utils";
 import { NoteEditorHeader } from "./NoteEditorHeader";
 import { NoteTagBar } from "./NoteTagBar";
 import { ChronoteEditor } from "@presentation/editor/ChronoteEditor";
 import type { ProseMirrorNode } from "@domain/document.types";
+import { navigateToNoteOrDsm } from "@application/navigationHelper";
 
 export const NoteEditorCanvas: React.FC = () => {
   const { activeNote, isLoading, updateContent } = useNotesStore();
@@ -19,23 +16,7 @@ export const NoteEditorCanvas: React.FC = () => {
   }, [activeNote?.id, activeNote?.content]);
 
   const handleNavigateToNote = (targetNoteId: string) => {
-    if (targetNoteId.startsWith("dsm:")) {
-      const date = targetNoteId.replace("dsm:", "");
-      useTabsStore.getState().switchTab(DSM_TAB_ID);
-      useDsmStore.getState().jumpToDate(date);
-      return;
-    }
-
-    const noteMeta = useWorkspaceStore.getState().recentNotes.find((n) => n.id === targetNoteId);
-    const title = noteMeta ? noteMeta.title : "Note";
-
-    useTabsStore.getState().openTab({
-      id: `tab_${targetNoteId}`,
-      documentId: targetNoteId,
-      documentType: "general",
-      title,
-    });
-    void useNotesStore.getState().loadNote(targetNoteId);
+    void navigateToNoteOrDsm(targetNoteId);
   };
 
   if (isLoading) {

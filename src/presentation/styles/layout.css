@@ -250,6 +250,12 @@
   padding: 0 var(--space-2);
   overflow-x: auto;
   gap: var(--space-1);
+  transition: background-color var(--transition-fast);
+}
+
+.tab-bar-container.is-drag-over {
+  background-color: var(--bg-surface-hover);
+  border-bottom-color: var(--accent-primary);
 }
 
 .tab-item {

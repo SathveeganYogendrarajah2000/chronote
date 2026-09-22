@@ -158,8 +158,20 @@ export const NavigationSidebar: React.FC = () => {
                   type="button"
                   className="sidebar-nav-item"
                   style={{ fontSize: "var(--font-size-xs)", padding: "3px 6px" }}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(
+                      "application/x-chronote-note",
+                      JSON.stringify({
+                        id: `dsm:${entry.date}`,
+                        title: `DSM Stand-up (${entry.date})`,
+                      })
+                    );
+                    e.dataTransfer.setData("text/plain", `[[DSM Stand-up (${entry.date})]]`);
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
                   onClick={() => handleJumpToDsmDate(entry.date)}
-                  title={`Jump to ${entry.date}`}
+                  title={`Jump to ${entry.date} (Drag to drop link into editor)`}
                 >
                   <span style={{ fontFamily: "var(--font-mono)", opacity: 0.9 }}>{entry.date}</span>
                   <span style={{ marginLeft: "auto", fontSize: "10px", color: isToday ? "var(--accent-hover)" : "var(--text-muted)" }}>
@@ -225,7 +237,17 @@ export const NavigationSidebar: React.FC = () => {
                         key={note.id}
                         type="button"
                         className={`sidebar-note-item ${isTabActive ? "active" : ""}`}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData(
+                            "application/x-chronote-note",
+                            JSON.stringify({ id: note.id, title: note.title })
+                          );
+                          e.dataTransfer.setData("text/plain", `[[${note.title}]]`);
+                          e.dataTransfer.effectAllowed = "copy";
+                        }}
                         onClick={() => handleOpenGeneralNote(note.id, note.title, note.pinned)}
+                        title={`${note.title} (Drag into editor to link)`}
                       >
                         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0 }}>
                           <path d="M4 0h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H4z" />
@@ -272,7 +294,17 @@ export const NavigationSidebar: React.FC = () => {
                         key={note.id}
                         type="button"
                         className={`sidebar-note-item ${isTabActive ? "active" : ""}`}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData(
+                            "application/x-chronote-note",
+                            JSON.stringify({ id: note.id, title: note.title })
+                          );
+                          e.dataTransfer.setData("text/plain", `[[${note.title}]]`);
+                          e.dataTransfer.effectAllowed = "copy";
+                        }}
                         onClick={() => handleOpenGeneralNote(note.id, note.title, note.pinned)}
+                        title={`${note.title} (Drag into editor to link)`}
                       >
                         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0 }}>
                           <path d="M4 0h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H4z" />
