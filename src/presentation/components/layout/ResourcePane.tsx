@@ -8,7 +8,7 @@ import { DSM_TAB_ID } from "@domain/tabs.types";
 import type { ResourceType, ResourceReference, BacklinkReference } from "@domain/resource.types";
 import { IconButton } from "../common/IconButton";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { toAssetUrl } from "@infrastructure/tauri/assetHelper";
 
 export const ResourcePane: React.FC = () => {
   const { resourcePaneCollapsed, toggleResourcePane } = useUiStore();
@@ -125,18 +125,13 @@ export const ResourcePane: React.FC = () => {
     if (current?.documentType === "general") {
       const note = useNotesStore.getState().activeNote;
       if (note) {
-        let src = asset.relativePath;
-        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window && asset.absolutePath) {
-          try {
-            src = convertFileSrc(asset.absolutePath);
-          } catch {
-            src = asset.relativePath;
-          }
-        }
+        const rawPath = asset.absolutePath || asset.relativePath;
+        const src = toAssetUrl(rawPath);
         const newBlock = {
           type: "image",
           attrs: {
             src,
+            filePath: rawPath,
             alt: asset.fileName,
             assetId: asset.id,
             title: asset.fileName,
@@ -159,10 +154,13 @@ export const ResourcePane: React.FC = () => {
     if (current?.documentType === "general") {
       const note = useNotesStore.getState().activeNote;
       if (note) {
+        const rawPath = asset.absolutePath || asset.relativePath;
+        const src = toAssetUrl(rawPath);
         const newBlock = {
           type: "attachment",
           attrs: {
-            src: asset.absolutePath || asset.relativePath,
+            src,
+            filePath: rawPath,
             fileName: asset.fileName,
             fileSize: asset.fileSize,
             mimeType: asset.mimeType,

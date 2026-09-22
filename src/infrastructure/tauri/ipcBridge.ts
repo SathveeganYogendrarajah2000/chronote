@@ -56,6 +56,7 @@ export interface IpcBridge {
   ping(): Promise<string>;
   openExternalUrl(url: string): Promise<void>;
   revealInExplorer(path: string): Promise<void>;
+  openFile(path: string): Promise<void>;
   pickAssetFile(assetType: "image" | "file"): Promise<AssetInfo | null>;
   saveAssetBinary(assetType: "image" | "file", fileName: string, data: Uint8Array): Promise<AssetInfo>;
   pickWorkspaceDirectory(): Promise<string | null>;
@@ -123,6 +124,16 @@ export class TauriIpcBridge implements IpcBridge {
       await invoke<void>("reveal_in_explorer", { path });
     } catch (err) {
       console.error("reveal_in_explorer error:", err);
+    }
+  }
+
+  async openFile(path: string): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.openFile(path);
+    try {
+      await invoke<void>("open_file", { path });
+    } catch (err) {
+      console.error("open_file error, falling back to reveal in explorer:", err);
+      await this.revealInExplorer(path);
     }
   }
 

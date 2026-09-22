@@ -5,6 +5,7 @@ declare module "@tiptap/core" {
     attachment: {
       setAttachment: (options: {
         src: string;
+        filePath?: string;
         fileName: string;
         fileSize?: number;
         mimeType?: string;
@@ -32,6 +33,7 @@ export const AttachmentExtension = Node.create({
   addAttributes() {
     return {
       src: { default: "" },
+      filePath: { default: "" },
       fileName: { default: "Attachment" },
       fileSize: { default: 0 },
       mimeType: { default: "application/octet-stream" },
@@ -50,13 +52,16 @@ export const AttachmentExtension = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     const sizeStr = formatBytes(HTMLAttributes.fileSize);
+    const targetPath = HTMLAttributes.filePath || HTMLAttributes.src || "";
     return [
       "div",
       mergeAttributes(HTMLAttributes, {
         "data-type": "attachment",
         class: "chronote-attachment-card",
+        "data-file-path": targetPath,
         "data-asset-src": HTMLAttributes.src || "",
         "data-file-name": HTMLAttributes.fileName || "",
+        title: `Click to open ${HTMLAttributes.fileName || "file"} (or click 📁 to reveal in Explorer)`,
       }),
       [
         "div",
@@ -72,6 +77,16 @@ export const AttachmentExtension = Node.create({
           HTMLAttributes.fileName || "Attached file",
         ],
         sizeStr ? ["span", { class: "attachment-size" }, sizeStr] : null,
+      ],
+      [
+        "button",
+        {
+          type: "button",
+          class: "attachment-reveal-btn",
+          "data-action": "reveal",
+          title: "Reveal file in Explorer",
+        },
+        "📁",
       ],
     ];
   },

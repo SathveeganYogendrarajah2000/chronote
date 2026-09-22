@@ -82,6 +82,7 @@ export function extractResourcesFromDoc(
         (block.attrs?.alt as string) ||
         "Attachment";
       const src =
+        (block.attrs?.filePath as string) ||
         (block.attrs?.src as string) ||
         (block.attrs?.targetUrl as string) ||
         (block.attrs?.relativePath as string) ||

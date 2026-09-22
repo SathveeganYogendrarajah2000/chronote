@@ -47,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SQLite resource indexer extracts both images and file attachments into the workspace resources index.
 
 ### Fixed
+- **Tauri Asset Protocol & Embedded Image Visibility:**
+  - Enabled Tauri `protocol-asset` feature and configured `assetProtocol` scopes in `tauri.conf.json`, resolving 403 Forbidden errors when loading local images via `asset://` / `http://asset.localhost/`.
+- **File Attachment Launch & Explorer Reveal:**
+  - Added native `open_file` command to open attached files with their OS default application on click.
+  - Added dedicated explorer reveal button (`📁`) on attachment cards and hardened `reveal_in_explorer` to resolve local filesystem paths from URLs and prevent accidental web browser launches with `asset.localhost`.
 - **Cold Startup Latency runaway:**
   - Resolved runaway latency timer in Performance & Architecture Diagnostics by marking `timeline_rendered` lifecycle milestone upon DSM timeline mount and adding fallback latch on `workspace_ready`.
 - **Duplicate class member in MockIpcBridge:**

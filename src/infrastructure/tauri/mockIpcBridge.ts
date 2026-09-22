@@ -58,6 +58,10 @@ export class MockIpcBridge implements IpcBridge {
     console.log(`[Mock] revealInExplorer: ${path}`);
   }
 
+  async openFile(path: string): Promise<void> {
+    console.log(`[Mock] openFile: ${path}`);
+  }
+
   async pickAssetFile(assetType: "image" | "file"): Promise<AssetInfo | null> {
     const isImage = assetType === "image";
     const id = `${isImage ? "img" : "att"}_mock_${Date.now()}`;

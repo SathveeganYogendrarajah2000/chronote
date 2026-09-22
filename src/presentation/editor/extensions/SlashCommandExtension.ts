@@ -1,7 +1,7 @@
 import { Extension } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
 import Suggestion from "@tiptap/suggestion";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { toAssetUrl } from "@infrastructure/tauri/assetHelper";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import type { SlashCommandItem } from "../components/SlashCommandMenu";
 
@@ -218,16 +218,11 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
               chain.run();
               void ipcBridge.pickAssetFile("image").then((asset) => {
                 if (asset) {
-                  let src = asset.relativePath;
-                  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window && asset.absolutePath) {
-                    try {
-                      src = convertFileSrc(asset.absolutePath);
-                    } catch {
-                      src = asset.relativePath;
-                    }
-                  }
+                  const rawPath = asset.absolutePath || asset.relativePath;
+                  const src = toAssetUrl(rawPath);
                   (editor.chain().focus() as any).setImage({
                     src,
+                    filePath: rawPath,
                     alt: asset.fileName,
                     assetId: asset.id,
                     title: asset.fileName,
@@ -239,16 +234,11 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
               chain.run();
               void ipcBridge.pickAssetFile("file").then((asset) => {
                 if (asset) {
-                  let src = asset.relativePath;
-                  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window && asset.absolutePath) {
-                    try {
-                      src = convertFileSrc(asset.absolutePath);
-                    } catch {
-                      src = asset.relativePath;
-                    }
-                  }
+                  const rawPath = asset.absolutePath || asset.relativePath;
+                  const src = toAssetUrl(rawPath);
                   (editor.chain().focus() as any).setAttachment({
                     src,
+                    filePath: rawPath,
                     fileName: asset.fileName,
                     fileSize: asset.fileSize,
                     mimeType: asset.mimeType,

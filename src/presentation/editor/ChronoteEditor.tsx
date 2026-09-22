@@ -165,6 +165,7 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
               void processFileAsset(file).then((asset) => {
                 const node = view.state.schema.nodes.image?.create({
                   src: asset.src,
+                  filePath: asset.filePath,
                   alt: asset.fileName,
                   assetId: asset.assetId,
                   title: asset.fileName,
@@ -193,6 +194,7 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
               if (asset.isImage) {
                 const node = view.state.schema.nodes.image?.create({
                   src: asset.src,
+                  filePath: asset.filePath,
                   alt: asset.fileName,
                   assetId: asset.assetId,
                   title: asset.fileName,
@@ -205,6 +207,7 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
               } else {
                 const node = view.state.schema.nodes.attachment?.create({
                   src: asset.src,
+                  filePath: asset.filePath,
                   fileName: asset.fileName,
                   fileSize: asset.fileSize,
                   mimeType: asset.mimeType,
@@ -254,14 +257,21 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
       handleClick: (_view, _pos, event) => {
         const target = event.target as HTMLElement;
 
-        // Attachment card click -> reveal in file explorer
+        // Attachment card click -> open file or reveal in explorer
         const attachmentEl = target.closest<HTMLElement>("[data-type='attachment']");
         if (attachmentEl) {
-          const src = attachmentEl.getAttribute("data-asset-src");
-          if (src) {
-            event.preventDefault();
-            event.stopPropagation();
-            void ipcBridge.revealInExplorer(src);
+          event.preventDefault();
+          event.stopPropagation();
+          const targetPath =
+            attachmentEl.getAttribute("data-file-path") ||
+            attachmentEl.getAttribute("data-asset-src");
+          if (targetPath) {
+            const isReveal = target.closest("[data-action='reveal']");
+            if (isReveal) {
+              void ipcBridge.revealInExplorer(targetPath);
+            } else {
+              void ipcBridge.openFile(targetPath);
+            }
             return true;
           }
         }
@@ -269,6 +279,12 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
         // External link click -> open in default OS browser
         const extLink = target.closest<HTMLAnchorElement>("a.editor-external-link, a[href]");
         if (extLink && extLink.href) {
+          // Block internal asset URLs from being opened in external web browser
+          if (extLink.href.includes("asset.localhost")) {
+            event.preventDefault();
+            event.stopPropagation();
+            return true;
+          }
           event.preventDefault();
           event.stopPropagation();
           void ipcBridge.openExternalUrl(extLink.href);

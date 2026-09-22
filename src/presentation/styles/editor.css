@@ -641,3 +641,25 @@
   color: var(--text-muted);
 }
 
+.attachment-reveal-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+}
+
+.attachment-reveal-btn:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: scale(1.05);
+}
+

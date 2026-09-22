@@ -13,7 +13,7 @@ use commands::note::{
 };
 use commands::performance::get_performance_metrics;
 use commands::search::{get_backlinks, get_resources, search_workspace};
-use commands::system::{get_app_info, open_external_url, ping, reveal_in_explorer};
+use commands::system::{get_app_info, open_external_url, open_file, ping, reveal_in_explorer};
 use commands::workspace::{
     create_workspace, get_active_workspace, open_workspace, pick_workspace_directory,
     rebuild_index, save_workspace_settings,
@@ -25,7 +25,8 @@ pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
         .setup(|app| {
-            if cfg!(debug_assertions) {
+            #[cfg(debug_assertions)]
+            {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .level(log::LevelFilter::Info)
@@ -38,6 +39,7 @@ pub fn run() {
             get_app_info,
             ping,
             open_external_url,
+            open_file,
             reveal_in_explorer,
             pick_asset_file,
             save_asset_binary,

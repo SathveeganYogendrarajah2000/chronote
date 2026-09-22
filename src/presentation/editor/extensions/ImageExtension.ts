@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { toAssetUrl } from "@infrastructure/tauri/assetHelper";
 
 export interface ImageOptions {
   inline?: boolean;
@@ -10,6 +11,7 @@ declare module "@tiptap/core" {
     customImage: {
       setImage: (options: {
         src: string;
+        filePath?: string;
         alt?: string;
         title?: string;
         assetId?: string;
@@ -30,6 +32,7 @@ export const CustomImage = Node.create<ImageOptions>({
   addAttributes() {
     return {
       src: { default: null },
+      filePath: { default: null },
       alt: { default: null },
       title: { default: null },
       assetId: { default: null },
@@ -48,10 +51,18 @@ export const CustomImage = Node.create<ImageOptions>({
 
   renderHTML({ HTMLAttributes }) {
     const { alt, ...imgAttrs } = HTMLAttributes;
+    const targetSrc = toAssetUrl(imgAttrs.src || HTMLAttributes.filePath);
     return [
       "div",
       { class: "chronote-image-wrapper" },
-      ["img", mergeAttributes(this.options.HTMLAttributes ?? {}, imgAttrs, { class: "chronote-image" })],
+      [
+        "img",
+        mergeAttributes(this.options.HTMLAttributes ?? {}, imgAttrs, {
+          src: targetSrc,
+          class: "chronote-image",
+          loading: "lazy",
+        }),
+      ],
       alt ? ["div", { class: "chronote-image-caption" }, alt] : null,
     ];
   },

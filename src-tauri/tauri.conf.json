@@ -22,7 +22,27 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "**",
+          "**/*",
+          "C:**",
+          "C:/**/*",
+          "D:**",
+          "D:/**/*",
+          "E:**",
+          "E:/**/*",
+          "F:**",
+          "F:/**/*",
+          "G:**",
+          "G:/**/*",
+          "$HOME/**",
+          "$APPDATA/**",
+          "$LOCALDATA/**"
+        ]
+      }
     }
   },
   "bundle": {

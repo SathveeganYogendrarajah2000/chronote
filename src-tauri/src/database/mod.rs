@@ -278,7 +278,7 @@ fn extract_blocks_and_resources(
                     .unwrap_or("Attachment");
                 let src = child
                     .get("attrs")
-                    .and_then(|a| a.get("src").or_else(|| a.get("targetUrl")).or_else(|| a.get("relativePath")))
+                    .and_then(|a| a.get("filePath").or_else(|| a.get("src")).or_else(|| a.get("targetUrl")).or_else(|| a.get("relativePath")))
                     .and_then(|s| s.as_str())
                     .unwrap_or("");
                 resources.push(ExtractedResourceItem {
