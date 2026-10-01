@@ -63,6 +63,11 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
   - [x] Export to Microsoft Word (`.docx`).
   - [x] Export to PDF (`.pdf`).
   - [x] One-click full workspace `.zip` backup.
+- **Milestone 1.8: Ergonomic Navigation & Adaptive Workspace Scaling (Delivered in v0.1.4)**
+  - [x] Application-wide Zoom In/Out (`Ctrl+=`, `Ctrl+-`, `Ctrl+0`, `Ctrl+Wheel`) with viewport dimension compensation (`calc(100vw / var(--app-zoom))`), on-screen HUD overlay, and Tauri webview integration.
+  - [x] Multi-Tag Search & Filter across Side Navigation and DSM timeline with `ALL` (AND) / `ANY` (OR) match mode toggling.
+  - [x] Automated Table of Contents with live cursor context tracking across General Notes and DSM entries, outline search, and exact ProseMirror text selection navigation upon click.
+  - [x] Resizable Sidebars for Left Navigation Sidebar and Right Resource Inspector with interactive draggable handles, min/max bounds, double-click reset, and responsive full-width child filling.
 
 ---
 

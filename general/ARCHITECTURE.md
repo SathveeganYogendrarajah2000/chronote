@@ -110,8 +110,15 @@ The system enforces three strict structural rules:
 
 ### 3.2 Application Layer (`src/application/`)
 - **State Management:** Zustand 5.x.
-  - Stores are organized by bounded context: `useWorkspaceStore`, `useDsmStore`, `useNotesStore`, `useTabsStore`, `useSearchStore`, `useResourceStore`.
-  - Stores contain pure action dispatchers and async thunks that orchestrate use cases.
+  - Stores organized by bounded context:
+    - `useWorkspaceStore`: Active workspace directory, recent notes, and indexing status.
+    - `useDsmStore`: Continuous stand-up journal timeline, date jump, collapse states, and multi-tag filtering.
+    - `useNotesStore`: General notes catalog, active note, dirty states, and multi-tag filtering.
+    - `useTabsStore`: Multi-document tab bar with DSM pinning and session restore.
+    - `useSearchStore`: Query parser, filter predicates, and FTS5 search results.
+    - `useResourceStore`: Indexed code blocks, images, links, attachments, and backlinks.
+    - `useTocStore`: Live ProseMirror heading outline extraction, active cursor context tracking (`general` vs `dsm`), heading navigator registration, and exact cursor navigation.
+    - `useUiStore`: Zoom scaling state, viewport dimension compensation, HUD overlay, and interactive sidebar width resizing with persistence.
 - **Autosave Engine:**
   - Intercepts document mutations from the editor.
   - Debounces writes (default: 800 ms idle or immediately on tab switch / window blur).

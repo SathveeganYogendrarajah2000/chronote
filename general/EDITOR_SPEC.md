@@ -139,3 +139,30 @@ Typing `/` on an empty line or at the end of a word opens the **Quick Insert Com
 | `Ctrl+Tab` | Tab Bar | Switch to Next Tab |
 | `Ctrl+Shift+Tab` | Tab Bar | Switch to Previous Tab |
 | `Ctrl+Shift+T` | Tab Bar | Reopen Recently Closed Tab |
+| `Ctrl+=` / `Ctrl++` | Application | Zoom In (scales elements while filling window) |
+| `Ctrl+-` | Application | Zoom Out (scales elements while filling window) |
+| `Ctrl+0` | Application | Reset Zoom to 100% |
+| `Ctrl+Wheel` | Application | Step Zoom In / Out |
+
+---
+
+## 7. Table of Contents & Heading Navigation System
+
+Chronote provides an automated, real-time Table of Contents (Outline) that keeps the engineer oriented in long technical investigations and multi-section stand-ups.
+
+### 7.1 Architecture & Block ID Extension
+- Every heading block (`h1`, `h2`, `h3`) is automatically stamped with a stable block ID via `BlockIdExtension` (`data-block-id="blk_..."`).
+- `extractHeadings(doc)` in `src/domain/toc.utils.ts` parses the ProseMirror JSON tree into ordered `TocHeadingItem` objects (`id`, `level`, `text`, `index`).
+
+### 7.2 Dynamic Cursor Context Tracking
+- `ChronoteEditor` registers ProseMirror `onFocus` and `onSelectionUpdate` handlers.
+- As the user types or clicks, the editor inspects nodes from position `0` to `selection.from`, identifying the nearest active heading and synchronizing `activeHeadingId` with `useTocStore`.
+- Moving between a General Note and a Daily Stand-up date entry automatically switches the Outline context to the document containing the active cursor.
+
+### 7.3 Exact Cursor Positioning on Jump
+- When an engineer clicks any heading in the Table of Contents (via the Resource Inspector Outline tab or the floating popover):
+  1. If the target resides in a collapsed DSM date entry, the entry automatically uncollapses.
+  2. The registered editor navigator scans the ProseMirror document tree for the matching heading node.
+  3. Executes `editor.chain().focus().setTextSelection(targetPos).run()`: places the blinking typing cursor directly inside that heading.
+  4. Smoothly scrolls the target heading into view: `targetEl.scrollIntoView({ behavior: "smooth", block: "center" })`.
+  5. Triggers a prominent visual feedback pulse animation (`block-highlight-pulse`).
