@@ -74,8 +74,7 @@ export const DsmEntryHeader: React.FC<DsmEntryHeaderProps> = ({
               key={tag}
               tag={tag}
               onClick={() => {
-                const current = useDsmStore.getState().selectedTag;
-                useDsmStore.getState().setSelectedTag(current === tag ? null : tag);
+                useDsmStore.getState().toggleTagFilter(tag);
               }}
               onRemove={() => onRemoveTag(tag)}
             />

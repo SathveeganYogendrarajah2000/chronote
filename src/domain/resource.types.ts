@@ -2,7 +2,7 @@
  * Chronote Resource Browser Domain Types (DOMAIN_MODEL.md Section 2.7 & UX_SPEC.md Section 3.5).
  */
 
-export type ResourceType = "code" | "image" | "link" | "attachment" | "backlink";
+export type ResourceType = "outline" | "code" | "image" | "link" | "attachment" | "backlink";
 
 export interface ResourceReference {
   readonly id: string;

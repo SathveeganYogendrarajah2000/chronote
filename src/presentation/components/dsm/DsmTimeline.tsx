@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useDsmStore, getTodayIsoDate } from "@application/stores/useDsmStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
+import { useTocStore } from "@application/stores/useTocStore";
 import { performanceProfiler } from "@application/services/performanceProfiler";
-import { sortDsmEntries } from "@domain/dsm.utils";
+import { sortDsmEntries, filterDsmEntriesByTags } from "@domain/dsm.utils";
+import { extractHeadings } from "@domain/toc.utils";
 import { DsmEntryItem } from "./DsmEntryItem";
 import { DsmDatePicker } from "./DsmDatePicker";
+import { FloatingTocPopover } from "../toc/FloatingTocPopover";
 
 export const DsmTimeline: React.FC = () => {
   const {
@@ -12,20 +15,43 @@ export const DsmTimeline: React.FC = () => {
     isLoading,
     isSaving,
     isDirty,
-    selectedTag,
-    setSelectedTag,
+    selectedTags,
+    toggleTagFilter,
+    clearTagFilters,
+    tagMatchMode,
+    setTagMatchMode,
     setAllCollapse,
     jumpToDate,
     createOrGetEntry,
+    highlightedDate,
   } = useDsmStore();
 
   const { workspace } = useWorkspaceStore();
+  const { activeContext, setActiveContext } = useTocStore();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isTocOpen, setIsTocOpen] = useState(false);
 
   // Mark startup timeline rendering complete for diagnostics
   useEffect(() => {
     performanceProfiler.mark("timeline_rendered");
   }, []);
+
+  // Ensure activeContext tracks DSM entry on mount / highlightedDate change
+  useEffect(() => {
+    const today = getTodayIsoDate();
+    const targetDate =
+      highlightedDate ||
+      (dsmDoc?.entries.some((e) => e.date === today) ? today : dsmDoc?.entries[0]?.date);
+
+    if (targetDate && (!activeContext || activeContext.source !== "dsm" || !activeContext.date)) {
+      setActiveContext({
+        source: "dsm",
+        documentId: `dsm_${targetDate}`,
+        date: targetDate,
+        title: `Stand-up (${targetDate})`,
+      });
+    }
+  }, [highlightedDate, dsmDoc?.entries, activeContext, setActiveContext]);
 
   const sortOrder = workspace?.settings?.dsmSortOrder ?? "desc";
 
@@ -47,10 +73,18 @@ export const DsmTimeline: React.FC = () => {
       .sort((a, b) => b.count - a.count);
   }, [dsmDoc?.entries]);
 
+  // Multi-tag filtering with AND/OR support
   const entries = useMemo(() => {
-    if (!selectedTag) return allEntries;
-    return allEntries.filter((e) => e.tags.includes(selectedTag));
-  }, [allEntries, selectedTag]);
+    return filterDsmEntriesByTags(allEntries, selectedTags, tagMatchMode);
+  }, [allEntries, selectedTags, tagMatchMode]);
+
+  // Headings count for active DSM entry
+  const activeEntryHeadingsCount = useMemo(() => {
+    const activeDate = activeContext?.date || highlightedDate || allEntries[0]?.date;
+    if (!activeDate) return 0;
+    const entry = allEntries.find((e) => e.date === activeDate);
+    return entry ? extractHeadings(entry.content).length : 0;
+  }, [activeContext?.date, highlightedDate, allEntries]);
 
   const handleJumpToToday = () => {
     const today = getTodayIsoDate();
@@ -93,6 +127,29 @@ export const DsmTimeline: React.FC = () => {
             ) : (
               <span>✓ Saved</span>
             )}
+          </div>
+
+          {/* Quick Table of Contents Trigger */}
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ fontSize: "var(--font-size-xs)", padding: "var(--space-1) var(--space-3)", display: "inline-flex", alignItems: "center", gap: 4 }}
+              onClick={() => setIsTocOpen(!isTocOpen)}
+              title="Table of Contents for active stand-up entry"
+            >
+              <span>📑 Outline</span>
+              {activeEntryHeadingsCount > 0 && (
+                <span style={{ fontSize: "10px", fontFamily: "var(--font-mono)", opacity: 0.85 }}>
+                  ({activeEntryHeadingsCount})
+                </span>
+              )}
+            </button>
+            <FloatingTocPopover
+              isOpen={isTocOpen}
+              onClose={() => setIsTocOpen(false)}
+              title={activeContext?.title || "Stand-up Outline"}
+            />
           </div>
 
           {/* Action Buttons */}
@@ -148,7 +205,7 @@ export const DsmTimeline: React.FC = () => {
         </div>
       </header>
 
-      {/* Tag Filter Bar */}
+      {/* Tag Filter Bar with Multi-Tag Support */}
       {availableTags.length > 0 && (
         <div
           style={{
@@ -162,16 +219,17 @@ export const DsmTimeline: React.FC = () => {
           }}
         >
           <span style={{ fontSize: "var(--font-size-xs)", color: "var(--text-muted)", marginRight: 4 }}>
-            Filter by tag:
+            Filter by tags:
           </span>
+
           <button
             type="button"
-            className={`tag-chip ${!selectedTag ? "active" : ""}`}
-            onClick={() => setSelectedTag(null)}
+            className={`tag-chip ${selectedTags.length === 0 ? "active" : ""}`}
+            onClick={clearTagFilters}
             style={{
               cursor: "pointer",
-              backgroundColor: !selectedTag ? "var(--accent-primary)" : "var(--bg-surface)",
-              color: !selectedTag ? "#ffffff" : "var(--text-secondary)",
+              backgroundColor: selectedTags.length === 0 ? "var(--accent-primary)" : "var(--bg-surface)",
+              color: selectedTags.length === 0 ? "#ffffff" : "var(--text-secondary)",
               border: "1px solid var(--border-subtle)",
               borderRadius: "var(--radius-full)",
               padding: "2px 10px",
@@ -181,33 +239,61 @@ export const DsmTimeline: React.FC = () => {
           >
             All ({allEntries.length})
           </button>
+
           {availableTags.map(({ tag, count }) => {
-            const isSelected = selectedTag === tag;
+            const isSelected = selectedTags.includes(tag);
             return (
               <button
                 key={tag}
                 type="button"
                 className={`tag-chip ${isSelected ? "active" : ""}`}
-                onClick={() => setSelectedTag(isSelected ? null : tag)}
+                onClick={() => toggleTagFilter(tag)}
                 style={{
                   cursor: "pointer",
                   backgroundColor: isSelected ? "var(--accent-primary)" : "var(--bg-surface)",
                   color: isSelected ? "#ffffff" : "var(--text-secondary)",
-                  border: "1px solid var(--border-subtle)",
+                  border: isSelected ? "1px solid var(--accent-primary)" : "1px solid var(--border-subtle)",
                   borderRadius: "var(--radius-full)",
                   padding: "2px 10px",
                   fontSize: "var(--font-size-xs)",
                   fontWeight: 500,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
                 }}
+                title={isSelected ? `Click to remove #${tag} filter` : `Click to filter by #${tag}`}
               >
-                #{tag} <span style={{ opacity: 0.75, fontSize: "10px" }}>({count})</span>
+                <span>#{tag}</span>
+                <span style={{ opacity: 0.75, fontSize: "10px" }}>({count})</span>
+                {isSelected && <span style={{ fontSize: "11px", marginLeft: 2 }}>✕</span>}
               </button>
             );
           })}
-          {selectedTag && (
+
+          {selectedTags.length > 1 && (
+            <div className="tag-match-toggle" title="Toggle between matching ALL selected tags or ANY selected tag">
+              <span style={{ padding: "0 4px", color: "var(--text-muted)" }}>Match:</span>
+              <button
+                type="button"
+                className={`tag-match-toggle-btn ${tagMatchMode === "and" ? "active" : ""}`}
+                onClick={() => setTagMatchMode("and")}
+              >
+                ALL
+              </button>
+              <button
+                type="button"
+                className={`tag-match-toggle-btn ${tagMatchMode === "or" ? "active" : ""}`}
+                onClick={() => setTagMatchMode("or")}
+              >
+                ANY
+              </button>
+            </div>
+          )}
+
+          {selectedTags.length > 0 && (
             <button
               type="button"
-              onClick={() => setSelectedTag(null)}
+              onClick={clearTagFilters}
               style={{
                 background: "transparent",
                 border: "none",
@@ -217,8 +303,9 @@ export const DsmTimeline: React.FC = () => {
                 padding: "2px 6px",
                 marginLeft: 4,
               }}
+              title="Clear all tag filters"
             >
-              Clear filter ×
+              Clear filters ×
             </button>
           )}
         </div>
@@ -226,17 +313,19 @@ export const DsmTimeline: React.FC = () => {
 
       {/* Main Timeline Entries Stream */}
       {entries.length === 0 ? (
-        selectedTag ? (
+        selectedTags.length > 0 ? (
           <div className="dsm-empty-state">
             <div className="dsm-empty-icon">🏷️</div>
-            <h3 className="dsm-empty-title">No Entries Tagged #{selectedTag}</h3>
+            <h3 className="dsm-empty-title">
+              No Entries Tagged #{selectedTags.join(", #")}
+            </h3>
             <p className="dsm-empty-subtitle">
-              There are no stand-up entries matching this tag.
+              There are no stand-up entries matching {tagMatchMode === "and" ? "all" : "any"} of these tags.
             </p>
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => setSelectedTag(null)}
+              onClick={clearTagFilters}
               style={{ marginTop: 8 }}
             >
               Show all stand-up entries

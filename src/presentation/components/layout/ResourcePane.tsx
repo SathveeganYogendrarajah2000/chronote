@@ -9,6 +9,9 @@ import type { ResourceType, ResourceReference, BacklinkReference } from "@domain
 import { IconButton } from "../common/IconButton";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import { toAssetUrl } from "@infrastructure/tauri/assetHelper";
+import { TableOfContents } from "../toc/TableOfContents";
+import { extractHeadings } from "@domain/toc.utils";
+import { useTocStore } from "@application/stores/useTocStore";
 
 export const ResourcePane: React.FC = () => {
   const { resourcePaneCollapsed, toggleResourcePane } = useUiStore();
@@ -230,7 +233,25 @@ export const ResourcePane: React.FC = () => {
     );
   }, [backlinks, cleanFilter]);
 
+  const currentTab = tabs.find((t) => t.id === activeTabId);
+  const isDsmDoc = currentTab?.documentType === "dsm";
+  const activeNote = useNotesStore((s) => s.activeNote);
+  const dsmDoc = useDsmStore((s) => s.dsmDoc);
+  const highlightedDate = useDsmStore((s) => s.highlightedDate);
+  const activeContext = useTocStore((s) => s.activeContext);
+
+  const tocHeadingsCount = useMemo(() => {
+    if (isDsmDoc) {
+      const activeDate = activeContext?.date || highlightedDate || dsmDoc?.entries[0]?.date;
+      const entry = activeDate ? dsmDoc?.entries.find((e) => e.date === activeDate) : null;
+      return entry ? extractHeadings(entry.content).length : 0;
+    } else {
+      return activeNote ? extractHeadings(activeNote.content).length : 0;
+    }
+  }, [isDsmDoc, activeContext?.date, highlightedDate, dsmDoc?.entries, activeNote]);
+
   const tabDefs: { id: ResourceType; label: string; count: number }[] = [
+    { id: "outline", label: "Outline", count: tocHeadingsCount },
     { id: "code", label: "Code", count: codeItems.length },
     { id: "image", label: "Images", count: imageItems.length },
     { id: "link", label: "Links", count: linkItems.length },
@@ -336,6 +357,13 @@ export const ResourcePane: React.FC = () => {
         {isLoading && (
           <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "var(--font-size-xs)", padding: "var(--space-4)" }}>
             Loading resources...
+          </div>
+        )}
+
+        {/* Outline Tab (Table of Contents) */}
+        {!isLoading && activeTab === "outline" && (
+          <div style={{ height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <TableOfContents />
           </div>
         )}
 

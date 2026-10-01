@@ -21,6 +21,8 @@ export interface DsmState {
   highlightedDate: string | null;
   searchFilter: string;
   selectedTag: string | null;
+  selectedTags: string[];
+  tagMatchMode: "and" | "or";
 
   // Actions
   loadDsm: () => Promise<void>;
@@ -36,6 +38,10 @@ export interface DsmState {
   jumpToDate: (date: string) => DsmEntry | null;
   setSearchFilter: (filter: string) => void;
   setSelectedTag: (tag: string | null) => void;
+  toggleTagFilter: (tag: string) => void;
+  setSelectedTags: (tags: string[]) => void;
+  clearTagFilters: () => void;
+  setTagMatchMode: (mode: "and" | "or") => void;
   clearHighlightedDate: () => void;
 }
 
@@ -55,6 +61,8 @@ export const useDsmStore = create<DsmState>((set, get) => ({
   highlightedDate: null,
   searchFilter: "",
   selectedTag: null,
+  selectedTags: [],
+  tagMatchMode: "and",
 
   loadDsm: async () => {
     set({ isLoading: true });
@@ -374,6 +382,37 @@ export const useDsmStore = create<DsmState>((set, get) => ({
   },
 
   setSearchFilter: (filter: string) => set({ searchFilter: filter }),
-  setSelectedTag: (tag: string | null) => set({ selectedTag: tag }),
+
+  setSelectedTag: (tag: string | null) =>
+    set({
+      selectedTag: tag,
+      selectedTags: tag ? [tag] : [],
+    }),
+
+  toggleTagFilter: (tag: string) => {
+    const { selectedTags } = get();
+    const nextTags = selectedTags.includes(tag)
+      ? selectedTags.filter((t) => t !== tag)
+      : [...selectedTags, tag];
+    set({
+      selectedTags: nextTags,
+      selectedTag: nextTags[0] ?? null,
+    });
+  },
+
+  setSelectedTags: (selectedTags: string[]) =>
+    set({
+      selectedTags,
+      selectedTag: selectedTags[0] ?? null,
+    }),
+
+  clearTagFilters: () =>
+    set({
+      selectedTags: [],
+      selectedTag: null,
+    }),
+
+  setTagMatchMode: (tagMatchMode: "and" | "or") => set({ tagMatchMode }),
+
   clearHighlightedDate: () => set({ highlightedDate: null }),
 }));

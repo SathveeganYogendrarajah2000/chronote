@@ -122,6 +122,7 @@ export const DsmEntryItem: React.FC<DsmEntryItemProps> = ({ entry }) => {
         />
       ) : (
         <DsmEntryEditor
+          date={entry.date}
           content={entry.content}
           onUpdateContent={(content) => updateEntryContent(entry.id, content)}
           onNavigateToNote={handleNavigateToNote}

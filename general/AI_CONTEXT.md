@@ -96,7 +96,7 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Release 0.1.0 completed (File attachments & image drag/drop/paste, isolated iframe PDF printing, real-time Resource Inspector sync, DSM timeline & sidebar tag filtering, browser link opener, startup latency fix, 129 Vitest + 21 Rust tests passing).
+- **Current Work:** Application-wide Zoom In/Out (`Ctrl+=`, `Ctrl+-`, `Ctrl+0`, wheel, HUD overlay & header controls), Multi-Tag filtering in Sidebar & DSM timeline with `ALL`/`ANY` match mode, and automated Table of Contents with live cursor context tracking across General Notes and DSM entries (Resource Inspector Outline tab + floating header popover). 140 Vitest + 22 Rust tests passing.
 - **Next Recommended Task:** Create git release tag `v0.1.0` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---

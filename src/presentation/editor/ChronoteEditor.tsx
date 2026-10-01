@@ -30,6 +30,7 @@ import { BubbleMenuBar } from "./components/BubbleMenuBar";
 import { BlockId } from "./extensions/BlockIdExtension";
 import { processFileAsset } from "@infrastructure/tauri/assetHelper";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
+import { useTocStore } from "@application/stores/useTocStore";
 
 export interface ChronoteEditorProps {
   content: ProseMirrorNode;
@@ -38,6 +39,7 @@ export interface ChronoteEditorProps {
   editable?: boolean | undefined;
   autoFocus?: boolean | undefined;
   onNavigateToNote?: ((targetNoteId: string) => void) | undefined;
+  onEditorFocus?: (() => void) | undefined;
   className?: string | undefined;
 }
 
@@ -48,6 +50,7 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
   editable = true,
   autoFocus = false,
   onNavigateToNote,
+  onEditorFocus,
   className = "",
 }) => {
   const { recentNotes } = useWorkspaceStore();
@@ -304,6 +307,33 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
         }
         return false;
       },
+    },
+    onFocus: ({ editor: ed }) => {
+      if (onEditorFocus) {
+        onEditorFocus();
+      }
+      const { from } = ed.state.selection;
+      let activeId: string | null = null;
+      ed.state.doc.nodesBetween(0, from, (node) => {
+        if (node.type.name === "heading" && node.attrs?.id) {
+          activeId = node.attrs.id as string;
+        }
+      });
+      if (activeId) {
+        useTocStore.getState().setActiveHeadingId(activeId);
+      }
+    },
+    onSelectionUpdate: ({ editor: ed }) => {
+      const { from } = ed.state.selection;
+      let activeId: string | null = null;
+      ed.state.doc.nodesBetween(0, from, (node) => {
+        if (node.type.name === "heading" && node.attrs?.id) {
+          activeId = node.attrs.id as string;
+        }
+      });
+      if (activeId) {
+        useTocStore.getState().setActiveHeadingId(activeId);
+      }
     },
     onUpdate: ({ editor }) => {
       if (onChange) {

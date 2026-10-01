@@ -5,7 +5,7 @@ import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { useDsmStore } from "@application/stores/useDsmStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
 import { formatDateLabel, sortDsmEntries } from "@domain/dsm.utils";
-import { filterNotes } from "@domain/note.utils";
+import { filterNotes, filterNotesByTags } from "@domain/note.utils";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 import { TagChip } from "../common/TagChip";
 
@@ -13,12 +13,23 @@ export const NavigationSidebar: React.FC = () => {
   const { sidebarCollapsed } = useUiStore();
   const { activeTabId, switchTab, openTab } = useTabsStore();
   const { workspace, recentNotes, setWorkspaceModalOpen } = useWorkspaceStore();
-  const { dsmDoc, jumpToDate, selectedTag: dsmSelectedTag, setSelectedTag: setDsmSelectedTag } = useDsmStore();
+  const {
+    dsmDoc,
+    jumpToDate,
+    selectedTags: dsmSelectedTags,
+    toggleTagFilter: toggleDsmTag,
+    clearTagFilters: clearDsmTags,
+    tagMatchMode: dsmTagMatchMode,
+    setTagMatchMode: setDsmTagMatchMode,
+  } = useDsmStore();
   const {
     filterQuery,
     setFilterQuery,
-    selectedTag,
-    setSelectedTag,
+    selectedTags,
+    toggleTagFilter,
+    clearTagFilters,
+    tagMatchMode,
+    setTagMatchMode,
     createNote,
     loadNote,
     togglePin,
@@ -63,18 +74,17 @@ export const NavigationSidebar: React.FC = () => {
 
   const handleTagClick = (tag: string) => {
     if (isDsmActive) {
-      setDsmSelectedTag(dsmSelectedTag === tag ? null : tag);
+      toggleDsmTag(tag);
     } else {
-      setSelectedTag(selectedTag === tag ? null : tag);
+      toggleTagFilter(tag);
     }
   };
 
   // Filter and group general notes into pinned and non-pinned
   const filteredNotes = useMemo(() => {
     const base = filterNotes(recentNotes, filterQuery);
-    if (!selectedTag) return base;
-    return base.filter((n) => n.tags.includes(selectedTag));
-  }, [recentNotes, filterQuery, selectedTag]);
+    return filterNotesByTags(base, selectedTags, tagMatchMode);
+  }, [recentNotes, filterQuery, selectedTags, tagMatchMode]);
 
   const pinnedNotes = useMemo(() => {
     return filteredNotes.filter((n) => n.pinned);
@@ -159,6 +169,90 @@ export const NavigationSidebar: React.FC = () => {
           <span className="nav-item-count">Timeline</span>
         </button>
 
+        {/* Active DSM Tag Filter Indicator */}
+        {dsmSelectedTags.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+              padding: "4px 8px",
+              margin: "4px 4px 6px",
+              background: "rgba(59, 130, 246, 0.12)",
+              border: "1px solid rgba(59, 130, 246, 0.3)",
+              borderRadius: "4px",
+              fontSize: "11px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: "10px" }}>DSM Tags ({dsmSelectedTags.length}):</span>
+                {dsmSelectedTags.length > 1 && (
+                  <div className="tag-match-toggle" title="Toggle between matching ALL selected tags or ANY selected tag">
+                    <button
+                      type="button"
+                      className={`tag-match-toggle-btn ${dsmTagMatchMode === "and" ? "active" : ""}`}
+                      onClick={() => setDsmTagMatchMode("and")}
+                    >
+                      ALL
+                    </button>
+                    <button
+                      type="button"
+                      className={`tag-match-toggle-btn ${dsmTagMatchMode === "or" ? "active" : ""}`}
+                      onClick={() => setDsmTagMatchMode("or")}
+                    >
+                      ANY
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={clearDsmTags}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                  fontSize: "11px",
+                  lineHeight: 1,
+                  padding: "0 2px",
+                }}
+                title="Clear DSM tag filters"
+              >
+                Clear all ×
+              </button>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {dsmSelectedTags.map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 3,
+                    background: "rgba(59, 130, 246, 0.2)",
+                    color: "#60a5fa",
+                    borderRadius: "3px",
+                    padding: "1px 5px",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                  }}
+                >
+                  #{tag}
+                  <span
+                    style={{ cursor: "pointer", opacity: 0.75, fontSize: "11px" }}
+                    onClick={() => toggleDsmTag(tag)}
+                    title={`Remove #${tag} filter`}
+                  >
+                    ×
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick jump to recent dates in DSM */}
         {recentDsmEntries.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: 4, paddingLeft: "var(--space-2)" }}>
@@ -228,13 +322,13 @@ export const NavigationSidebar: React.FC = () => {
         )}
 
         {/* Active Tag Filter Indicator */}
-        {selectedTag && (
+        {selectedTags.length > 0 && (
           <div
             style={{
               display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "3px 8px",
+              flexDirection: "column",
+              gap: 4,
+              padding: "4px 8px",
               margin: "2px 8px 6px",
               background: "rgba(99, 102, 241, 0.12)",
               border: "1px solid rgba(99, 102, 241, 0.3)",
@@ -242,23 +336,72 @@ export const NavigationSidebar: React.FC = () => {
               fontSize: "11px",
             }}
           >
-            <span>Tag: <strong style={{ color: "var(--accent-primary, #6366f1)" }}>#{selectedTag}</strong></span>
-            <button
-              type="button"
-              onClick={() => setSelectedTag(null)}
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--text-muted)",
-                fontSize: "12px",
-                lineHeight: 1,
-                padding: "0 2px",
-              }}
-              title="Clear tag filter"
-            >
-              ✕
-            </button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: "10px" }}>Tags ({selectedTags.length}):</span>
+                {selectedTags.length > 1 && (
+                  <div className="tag-match-toggle" title="Toggle between matching ALL selected tags or ANY selected tag">
+                    <button
+                      type="button"
+                      className={`tag-match-toggle-btn ${tagMatchMode === "and" ? "active" : ""}`}
+                      onClick={() => setTagMatchMode("and")}
+                    >
+                      ALL
+                    </button>
+                    <button
+                      type="button"
+                      className={`tag-match-toggle-btn ${tagMatchMode === "or" ? "active" : ""}`}
+                      onClick={() => setTagMatchMode("or")}
+                    >
+                      ANY
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={clearTagFilters}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                  fontSize: "11px",
+                  lineHeight: 1,
+                  padding: "0 2px",
+                }}
+                title="Clear all tag filters"
+              >
+                Clear all ×
+              </button>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {selectedTags.map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 3,
+                    background: "rgba(99, 102, 241, 0.2)",
+                    color: "var(--accent-primary, #6366f1)",
+                    borderRadius: "3px",
+                    padding: "1px 5px",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                  }}
+                >
+                  #{tag}
+                  <span
+                    style={{ cursor: "pointer", opacity: 0.75, fontSize: "11px" }}
+                    onClick={() => toggleTagFilter(tag)}
+                    title={`Remove #${tag} filter`}
+                  >
+                    ×
+                  </span>
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
@@ -395,7 +538,26 @@ export const NavigationSidebar: React.FC = () => {
       <div className="sidebar-section" style={{ borderBottom: "none" }}>
         <div className="sidebar-section-header">
           <span>Tags</span>
-          <span style={{ fontSize: "11px" }}>{dynamicTags.length}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {((isDsmActive && dsmSelectedTags.length > 0) || (!isDsmActive && selectedTags.length > 0)) && (
+              <button
+                type="button"
+                onClick={isDsmActive ? clearDsmTags : clearTagFilters}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--accent-hover)",
+                  fontSize: "10px",
+                  padding: 0,
+                }}
+                title="Clear active tag filters"
+              >
+                Clear ({isDsmActive ? dsmSelectedTags.length : selectedTags.length})
+              </button>
+            )}
+            <span style={{ fontSize: "11px" }}>{dynamicTags.length}</span>
+          </div>
         </div>
         {dynamicTags.length === 0 ? (
           <div style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--font-size-xs)", color: "var(--text-muted)" }}>
@@ -405,8 +567,8 @@ export const NavigationSidebar: React.FC = () => {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "0 4px" }}>
             {dynamicTags.map((item) => {
               const isSelected = isDsmActive
-                ? dsmSelectedTag === item.tag
-                : selectedTag === item.tag;
+                ? dsmSelectedTags.includes(item.tag)
+                : selectedTags.includes(item.tag);
               return (
                 <span
                   key={item.tag}
