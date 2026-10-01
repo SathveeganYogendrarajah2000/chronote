@@ -61,6 +61,7 @@ export const NoteEditorCanvas: React.FC = () => {
       <div className="note-editor-content">
         <ChronoteEditor
           content={activeNote.content}
+          editorContextKey={`general_${activeNote.id}`}
           onChange={(newContent: ProseMirrorNode) => updateContent(newContent)}
           onNavigateToNote={handleNavigateToNote}
           onEditorFocus={() => {

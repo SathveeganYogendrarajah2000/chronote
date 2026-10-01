@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
@@ -10,7 +10,14 @@ import { DSM_TAB_ID } from "@domain/tabs.types";
 import { TagChip } from "../common/TagChip";
 
 export const NavigationSidebar: React.FC = () => {
-  const { sidebarCollapsed } = useUiStore();
+  const {
+    sidebarCollapsed,
+    sidebarWidth,
+    setSidebarWidth,
+    resetSidebarWidth,
+    setIsResizingSidebar,
+  } = useUiStore();
+  const [isResizing, setIsResizing] = useState(false);
   const { activeTabId, switchTab, openTab } = useTabsStore();
   const { workspace, recentNotes, setWorkspaceModalOpen } = useWorkspaceStore();
   const {
@@ -118,10 +125,45 @@ export const NavigationSidebar: React.FC = () => {
       .sort((a, b) => b.count - a.count);
   }, [recentNotes, dsmDoc]);
 
+  const handleMouseDownResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setIsResizingSidebar(true);
+    document.body.classList.add("is-resizing-sidebar");
+
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const zoom = useUiStore.getState().zoomLevel;
+      const delta = (moveEvent.clientX - startX) / zoom;
+      setSidebarWidth(startWidth + delta);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setIsResizingSidebar(false);
+      document.body.classList.remove("is-resizing-sidebar");
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
   return (
-    <aside className={`navigation-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
-      {/* Workspace Indicator banner */}
-      <div className="sidebar-workspace-banner">
+    <aside
+      className={`navigation-sidebar ${sidebarCollapsed ? "collapsed" : ""} ${isResizing ? "resizing" : ""}`}
+      style={{
+        width: sidebarCollapsed ? 0 : sidebarWidth,
+        minWidth: sidebarCollapsed ? 0 : sidebarWidth,
+      }}
+    >
+      <div className="sidebar-scrollable-content">
+        {/* Workspace Indicator banner */}
+        <div className="sidebar-workspace-banner">
         {workspace ? (
           <button
             type="button"
@@ -589,6 +631,15 @@ export const NavigationSidebar: React.FC = () => {
           </div>
         )}
       </div>
+      </div>
+      {!sidebarCollapsed && (
+        <div
+          className={`sidebar-resize-handle ${isResizing ? "resizing" : ""}`}
+          onMouseDown={handleMouseDownResize}
+          onDoubleClick={resetSidebarWidth}
+          title="Drag to resize sidebar (Double-click to reset width)"
+        />
+      )}
     </aside>
   );
 };

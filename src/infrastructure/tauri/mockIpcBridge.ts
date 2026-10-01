@@ -39,7 +39,7 @@ export class MockIpcBridge implements IpcBridge {
   async getAppInfo(): Promise<AppInfo> {
     return {
       name: "Chronote (Mock Environment)",
-      version: "0.1.3-mock",
+      version: "0.1.4-mock",
       description: "Mock IPC Bridge for development and testing",
     };
   }

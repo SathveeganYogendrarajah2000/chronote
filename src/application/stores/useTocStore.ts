@@ -9,6 +9,10 @@ export interface ActiveNoteCursorContext {
   title: string;
 }
 
+export type HeadingNavigator = (heading: TocHeadingItem) => boolean;
+
+const editorNavigators = new Map<string, HeadingNavigator>();
+
 interface TocState {
   activeContext: ActiveNoteCursorContext | null;
   activeHeadingId: string | null;
@@ -18,6 +22,7 @@ interface TocState {
   setActiveHeadingId: (headingId: string | null) => void;
   setFloatingTocOpen: (open: boolean) => void;
   toggleFloatingToc: () => void;
+  registerEditorNavigator: (contextKey: string, navigator: HeadingNavigator) => () => void;
   scrollToHeading: (heading: TocHeadingItem) => void;
 }
 
@@ -31,11 +36,18 @@ export const useTocStore = create<TocState>((set, get) => ({
   setFloatingTocOpen: (isFloatingTocOpen) => set({ isFloatingTocOpen }),
   toggleFloatingToc: () => set((state) => ({ isFloatingTocOpen: !state.isFloatingTocOpen })),
 
+  registerEditorNavigator: (contextKey: string, navigator: HeadingNavigator) => {
+    editorNavigators.set(contextKey, navigator);
+    return () => {
+      if (editorNavigators.get(contextKey) === navigator) {
+        editorNavigators.delete(contextKey);
+      }
+    };
+  },
+
   scrollToHeading: (heading: TocHeadingItem) => {
     const { activeContext } = get();
     set({ activeHeadingId: heading.id });
-
-    if (typeof document === "undefined") return;
 
     // If target is in DSM, make sure the date entry is expanded
     if (activeContext?.source === "dsm" && activeContext.date) {
@@ -48,14 +60,35 @@ export const useTocStore = create<TocState>((set, get) => ({
 
     // Delay slightly to let any DOM changes (like expanding) resolve
     setTimeout(() => {
-      let targetEl: HTMLElement | null = null;
+      // 1. Try editor navigator first (sets exact ProseMirror cursor selection)
+      let navigated = false;
+      if (activeContext) {
+        const contextKey =
+          activeContext.source === "dsm" && activeContext.date
+            ? `dsm_${activeContext.date}`
+            : `general_${activeContext.documentId}`;
+        const nav = editorNavigators.get(contextKey);
+        if (nav) {
+          navigated = nav(heading);
+        }
+      }
+      if (!navigated && editorNavigators.size > 0) {
+        for (const nav of editorNavigators.values()) {
+          if (nav(heading)) {
+            navigated = true;
+            break;
+          }
+        }
+      }
 
-      // 1. Try finding by data-block-id
+      if (typeof document === "undefined") return;
+
+      // 2. Find DOM element for scrolling and pulse animation
+      let targetEl: HTMLElement | null = null;
       if (heading.id) {
         targetEl = document.querySelector(`[data-block-id="${heading.id}"]`) as HTMLElement;
       }
 
-      // 2. Fallback: search headings inside the active editor/view by matching text
       if (!targetEl) {
         const headings = document.querySelectorAll(
           activeContext?.source === "dsm" && activeContext.date
@@ -73,6 +106,23 @@ export const useTocStore = create<TocState>((set, get) => ({
 
       if (targetEl) {
         targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // If editor navigator wasn't registered, place DOM selection at the heading
+        if (!navigated) {
+          try {
+            const editorEl = targetEl.closest(".ProseMirror") as HTMLElement | null;
+            editorEl?.focus();
+            const sel = window.getSelection();
+            if (sel) {
+              const range = document.createRange();
+              const textNode = targetEl.firstChild || targetEl;
+              range.setStart(textNode, 0);
+              range.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+          } catch {}
+        }
 
         // Highlight pulse animation
         targetEl.classList.remove("block-highlight-pulse");

@@ -14,7 +14,15 @@ import { extractHeadings } from "@domain/toc.utils";
 import { useTocStore } from "@application/stores/useTocStore";
 
 export const ResourcePane: React.FC = () => {
-  const { resourcePaneCollapsed, toggleResourcePane } = useUiStore();
+  const {
+    resourcePaneCollapsed,
+    toggleResourcePane,
+    resourcePaneWidth,
+    setResourcePaneWidth,
+    resetResourcePaneWidth,
+    setIsResizingSidebar,
+  } = useUiStore();
+  const [isResizing, setIsResizing] = useState(false);
   const {
     activeTab,
     scope,
@@ -259,10 +267,54 @@ export const ResourcePane: React.FC = () => {
     { id: "backlink", label: "Backlinks", count: filteredBacklinks.length },
   ];
 
+  const handleMouseDownResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setIsResizingSidebar(true);
+    document.body.classList.add("is-resizing-sidebar");
+
+    const startX = e.clientX;
+    const startWidth = resourcePaneWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const zoom = useUiStore.getState().zoomLevel;
+      // Dragging left increases width, dragging right decreases width
+      const delta = (startX - moveEvent.clientX) / zoom;
+      setResourcePaneWidth(startWidth + delta);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setIsResizingSidebar(false);
+      document.body.classList.remove("is-resizing-sidebar");
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
   return (
-    <aside className={`resource-pane ${resourcePaneCollapsed ? "collapsed" : ""}`}>
-      {/* Header */}
-      <div className="resource-header">
+    <aside
+      className={`resource-pane ${resourcePaneCollapsed ? "collapsed" : ""} ${isResizing ? "resizing" : ""}`}
+      style={{
+        width: resourcePaneCollapsed ? 0 : resourcePaneWidth,
+        minWidth: resourcePaneCollapsed ? 0 : resourcePaneWidth,
+      }}
+    >
+      {!resourcePaneCollapsed && (
+        <div
+          className={`resource-pane-resize-handle ${isResizing ? "resizing" : ""}`}
+          onMouseDown={handleMouseDownResize}
+          onDoubleClick={resetResourcePaneWidth}
+          title="Drag to resize inspector (Double-click to reset width)"
+        />
+      )}
+      <div className="resource-scrollable-content">
+        {/* Header */}
+        <div className="resource-header">
         <span
           style={{
             fontSize: "var(--font-size-xs)",
@@ -592,6 +644,7 @@ export const ResourcePane: React.FC = () => {
             )}
           </div>
         )}
+      </div>
       </div>
     </aside>
   );

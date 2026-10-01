@@ -22,6 +22,7 @@ export const DsmEntryEditor: React.FC<DsmEntryEditorProps> = ({
     <div className="dsm-content-area">
       <ChronoteEditor
         content={content}
+        editorContextKey={`dsm_${date}`}
         placeholder="What did you work on today? (Investigations, PRs, queries, commands, blockers...)"
         onChange={(newContent: ProseMirrorNode) => {
           if (onUpdateContent) onUpdateContent(newContent);

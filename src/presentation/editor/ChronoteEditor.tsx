@@ -40,6 +40,7 @@ export interface ChronoteEditorProps {
   autoFocus?: boolean | undefined;
   onNavigateToNote?: ((targetNoteId: string) => void) | undefined;
   onEditorFocus?: (() => void) | undefined;
+  editorContextKey?: string | undefined;
   className?: string | undefined;
 }
 
@@ -51,6 +52,7 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
   autoFocus = false,
   onNavigateToNote,
   onEditorFocus,
+  editorContextKey,
   className = "",
 }) => {
   const { recentNotes } = useWorkspaceStore();
@@ -354,6 +356,37 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
       editor.commands.setContent(content, { emitUpdate: false });
     }
   }, [content, editor]);
+
+  // Register editor navigator with Table of Contents for exact cursor navigation
+  useEffect(() => {
+    if (!editor) return;
+    const key = editorContextKey || "default";
+    const unregister = useTocStore.getState().registerEditorNavigator(key, (heading) => {
+      let targetPos: number | null = null;
+      editor.state.doc.descendants((node, pos) => {
+        if (targetPos !== null) return false;
+        if (node.type.name === "heading") {
+          if (heading.id && node.attrs?.id === heading.id) {
+            targetPos = pos + 1;
+            return false;
+          }
+          if (node.textContent.trim() === heading.text.trim()) {
+            targetPos = pos + 1;
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (targetPos !== null) {
+        editor.chain().focus().setTextSelection(targetPos).run();
+        return true;
+      }
+      return false;
+    });
+
+    return unregister;
+  }, [editor, editorContextKey]);
 
   // Handle internal link navigation clicks
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
