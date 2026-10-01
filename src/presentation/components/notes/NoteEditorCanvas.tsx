@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useNotesStore } from "@application/stores/useNotesStore";
+import { useTocStore } from "@application/stores/useTocStore";
 import { proseMirrorDocToText } from "@domain/note.utils";
 import { NoteEditorHeader } from "./NoteEditorHeader";
 import { NoteTagBar } from "./NoteTagBar";
@@ -9,6 +10,17 @@ import { navigateToNoteOrDsm } from "@application/navigationHelper";
 
 export const NoteEditorCanvas: React.FC = () => {
   const { activeNote, isLoading, updateContent } = useNotesStore();
+  const { setActiveContext } = useTocStore();
+
+  useEffect(() => {
+    if (activeNote) {
+      setActiveContext({
+        source: "general",
+        documentId: activeNote.id,
+        title: activeNote.title,
+      });
+    }
+  }, [activeNote?.id, activeNote?.title, setActiveContext]);
 
   const textContent = useMemo(() => {
     if (!activeNote) return "";
@@ -49,8 +61,16 @@ export const NoteEditorCanvas: React.FC = () => {
       <div className="note-editor-content">
         <ChronoteEditor
           content={activeNote.content}
+          editorContextKey={`general_${activeNote.id}`}
           onChange={(newContent: ProseMirrorNode) => updateContent(newContent)}
           onNavigateToNote={handleNavigateToNote}
+          onEditorFocus={() => {
+            setActiveContext({
+              source: "general",
+              documentId: activeNote.id,
+              title: activeNote.title,
+            });
+          }}
         />
 
         <div className="note-editor-footer">

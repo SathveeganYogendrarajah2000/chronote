@@ -11,31 +11,31 @@ Chronote is designed specifically for software engineers who spend hours inside 
 
 ---
 
-## 2. Desktop Application Window Layout
+### 2. Desktop Application Window Layout
 
-Chronote utilizes a 3-pane responsive desktop layout:
+Chronote utilizes a 3-pane responsive desktop layout with dynamically resizable sidebars and full-application zoom scaling:
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│  [Search workspace... (Ctrl+F)]                         [+ New Note] [⚙ Settings]     │  <-- App Header
-├────────────────────────┬───────────────────────────────────────────────┬───────────────┤
-│ NAVIGATION SIDEBAR     │ MAIN EDITOR WORKSPACE                         │ RESOURCE PANE │
-│                        │ ┌───────────────────────────────────────────┐ │ (Collapsible) │
-│ ▼ DAILY STAND-UP (DSM) │ │ [★ DSM] [Spring Security] [MongoDB Notes]x│ │               │
-│   Today (2026-09-16)   │ └───────────────────────────────────────────┘ │ ▼ CODE (14)   │
-│   2026-09-15           │                                               │   - JWT Auth  │
-│   2026-09-14           │ ▼ 2026-09-16 [Wednesday]     #springboot #jwt │   - Mongo Agg │
-│                        │   Investigating Auth Token Expiry             │               │
-│ ▼ GENERAL NOTES (12)   │   Completed token refresh logic...            │ ▼ IMAGES (4)  │
-│   Spring Security      │                                               │   - Screenshot│
-│   Postgres Indexing    │ ▶ 2026-09-15 [Tuesday]       #aws #monitoring │               │
-│   Docker Setup         │   Set up CloudWatch alarms for ECS memory...  │ ▼ LINKS (8)   │
-│                        │                                               │   - Spring Doc│
-│ ▼ TAGS                 │ ▶ 2026-09-14 [Monday]       #angular #backend │               │
-│   #springboot (8)      │   Fixed CORS headers on local gateway...      │ ▼ BACKLINKS(2)│
-│   #backend (15)        │                                               │   - Architecture│
-│   #aws (4)             │                                               │               │
-└────────────────────────┴───────────────────────────────────────────────┴───────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  [Search workspace... (Ctrl+F)]               [-] 100% [+]               [+ New Note] [⚙ Settings]     │  <-- App Header
+├────────────────────────┬───────────────────────────────────────────────────────────────┬───────────────┤
+│ NAVIGATION SIDEBAR     │ MAIN EDITOR WORKSPACE                                         │ RESOURCE PANE │
+│ (Resizable: 180-600px) │ ┌───────────────────────────────────────────────────────────┐ │ (200-700px)   │
+│                        │ │ [★ DSM] [Spring Security] [MongoDB Notes]x                │ │               │
+│ ▼ DAILY STAND-UP (DSM) │ └───────────────────────────────────────────────────────────┘ │ ▼ OUTLINE (5) │
+│   Today (2026-10-02)   │                                                               │   H1 Architect│
+│   2026-10-01           │ ▼ 2026-10-02 [Friday]        #springboot #jwt   [📑 Outline] │   H2 Database │
+│                        │   Investigating Auth Token Expiry                             │               │
+│ ▼ GENERAL NOTES (12)   │   Completed token refresh logic...                            │ ▼ CODE (14)   │
+│   Spring Security      │                                                               │   - JWT Auth  │
+│   Postgres Indexing    │ ▶ 2026-10-01 [Thursday]      #aws #monitoring                 │   - Mongo Agg │
+│   Docker Setup         │   Set up CloudWatch alarms for ECS memory...                  │               │
+│                        │                                                               │ ▼ IMAGES (4)  │
+│ ▼ TAGS                 │                                                               │   - Screenshot│
+│   [#springboot] [#jwt] │                                                               │               │
+│   Match: [ALL] [ANY]   │                                                               │ ▼ BACKLINKS(2)│
+│                        │                                                               │   - Arch Note │
+└─[⋮ Drag Handle]────────┴───────────────────────────────────────────────────────────────┴─[⋮ Handle]────┘
 ```
 
 ---
@@ -44,14 +44,23 @@ Chronote utilizes a 3-pane responsive desktop layout:
 
 ### 3.1 App Header Bar
 - **Global Search Input:** Centered search pill (`Ctrl+F`). Pressing `Enter` or clicking opens the Quick Search Modal with filter suggestions.
+- **Application Zoom Controls (`[-] 100% [+]`):**
+  - Buttons for quick stepping: `[-]` zoom out (down to 70%), `[+]` zoom in (up to 200%).
+  - Center percentage pill displays current zoom factor; clicking resets instantly to 100%.
+  - On-screen glassmorphic HUD toast indicator displays current zoom level on change.
+  - Scales elements smaller or larger while **completely filling 100% of the window dimensions** via dynamic calc compensation.
 - **New Note Button (`Ctrl+N`):** Creates a new untitled General Note and immediately places cursor focus in the title input.
 - **Settings Icon:** Opens workspace preferences (theme, font size, export, backup, re-index database).
 
-### 3.2 Navigation Sidebar (Left)
+### 3.2 Navigation Sidebar (Left, Resizable & Collapsible)
+- **Interactive Edge Drag Handle:** Grab the right boundary (`.sidebar-resize-handle`) to resize width between **180px** and **600px** (default 260px). Double-click resets to default.
+- **Full-Width Element Responsiveness:** Workspace card, navigation items, note lists, and tag chips flex to fill 100% of the sidebar width.
 - **DSM Journal Root:** Quick button with calendar badge to jump to Today’s DSM entry (`Ctrl+Shift+D`).
 - **DSM Date Tree:** Quick scroll targets for recent days (grouped by "This Week", "Last Week", "Older").
 - **General Notes Catalog:** Pinned notes on top, followed by alphabetically sorted notes with search filter.
-- **Tags Cloud / List:** Lists all normalized workspace tags with entry count badges (`#springboot (8)`). Clicking a tag opens a filtered view.
+- **Multi-Tag Search & Filter Bar:**
+  - Clicking tags adds/removes them from the multi-tag filter set.
+  - Active filter bar displays chips with individual remove buttons (`×`), a match mode switcher (`ALL` vs `ANY`), and a `Clear` button.
 - **Sidebar Collapse:** Toggleable via `Ctrl+\` to maximize editor canvas.
 
 ### 3.3 Multi-Document Tab Bar
@@ -67,22 +76,25 @@ Chronote utilizes a 3-pane responsive desktop layout:
 
 ### 3.4 DSM Continuous Timeline UX
 - **The Journal Stream:** All calendar dates render sequentially in one scrollable timeline.
+- **Timeline Multi-Tag Filter Bar:** Filter timeline entries by multiple tags with `ALL` / `ANY` mode switcher and clear button.
 - **Collapsible Entry Headers:**
-  - **Expanded View (▼):**
-    - Header displays Date (`2026-09-16`), Day of week (`Wednesday`), Entry Tags (`#springboot #jwt`), and an "Add Tag" chip.
-    - Full rich-text editor canvas active for that day.
-  - **Collapsed View (▶):**
-    - Content is collapsed into a single-line summary strip.
-    - Displays date badge, tag chips, and an **auto-derived preview** (the first 120 characters of meaningful text, truncated with `...`).
-    - Clicking the chevron or double-clicking the header expands the entry.
-- **Calendar Quick Jump:** A subtle calendar icon in the header opens an inline date picker to jump directly to any historical date without endless scrolling.
+  - **Expanded View (▼):** Header displays Date, Day of week, Entry Tags, and interactive tag chips.
+  - **Collapsed View (▶):** Single-line summary strip with auto-derived text preview.
+- **Floating Outline Trigger:** `📑 Outline` toolbar button opens floating table of contents popover for quick navigation across stand-up entries.
+- **Calendar Quick Jump:** Header date picker to jump directly to any historical date without scrolling.
 
-### 3.5 Resource Browser Pane (Right, Collapsible)
-An indexed inspector over the current document or entire workspace:
-- **Code Tab:** Shows all code blocks with language pills. Clicking an item jumps and highlights that exact code block in the editor.
-- **Images Tab:** Thumbnail gallery of all embedded screenshots and figures. Clicking reveals full image or jumps to location.
-- **Links Tab:** All external HTTP(S) URLs referenced. Clicking opens URL in default external browser (with safety prompt).
-- **Backlinks Tab:** Shows all other notes and DSM dates that reference the active document via `[[...]]` links.
+### 3.5 Resource Browser Pane (Right, Resizable & Collapsible)
+- **Interactive Edge Drag Handle:** Grab the left boundary (`.resource-pane-resize-handle`) to resize width between **200px** and **700px** (default 320px). Double-click resets to default.
+- **Outline Tab (Table of Contents):**
+  - Displays hierarchical heading outline (`H1`, `H2`, `H3`) with depth indentation and total heading count badge.
+  - Real-time cursor context tracking: switches context dynamically when cursor enters a General Note or a specific DSM date entry.
+  - **Exact Cursor Navigation:** Clicking any heading item moves the editor cursor directly inside that heading, scrolls into view, and pulses.
+  - Filter input for searching headings in long documents.
+- **Code Tab:** Shows all code blocks with language pills and jump-to-code action.
+- **Images Tab:** Thumbnail gallery of all embedded screenshots and figures.
+- **Links Tab:** All external HTTP(S) URLs referenced with native external browser launcher.
+- **Attachments / Files Tab:** File attachments with size formatting and OS explorer reveal action.
+- **Backlinks Tab:** Shows all referencing notes and DSM dates using `[[...]]` wiki-links.
 
 ---
 

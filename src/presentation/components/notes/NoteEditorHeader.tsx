@@ -1,10 +1,13 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNotesStore } from "@application/stores/useNotesStore";
+import { extractHeadings } from "@domain/toc.utils";
+import { FloatingTocPopover } from "../toc/FloatingTocPopover";
 
 export const NoteEditorHeader: React.FC = () => {
   const { activeNote, isSaving, isDirty, updateTitle, togglePin, setDeleteCandidateId } =
     useNotesStore();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isTocOpen, setIsTocOpen] = useState(false);
 
   // Auto-focus title if note was newly created ("Untitled Note")
   useEffect(() => {
@@ -12,6 +15,11 @@ export const NoteEditorHeader: React.FC = () => {
       inputRef.current?.select();
     }
   }, [activeNote?.id]);
+
+  const headingsCount = useMemo(() => {
+    if (!activeNote) return 0;
+    return extractHeadings(activeNote.content).length;
+  }, [activeNote?.content]);
 
   if (!activeNote) return null;
 
@@ -63,6 +71,29 @@ export const NoteEditorHeader: React.FC = () => {
       </div>
 
       <div className="note-header-actions">
+        <div style={{ position: "relative" }}>
+          <button
+            type="button"
+            className="note-action-btn"
+            style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 6px" }}
+            onClick={() => setIsTocOpen(!isTocOpen)}
+            title={`Table of Contents (${headingsCount} headings)`}
+            aria-label="Table of Contents"
+          >
+            <span>📑</span>
+            {headingsCount > 0 && (
+              <span style={{ fontSize: "10px", fontFamily: "var(--font-mono)", opacity: 0.85 }}>
+                {headingsCount}
+              </span>
+            )}
+          </button>
+          <FloatingTocPopover
+            isOpen={isTocOpen}
+            onClose={() => setIsTocOpen(false)}
+            title={activeNote.title}
+          />
+        </div>
+
         <button
           type="button"
           className={`note-action-btn ${activeNote.pinned ? "pinned" : ""}`}

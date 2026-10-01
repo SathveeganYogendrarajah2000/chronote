@@ -16,6 +16,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.4] - 2026-10-02
+
+### Added
+- **Window-Filling Application Zoom In / Out:**
+  - Full application scaling via root CSS zoom coupled with dynamic viewport dimension compensation (`width: calc(100vw / var(--app-zoom, 1)); height: calc(100vh / var(--app-zoom, 1))`).
+  - Scales elements smaller or larger while **completely filling 100% of the window dimensions** without leaving black borders, margins, or clipping.
+  - Multi-input control: `Ctrl`+`+` / `Ctrl`+`=`, `Ctrl`+`-`, `Ctrl`+`0` (reset), `Ctrl`+MouseWheel, and header control buttons `[-] 100% [+]`.
+  - On-screen glassmorphic HUD toast indicator showing current percentage on zoom change.
+  - LocalStorage persistence (`chronote_zoom_level`) across app restarts and native Tauri webview zoom bridge (`getCurrentWebview().setZoom()`).
+- **Interactive Resizable Sidebars:**
+  - Left Navigation Sidebar: draggable vertical split handle along right boundary (`.sidebar-resize-handle`) with `col-resize` cursor and accent highlight.
+  - Right Resource Inspector: draggable vertical split handle along left boundary (`.resource-pane-resize-handle`).
+  - Dynamic width clamping: left sidebar (180px – 600px, default 260px), right pane (200px – 700px, default 320px).
+  - Double-click resize handle to reset instantly to default width.
+  - Fluid child responsiveness: workspace card, navigation items, note lists, tag chips, tab buttons, resource cards, and Table of Contents items automatically expand to fill the entire sidebar width.
+  - Zero-latency drag state: disables CSS transitions during dragging (`.resizing { transition: none !important; }`) and applies `body.is-resizing-sidebar` to prevent accidental text selections.
+  - LocalStorage persistence (`chronote_sidebar_width`, `chronote_resource_width`) and CSS variable synchronization (`--sidebar-width`, `--resource-width`).
+- **Automated Table of Contents with Exact Cursor Navigation:**
+  - Real-time hierarchical heading extraction (`h1`, `h2`, `h3`) from ProseMirror JSON trees with hierarchy badges and depth indentation.
+  - Dynamic cursor context tracking: listens to ProseMirror `onFocus` and `onSelectionUpdate` to track whether the cursor is in a General Note or a specific Daily Stand-up date entry.
+  - Exact cursor positioning: clicking any TOC heading item focuses the editor and executes `editor.chain().focus().setTextSelection(targetPos).run()` to move the active typing cursor directly inside that heading.
+  - Auto-expands collapsed DSM date entries if the target heading is within a collapsed day.
+  - Smooth scrolling with center alignment and `block-highlight-pulse` glow animation.
+  - Dual access: Dedicated **Outline** tab in Resource Inspector with live search filter and heading count, plus floating popover trigger (`📑 Outline`) in note and DSM headers.
+- **Multi-Tag Search & Filtering:**
+  - Multi-tag selection in Navigation Sidebar and DSM Journal timeline.
+  - Match mode switcher: toggle between `ALL` (boolean AND — entries must contain all selected tags) and `ANY` (boolean OR — entries containing any selected tag).
+  - Active filter bar with removable tag chips (`×`) and 1-click clear action.
+  - Backwards-compatible domain utilities: `filterNotesByTags` and `filterDsmEntriesByTags`.
+
+---
+
 ## [0.1.0] - 2026-09-22
 
 ### Added

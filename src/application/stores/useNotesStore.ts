@@ -20,6 +20,8 @@ export interface NotesState {
   isDirty: boolean;
   filterQuery: string;
   selectedTag: string | null;
+  selectedTags: string[];
+  tagMatchMode: "and" | "or";
   deleteCandidateId: string | null;
 
   // Actions
@@ -40,6 +42,10 @@ export interface NotesState {
   deleteNote: (id: string) => Promise<void>;
   setFilterQuery: (query: string) => void;
   setSelectedTag: (tag: string | null) => void;
+  toggleTagFilter: (tag: string) => void;
+  setSelectedTags: (tags: string[]) => void;
+  clearTagFilters: () => void;
+  setTagMatchMode: (mode: "and" | "or") => void;
   clearActiveNote: () => void;
 }
 
@@ -50,6 +56,8 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   isDirty: false,
   filterQuery: "",
   selectedTag: null,
+  selectedTags: [],
+  tagMatchMode: "and",
   deleteCandidateId: null,
 
   loadNote: async (id: string) => {
@@ -324,7 +332,39 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   setSelectedTag: (selectedTag: string | null) => {
-    set({ selectedTag });
+    set({
+      selectedTag,
+      selectedTags: selectedTag ? [selectedTag] : [],
+    });
+  },
+
+  toggleTagFilter: (tag: string) => {
+    const { selectedTags } = get();
+    const nextTags = selectedTags.includes(tag)
+      ? selectedTags.filter((t) => t !== tag)
+      : [...selectedTags, tag];
+    set({
+      selectedTags: nextTags,
+      selectedTag: nextTags[0] ?? null,
+    });
+  },
+
+  setSelectedTags: (selectedTags: string[]) => {
+    set({
+      selectedTags,
+      selectedTag: selectedTags[0] ?? null,
+    });
+  },
+
+  clearTagFilters: () => {
+    set({
+      selectedTags: [],
+      selectedTag: null,
+    });
+  },
+
+  setTagMatchMode: (tagMatchMode: "and" | "or") => {
+    set({ tagMatchMode });
   },
 
   clearActiveNote: () => {

@@ -164,6 +164,25 @@ interface TabSessionState {
 }
 ```
 
+### 2.7 Table of Contents (Outline) Heading Model
+Represents an ordered heading node extracted from a ProseMirror document tree.
+```typescript
+interface TocHeadingItem {
+  readonly id: string;        // Stable Block ID e.g. "blk_01JC87Y45Q..."
+  readonly level: number;     // Heading depth (1 for h1, 2 for h2, 3 for h3)
+  readonly text: string;      // Plaintext heading title
+  readonly index: number;     // 0-indexed document occurrence position
+}
+```
+
+### 2.8 Resource References & Filter Mode Types
+The Resource Inspector aggregates references across the workspace or active document:
+```typescript
+type ResourceType = "outline" | "code" | "image" | "link" | "attachment" | "backlink";
+
+type TagMatchMode = "and" | "or";
+```
+
 ---
 
 ## 3. Domain Invariants and Validation Rules

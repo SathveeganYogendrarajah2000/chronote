@@ -30,6 +30,7 @@ import { BubbleMenuBar } from "./components/BubbleMenuBar";
 import { BlockId } from "./extensions/BlockIdExtension";
 import { processFileAsset } from "@infrastructure/tauri/assetHelper";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
+import { useTocStore } from "@application/stores/useTocStore";
 
 export interface ChronoteEditorProps {
   content: ProseMirrorNode;
@@ -38,6 +39,8 @@ export interface ChronoteEditorProps {
   editable?: boolean | undefined;
   autoFocus?: boolean | undefined;
   onNavigateToNote?: ((targetNoteId: string) => void) | undefined;
+  onEditorFocus?: (() => void) | undefined;
+  editorContextKey?: string | undefined;
   className?: string | undefined;
 }
 
@@ -48,6 +51,8 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
   editable = true,
   autoFocus = false,
   onNavigateToNote,
+  onEditorFocus,
+  editorContextKey,
   className = "",
 }) => {
   const { recentNotes } = useWorkspaceStore();
@@ -305,6 +310,33 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
         return false;
       },
     },
+    onFocus: ({ editor: ed }) => {
+      if (onEditorFocus) {
+        onEditorFocus();
+      }
+      const { from } = ed.state.selection;
+      let activeId: string | null = null;
+      ed.state.doc.nodesBetween(0, from, (node) => {
+        if (node.type.name === "heading" && node.attrs?.id) {
+          activeId = node.attrs.id as string;
+        }
+      });
+      if (activeId) {
+        useTocStore.getState().setActiveHeadingId(activeId);
+      }
+    },
+    onSelectionUpdate: ({ editor: ed }) => {
+      const { from } = ed.state.selection;
+      let activeId: string | null = null;
+      ed.state.doc.nodesBetween(0, from, (node) => {
+        if (node.type.name === "heading" && node.attrs?.id) {
+          activeId = node.attrs.id as string;
+        }
+      });
+      if (activeId) {
+        useTocStore.getState().setActiveHeadingId(activeId);
+      }
+    },
     onUpdate: ({ editor }) => {
       if (onChange) {
         const json = editor.getJSON() as ProseMirrorNode;
@@ -324,6 +356,37 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
       editor.commands.setContent(content, { emitUpdate: false });
     }
   }, [content, editor]);
+
+  // Register editor navigator with Table of Contents for exact cursor navigation
+  useEffect(() => {
+    if (!editor) return;
+    const key = editorContextKey || "default";
+    const unregister = useTocStore.getState().registerEditorNavigator(key, (heading) => {
+      let targetPos: number | null = null;
+      editor.state.doc.descendants((node, pos) => {
+        if (targetPos !== null) return false;
+        if (node.type.name === "heading") {
+          if (heading.id && node.attrs?.id === heading.id) {
+            targetPos = pos + 1;
+            return false;
+          }
+          if (node.textContent.trim() === heading.text.trim()) {
+            targetPos = pos + 1;
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (targetPos !== null) {
+        editor.chain().focus().setTextSelection(targetPos).run();
+        return true;
+      }
+      return false;
+    });
+
+    return unregister;
+  }, [editor, editorContextKey]);
 
   // Handle internal link navigation clicks
   const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {

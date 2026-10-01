@@ -147,3 +147,27 @@ When a user clicks a search result:
 1. The target document is opened in a tab (or the active tab is switched).
 2. The editor smoothly scrolls the target block into view.
 3. A temporary CSS pulse/highlight animation draws attention to the matched block.
+
+---
+
+## 6. Multi-Tag Filtering in Navigation Sidebar & DSM Timeline
+
+In addition to the global FTS modal search, Chronote provides instant, interactive multi-tag filtering directly within the primary navigation panes.
+
+### 6.1 State & Mode Semantics
+- Both `useNotesStore` and `useDsmStore` maintain:
+  ```typescript
+  selectedTags: string[];
+  tagMatchMode: "and" | "or";
+  ```
+- **`and` Mode (ALL):** Requires notes or stand-up entries to contain every selected tag (`tags.includes(t)` for all `t`).
+- **`or` Mode (ANY):** Matches any note or entry containing at least one of the selected tags.
+
+### 6.2 Pure Domain Filtering Utilities
+- Implemented in `src/domain/note.utils.ts` (`filterNotesByTags`) and `src/domain/dsm.utils.ts` (`filterDsmEntriesByTags`).
+- Preserves full immutability and runs synchronously in sub-millisecond time across thousands of notes.
+
+### 6.3 UI Presentation & Controls
+- **Sidebar Tags:** Clicking tags in the Tags list toggles them in the active filter set with accent outline badges.
+- **Active Filter Bar:** Displays active tag chips with individual remove buttons (`×`), the `ALL` / `ANY` mode switcher, and a `Clear` button.
+- **DSM Entry Headers:** Clicking any tag chip on a stand-up entry toggles it in the timeline multi-tag filter.

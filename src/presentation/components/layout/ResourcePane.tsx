@@ -9,9 +9,20 @@ import type { ResourceType, ResourceReference, BacklinkReference } from "@domain
 import { IconButton } from "../common/IconButton";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import { toAssetUrl } from "@infrastructure/tauri/assetHelper";
+import { TableOfContents } from "../toc/TableOfContents";
+import { extractHeadings } from "@domain/toc.utils";
+import { useTocStore } from "@application/stores/useTocStore";
 
 export const ResourcePane: React.FC = () => {
-  const { resourcePaneCollapsed, toggleResourcePane } = useUiStore();
+  const {
+    resourcePaneCollapsed,
+    toggleResourcePane,
+    resourcePaneWidth,
+    setResourcePaneWidth,
+    resetResourcePaneWidth,
+    setIsResizingSidebar,
+  } = useUiStore();
+  const [isResizing, setIsResizing] = useState(false);
   const {
     activeTab,
     scope,
@@ -230,7 +241,25 @@ export const ResourcePane: React.FC = () => {
     );
   }, [backlinks, cleanFilter]);
 
+  const currentTab = tabs.find((t) => t.id === activeTabId);
+  const isDsmDoc = currentTab?.documentType === "dsm";
+  const activeNote = useNotesStore((s) => s.activeNote);
+  const dsmDoc = useDsmStore((s) => s.dsmDoc);
+  const highlightedDate = useDsmStore((s) => s.highlightedDate);
+  const activeContext = useTocStore((s) => s.activeContext);
+
+  const tocHeadingsCount = useMemo(() => {
+    if (isDsmDoc) {
+      const activeDate = activeContext?.date || highlightedDate || dsmDoc?.entries[0]?.date;
+      const entry = activeDate ? dsmDoc?.entries.find((e) => e.date === activeDate) : null;
+      return entry ? extractHeadings(entry.content).length : 0;
+    } else {
+      return activeNote ? extractHeadings(activeNote.content).length : 0;
+    }
+  }, [isDsmDoc, activeContext?.date, highlightedDate, dsmDoc?.entries, activeNote]);
+
   const tabDefs: { id: ResourceType; label: string; count: number }[] = [
+    { id: "outline", label: "Outline", count: tocHeadingsCount },
     { id: "code", label: "Code", count: codeItems.length },
     { id: "image", label: "Images", count: imageItems.length },
     { id: "link", label: "Links", count: linkItems.length },
@@ -238,10 +267,54 @@ export const ResourcePane: React.FC = () => {
     { id: "backlink", label: "Backlinks", count: filteredBacklinks.length },
   ];
 
+  const handleMouseDownResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setIsResizingSidebar(true);
+    document.body.classList.add("is-resizing-sidebar");
+
+    const startX = e.clientX;
+    const startWidth = resourcePaneWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const zoom = useUiStore.getState().zoomLevel;
+      // Dragging left increases width, dragging right decreases width
+      const delta = (startX - moveEvent.clientX) / zoom;
+      setResourcePaneWidth(startWidth + delta);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setIsResizingSidebar(false);
+      document.body.classList.remove("is-resizing-sidebar");
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
   return (
-    <aside className={`resource-pane ${resourcePaneCollapsed ? "collapsed" : ""}`}>
-      {/* Header */}
-      <div className="resource-header">
+    <aside
+      className={`resource-pane ${resourcePaneCollapsed ? "collapsed" : ""} ${isResizing ? "resizing" : ""}`}
+      style={{
+        width: resourcePaneCollapsed ? 0 : resourcePaneWidth,
+        minWidth: resourcePaneCollapsed ? 0 : resourcePaneWidth,
+      }}
+    >
+      {!resourcePaneCollapsed && (
+        <div
+          className={`resource-pane-resize-handle ${isResizing ? "resizing" : ""}`}
+          onMouseDown={handleMouseDownResize}
+          onDoubleClick={resetResourcePaneWidth}
+          title="Drag to resize inspector (Double-click to reset width)"
+        />
+      )}
+      <div className="resource-scrollable-content">
+        {/* Header */}
+        <div className="resource-header">
         <span
           style={{
             fontSize: "var(--font-size-xs)",
@@ -336,6 +409,13 @@ export const ResourcePane: React.FC = () => {
         {isLoading && (
           <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "var(--font-size-xs)", padding: "var(--space-4)" }}>
             Loading resources...
+          </div>
+        )}
+
+        {/* Outline Tab (Table of Contents) */}
+        {!isLoading && activeTab === "outline" && (
+          <div style={{ height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <TableOfContents />
           </div>
         )}
 
@@ -564,6 +644,7 @@ export const ResourcePane: React.FC = () => {
             )}
           </div>
         )}
+      </div>
       </div>
     </aside>
   );

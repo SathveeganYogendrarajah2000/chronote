@@ -271,3 +271,24 @@ export function sortDsmEntries(
       : a.date.localeCompare(b.date);
   });
 }
+
+/**
+ * Filters DSM entries matching an array of tags with either "and" (all tags) or "or" (any tag) match mode.
+ */
+export function filterDsmEntriesByTags(
+  entries: DsmEntry[],
+  tags: string[],
+  matchMode: "and" | "or" = "and"
+): DsmEntry[] {
+  if (!tags || tags.length === 0) {
+    return entries;
+  }
+  const cleanTags = tags.map((t) => (t.startsWith("#") ? t.slice(1).toLowerCase() : t.toLowerCase()));
+  return entries.filter((entry) => {
+    const entryTagsLower = entry.tags.map((t) => t.toLowerCase());
+    return matchMode === "and"
+      ? cleanTags.every((ct) => entryTagsLower.includes(ct))
+      : cleanTags.some((ct) => entryTagsLower.includes(ct));
+  });
+}
+

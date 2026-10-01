@@ -73,3 +73,24 @@ export function filterNotes(notes: NoteMetadata[], rawQuery: string): NoteMetada
     return titleMatch || tagMatch;
   });
 }
+
+/**
+ * Filters notes matching an array of tags with either "and" (all tags) or "or" (any tag) match mode.
+ */
+export function filterNotesByTags(
+  notes: NoteMetadata[],
+  tags: string[],
+  matchMode: "and" | "or" = "and"
+): NoteMetadata[] {
+  if (!tags || tags.length === 0) {
+    return notes;
+  }
+  const cleanTags = tags.map((t) => (t.startsWith("#") ? t.slice(1).toLowerCase() : t.toLowerCase()));
+  return notes.filter((note) => {
+    const noteTagsLower = note.tags.map((t) => t.toLowerCase());
+    return matchMode === "and"
+      ? cleanTags.every((ct) => noteTagsLower.includes(ct))
+      : cleanTags.some((ct) => noteTagsLower.includes(ct));
+  });
+}
+

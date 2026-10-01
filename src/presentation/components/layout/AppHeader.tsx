@@ -16,6 +16,10 @@ export const AppHeader: React.FC = () => {
     setSearchModalOpen,
     setExportModalOpen,
     setPerformanceModalOpen,
+    zoomLevel,
+    zoomIn,
+    zoomOut,
+    resetZoom,
   } = useUiStore();
 
   const { conflicts, setConflictModalOpen } = useConflictStore();
@@ -118,6 +122,37 @@ export const AppHeader: React.FC = () => {
           </svg>
           <span>New Note</span>
         </button>
+
+        {/* Zoom Controls */}
+        <div className="header-zoom-controls">
+          <button
+            type="button"
+            className="zoom-btn"
+            onClick={zoomOut}
+            title="Zoom Out (Ctrl+-)"
+            aria-label="Zoom Out"
+          >
+            -
+          </button>
+          <button
+            type="button"
+            className="zoom-value-btn"
+            onClick={resetZoom}
+            title="Reset Zoom to 100% (Ctrl+0)"
+            aria-label="Reset Zoom"
+          >
+            {Math.round(zoomLevel * 100)}%
+          </button>
+          <button
+            type="button"
+            className="zoom-btn"
+            onClick={zoomIn}
+            title="Zoom In (Ctrl++)"
+            aria-label="Zoom In"
+          >
+            +
+          </button>
+        </div>
 
         <IconButton
           label="Performance Diagnostics (Ctrl+Shift+P)"

@@ -111,11 +111,12 @@ To preserve extreme lightweight simplicity and focus, Phase 1 strictly supports 
 
 ### 4.5 Resource & Media Browser
 A dedicated, indexed resource inspector categorized into:
+- **Outline (Table of Contents):** Automated heading outline (`H1`, `H2`, `H3`) tracking cursor position across General Notes and DSM entries with exact cursor placement on click.
 - **Code:** All code blocks indexed across the workspace, filterable by language.
 - **Images:** Gallery of all pasted screenshots and diagrams.
 - **Links:** All external HTTP(S) URLs referenced across notes.
 - **Attachments:** All embedded PDF, log, or data files.
-- **Linked Notes:** Outgoing and incoming cross-document references.
+- **Linked Notes (Backlinks):** Outgoing and incoming cross-document references.
 - Clicking any item in the Resource Browser instantly navigates the editor to that exact block in its parent document.
 
 ### 4.6 Search Capabilities
@@ -137,6 +138,11 @@ A dedicated, indexed resource inspector categorized into:
   3. PDF (`.pdf`): Vector-rendered, print-ready document.
   4. Native Archive (`.zip`): Lossless backup archive containing all workspace JSON notes and binary assets.
 - **Export Scopes:** Single General Note, Single DSM Date Entry, Date Range of DSM Entries (e.g. "Export Sprint 42 DSMs"), or Entire Workspace.
+
+### 4.8 Adaptive Workspace Ergonomics (Zoom, Resizing & Multi-Tag)
+- **Window-Filling Application Zoom:** Scales the full UI (`70%` to `200%`) via `Ctrl+=`, `Ctrl+-`, `Ctrl+0`, `Ctrl+Wheel`, and header controls. Unlike static viewport scaling, dynamic dimension compensation ensures the app completely fills the screen without margins or black borders.
+- **Resizable Splitters:** Left Navigation Sidebar and Right Resource Inspector feature interactive edge handles (`cursor: col-resize`) with min/max clamps, double-click reset, zero-latency dragging, and full-width responsive child filling.
+- **Multi-Tag Filtering:** Allows selecting multiple tags concurrently in the side navigation and DSM timeline, with `ALL` (AND) and `ANY` (OR) boolean matching modes.
 
 ---
 

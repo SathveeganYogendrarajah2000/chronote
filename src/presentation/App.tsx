@@ -10,6 +10,7 @@ import "./styles/export.css";
 import "./styles/print.css";
 import "./styles/performance.css";
 import "./styles/conflict.css";
+import "./styles/toc.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";
@@ -33,7 +34,16 @@ import { performanceProfiler } from "@application/services/performanceProfiler";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 
 export const App: React.FC = () => {
-  const { toggleSidebar, setSearchModalOpen, setExportModalOpen, setPerformanceModalOpen } = useUiStore();
+  const {
+    toggleSidebar,
+    setSearchModalOpen,
+    setExportModalOpen,
+    setPerformanceModalOpen,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    zoomNotification,
+  } = useUiStore();
   const { tabs, activeTabId, switchTab, closeTab, reopenClosedTab } = useTabsStore();
   const { init: initWorkspace } = useWorkspaceStore();
   const { scanConflicts } = useConflictStore();
@@ -118,10 +128,40 @@ export const App: React.FC = () => {
           if (prevTab) switchTab(prevTab.id);
         }
       }
+      // Ctrl+= or Ctrl++: Zoom In
+      else if (e.ctrlKey && !e.shiftKey && (e.key === "=" || e.key === "+")) {
+        e.preventDefault();
+        zoomIn();
+      }
+      // Ctrl+-: Zoom Out
+      else if (e.ctrlKey && !e.shiftKey && e.key === "-") {
+        e.preventDefault();
+        zoomOut();
+      }
+      // Ctrl+0: Reset Zoom
+      else if (e.ctrlKey && !e.shiftKey && e.key === "0") {
+        e.preventDefault();
+        resetZoom();
+      }
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          zoomIn();
+        } else if (e.deltaY > 0) {
+          zoomOut();
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("wheel", handleWheel);
+    };
   }, [
     activeTabId,
     tabs,
@@ -132,6 +172,9 @@ export const App: React.FC = () => {
     setSearchModalOpen,
     setExportModalOpen,
     setPerformanceModalOpen,
+    zoomIn,
+    zoomOut,
+    resetZoom,
   ]);
 
   return (
@@ -151,6 +194,13 @@ export const App: React.FC = () => {
       <ExportModal />
       <PerformanceModal />
       <ConflictModal />
+
+      {/* On-screen Zoom HUD Indicator */}
+      {zoomNotification && (
+        <div className="zoom-hud-indicator">
+          <span>{zoomNotification}</span>
+        </div>
+      )}
     </div>
   );
 };

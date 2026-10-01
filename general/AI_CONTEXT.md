@@ -15,8 +15,8 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Release 0.1.0 (Production Ready)** — Completed. Ready for release tagging. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
-- **Status:** Release **0.1.0 COMPLETED**. Includes full OS drag-and-drop & clipboard paste for media and attachments with native Rust storage (`pick_asset_file`, `save_asset_binary`), real-time Resource Inspector synchronization, isolated iframe vector PDF/print generation (`htmlExporter.ts`), DSM timeline & navigation sidebar interactive tag filtering, external browser URL launcher, startup latency timer fix in Performance Profiler, synthetic large-scale workspace generator (5,000+ notes & 20,000+ blocks), batched SQLite transaction optimization (274 ms index rebuild, 3–5 ms FTS5 / trigram code search), native process RSS memory introspection (< 90 MB memory budget), Windows NSIS & WiX MSI packaging with GitHub Actions CI/release automation, and sync conflict resolution engine. **129/129 Vitest tests** and **21/21 native Rust tests** passing with zero errors.
+- **Current Phase:** **Release 0.1.4 (Adaptive Ergonomics & Navigation)** — Completed. Ready for release tagging. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
+- **Status:** Release **0.1.4 COMPLETED**. Delivers window-filling application zoom in/out with dynamic calc compensation, on-screen HUD overlay, and Tauri native webview zoom factor integration; interactive resizable sidebars (drag edge handles for left navigation sidebar and right Resource Inspector with min/max clamping, double-click reset to default width, and 100% full-width child responsiveness); automated Table of Contents with live cursor tracking across General Notes and DSM stand-up entries, outline search, and exact ProseMirror text selection navigation upon click; multi-tag search & filtering with `ALL`/`ANY` match mode toggling across sidebar and DSM timeline. **145/145 Vitest tests** across 23 test suites and **22/22 native Rust tests + 1 stress test** passing with zero errors.
 - **Next Milestone:** Phase 3: Cloud Integrations & Advanced Navigation (direct Google Drive / OneDrive OAuth sync adapters, interactive 3-way conflict resolution wizard for concurrent edits, and interactive visual backlinks graph).
 
 ---
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Release 0.1.0 completed (File attachments & image drag/drop/paste, isolated iframe PDF printing, real-time Resource Inspector sync, DSM timeline & sidebar tag filtering, browser link opener, startup latency fix, 129 Vitest + 21 Rust tests passing).
-- **Next Recommended Task:** Create git release tag `v0.1.0` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
+- **Current Work:** Version bumped to `v0.1.4`. Window-filling application zoom in/out (`Ctrl+=`, `Ctrl+-`, `Ctrl+0`, wheel, HUD overlay & header controls), resizable sidebars with interactive edge drag handles and double-click reset, Multi-Tag filtering in Sidebar & DSM timeline with `ALL`/`ANY` match mode toggles, and automated Table of Contents with live cursor context tracking across General Notes and DSM entries with exact ProseMirror cursor navigation upon click. 145 Vitest + 22 Rust tests passing.
+- **Next Recommended Task:** Create git release tag `v0.1.4` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---
 

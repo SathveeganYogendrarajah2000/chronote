@@ -45,23 +45,29 @@ Chronote enforces a strict multi-tier testing strategy to ensure reliability, da
 - [x] **Tag Normalization:** `#SpringBoot`, `springboot`, and `  #spring-boot  ` are normalized to `springboot` and `spring-boot`.
 - [x] **Deduplication:** Adding an existing tag to an entry is an idempotent no-op.
 - [x] **Tag Filtering:** Clicking `#aws` in the sidebar filters the DSM timeline to only show entries carrying the `#aws` tag.
+- [x] **Multi-Tag Boolean Filtering:** Filtering notes and DSM entries by multiple tags with both `and` (ALL) and `or` (ANY) logic (`multiTagFilter.test.ts`).
 
-### 3.3 Editor Markdown Shortcuts & Paste
+### 3.3 Table of Contents & Ergonomic Scaling
+- [x] **Heading Hierarchy Extraction:** Extracts `h1`, `h2`, `h3` heading nodes in document order, calculates depth indentation, and creates stable IDs (`toc.utils.test.ts`).
+- [x] **TOC Exact Cursor Navigation:** Registers editor navigators with `useTocStore`, verifies heading jump, ProseMirror selection placement, and focus (`uiAndTocStore.test.ts`).
+- [x] **Sidebar Resizing & Zoom Clamping:** Verifies sidebar width bounds (180–600px), resource pane bounds (200–700px), double-click reset, and zoom factor steps (`uiAndTocStore.test.ts`).
+
+### 3.4 Editor Markdown Shortcuts & Paste
 - [x] **Heading Input Rules:** Typing `## Test Heading` transforms the node into an H2 and strips `## ` from text.
 - [x] **Code Block Shortcut:** Typing ````ts + Enter opens a code block with `language="typescript"`.
 - [x] **HTML Paste Sanitization:** Pasting malicious HTML with `<script>` tags or inline `onerror` attributes strips all executable scripts while preserving formatting.
 
-### 3.4 Internal Links & Resilient Renaming
+### 3.5 Internal Links & Resilient Renaming
 - [x] **Link Creation:** Typing `[[` triggers autocomplete; selecting a note inserts an `internalLink` mark with target `noteId`.
 - [x] **Rename Resilience:** Renaming the target note updates its title in `workspace.json` / SQLite, but existing links with the immutable `noteId` remain intact and resolve correctly.
 - [x] **Broken Link Handling:** Deleting a note causes incoming links to render with a broken-link indicator without throwing unhandled exceptions.
 
-### 3.5 Storage, Autosave & Crash Recovery
+### 3.6 Storage, Autosave & Crash Recovery
 - [x] **Atomic Save Verification:** Modifying a note writes to `.tmp`, calls `fsync`, and renames to the target path. Original file is never partially overwritten.
 - [x] **Interrupted Save Recovery:** If a crash occurs while `.tmp` is being written, the original note file remains 100% intact and the application cleans up the orphaned `.tmp` on next boot.
 - [x] **Index Rebuilding:** Deleting `.chronote/index.db` and launching Chronote triggers a complete, lossless reconstruction of the SQLite database from disk notes in under 350 ms.
 
-### 3.6 Export Pipelines
+### 3.7 Export Pipelines
 - [x] **Markdown Export:** Exporting a DSM date range produces standard GitHub Flavored Markdown with clean headings, code blocks, and tag callouts.
 - [x] **DOCX Export:** Exporting a General note produces a valid OpenXML `.docx` file containing embedded images and styled code tables.
 - [x] **Zip Backup:** Exporting a workspace backup creates a valid zip archive containing all notes and assets (excluding `.chronote/index.db`). Unzipping and loading as a new workspace succeeds without error.
