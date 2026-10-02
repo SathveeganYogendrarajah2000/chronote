@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useCoursesStore } from "@application/stores/useCoursesStore";
+import type { LearningPlatform, LearningStatus } from "@domain/courses.types";
 import { TagPicker } from "../common/TagPicker";
 
 export const TopicModal: React.FC = () => {
@@ -16,6 +17,11 @@ export const TopicModal: React.FC = () => {
   const [title, setTitle] = useState("");
   const [parentId, setParentId] = useState<string | null>(null);
   const [description, setDescription] = useState("");
+  const [platform, setPlatform] = useState<string>("");
+  const [url, setUrl] = useState("");
+  const [author, setAuthor] = useState("");
+  const [status, setStatus] = useState<LearningStatus>("not_started");
+  const [progress, setProgress] = useState<number>(0);
   const [tags, setTags] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,11 +31,21 @@ export const TopicModal: React.FC = () => {
         setTitle(editingTopic.title);
         setParentId(editingTopic.parentId);
         setDescription(editingTopic.description);
+        setPlatform(editingTopic.platform ?? "");
+        setUrl(editingTopic.url ?? "");
+        setAuthor(editingTopic.author ?? "");
+        setStatus(editingTopic.status ?? "not_started");
+        setProgress(editingTopic.progress ?? 0);
         setTags(editingTopic.tags);
       } else {
         setTitle("");
         setParentId(parentTopicIdForNewTopic ?? null);
         setDescription("");
+        setPlatform("");
+        setUrl("");
+        setAuthor("");
+        setStatus("not_started");
+        setProgress(0);
         setTags([]);
       }
       setError(null);
@@ -65,15 +81,32 @@ export const TopicModal: React.FC = () => {
       return;
     }
 
+    const cleanPlatform = platform ? (platform as LearningPlatform) : undefined;
+
     if (editingTopic) {
       updateTopic(editingTopic.id, {
         title: title.trim(),
         parentId,
         description: description.trim(),
         tags,
+        platform: cleanPlatform,
+        url: url.trim(),
+        author: author.trim(),
+        status,
+        progress: Number(progress) || 0,
       });
     } else {
-      createTopic(title.trim(), parentId, description.trim(), tags);
+      createTopic({
+        title: title.trim(),
+        parentId,
+        description: description.trim(),
+        tags,
+        platform: cleanPlatform,
+        url: url.trim(),
+        author: author.trim(),
+        status,
+        progress: Number(progress) || 0,
+      });
     }
 
     closeTopicModal();
@@ -153,11 +186,93 @@ export const TopicModal: React.FC = () => {
             <label className="courses-form-label">Description / Goal (Optional)</label>
             <textarea
               className="courses-form-textarea"
-              rows={3}
+              rows={2}
               placeholder="What are you learning or investigating under this topic?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Optional Course / Resource Association */}
+          <div style={{ padding: "10px 12px", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-sm)", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--accent-hover)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Course / Platform Details (Optional)
+            </span>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div>
+                <label className="courses-form-label">Platform</label>
+                <select
+                  className="courses-form-select"
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                >
+                  <option value="">None / General Study Topic</option>
+                  <option value="udemy">Udemy Course</option>
+                  <option value="youtube">YouTube Series / Video</option>
+                  <option value="article">Article / Paper</option>
+                  <option value="course">Online Course</option>
+                  <option value="book">Book</option>
+                  <option value="documentation">Official Documentation</option>
+                  <option value="other">Other Platform</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="courses-form-label">Instructor / Author</label>
+                <input
+                  type="text"
+                  className="courses-form-input"
+                  placeholder="e.g. Stephane Maarek, Alex Xu"
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="courses-form-label">Course / Web Link URL</label>
+              <input
+                type="url"
+                className="courses-form-input"
+                placeholder="https://www.udemy.com/course/..."
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div>
+                <label className="courses-form-label">Learning Status</label>
+                <select
+                  className="courses-form-select"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as LearningStatus)}
+                >
+                  <option value="not_started">Not Started</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="on_hold">On Hold</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="courses-form-label">Progress: {progress}%</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={progress}
+                  onChange={(e) => {
+                    const p = Number(e.target.value);
+                    setProgress(p);
+                    if (p >= 100) setStatus("completed");
+                    else if (p > 0 && status === "not_started") setStatus("in_progress");
+                  }}
+                  style={{ width: "100%", accentColor: "var(--accent-hover)", marginTop: 8 }}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="courses-form-group">

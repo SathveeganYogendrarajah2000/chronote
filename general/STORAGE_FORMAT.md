@@ -152,7 +152,7 @@ Stores standalone general engineering notes.
 ```
 
 ### 2.4 `notes/courses.json`
-Stores the continuous Courses & Topics learning journal. Contains hierarchical topics and attached learning resources.
+Stores the continuous Courses & Topics learning journal. Each topic and subtopic is an independently addressable document holding structured ProseMirror notes (`content`), hierarchical nesting (`parentId`), and optional course metadata (`platform`, `url`, `author`, `status`, `progress`).
 ```json
 {
   "id": "courses_master",
@@ -164,41 +164,62 @@ Stores the continuous Courses & Topics learning journal. Contains hierarchical t
     {
       "id": "top_01JC8814CC",
       "parentId": null,
-      "title": "Distributed Systems",
-      "description": "Consensus, storage engines, and network protocols",
-      "tags": ["systems", "architecture"],
+      "title": "AWS",
+      "description": "Amazon Web Services study roadmap and certifications",
+      "tags": ["aws", "cloud"],
+      "status": "in_progress",
+      "progress": 45,
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "heading",
+            "attrs": { "level": 1, "id": "blk_top_01" },
+            "content": [{ "type": "text", "text": "AWS Study Goals & Overview" }]
+          },
+          {
+            "type": "paragraph",
+            "attrs": { "id": "blk_top_02" },
+            "content": [{ "type": "text", "text": "High-level notes and architectural synthesis across AWS services." }]
+          }
+        ]
+      },
       "createdAt": "2026-10-02T10:00:00.000Z",
       "updatedAt": "2026-10-02T10:00:00.000Z"
     },
     {
       "id": "top_01JC8815DD",
       "parentId": "top_01JC8814CC",
-      "title": "Consensus Algorithms",
-      "description": "Paxos, Raft, Viewstamped Replication",
-      "tags": ["consensus", "raft"],
+      "title": "AWS Cloud Solutions Architect Associate",
+      "description": "Udemy SAA-C03 preparation course",
+      "platform": "udemy",
+      "url": "https://www.udemy.com/course/aws-certified-solutions-architect-associate-saa-c03/",
+      "author": "Stephane Maarek",
+      "status": "in_progress",
+      "progress": 35,
+      "completedItems": 70,
+      "totalItems": 200,
+      "tags": ["aws", "udemy", "saa-c03"],
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "heading",
+            "attrs": { "level": 1, "id": "blk_saa_01" },
+            "content": [{ "type": "text", "text": "IAM, S3 & High Availability Architecture" }]
+          },
+          {
+            "type": "paragraph",
+            "attrs": { "id": "blk_saa_02" },
+            "content": [{ "type": "text", "text": "Notes covering multi-AZ deployment, Auto-scaling groups, and S3 lifecycle rules." }]
+          }
+        ]
+      },
       "createdAt": "2026-10-02T10:05:00.000Z",
       "updatedAt": "2026-10-02T10:05:00.000Z"
     }
   ],
-  "resources": [
-    {
-      "id": "crs_01JC8825EE",
-      "topicId": "top_01JC8815DD",
-      "title": "Raft Consensus Algorithm Explained",
-      "platform": "youtube",
-      "url": "https://www.youtube.com/watch?v=vYp4LYbnnW8",
-      "author": "Heidi Howard",
-      "status": "in_progress",
-      "progress": 60,
-      "completedItems": 3,
-      "totalItems": 5,
-      "rating": 5,
-      "tags": ["raft", "youtube"],
-      "notes": "Key concept: randomized election timeouts prevent split votes.",
-      "createdAt": "2026-10-02T10:15:00.000Z",
-      "updatedAt": "2026-10-02T11:00:00.000Z"
-    }
-  ]
+  "resources": []
 }
 ```
 

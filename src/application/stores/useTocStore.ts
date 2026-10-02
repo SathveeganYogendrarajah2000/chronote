@@ -3,7 +3,7 @@ import type { TocHeadingItem } from "@domain/toc.utils";
 import { useDsmStore } from "./useDsmStore";
 
 export interface ActiveNoteCursorContext {
-  source: "general" | "dsm";
+  source: "general" | "dsm" | "courses";
   documentId: string;
   date?: string | undefined;
   title: string;
@@ -66,6 +66,8 @@ export const useTocStore = create<TocState>((set, get) => ({
         const contextKey =
           activeContext.source === "dsm" && activeContext.date
             ? `dsm_${activeContext.date}`
+            : activeContext.source === "courses"
+            ? `courses_${activeContext.documentId}`
             : `general_${activeContext.documentId}`;
         const nav = editorNavigators.get(contextKey);
         if (nav) {
@@ -88,6 +90,8 @@ export const useTocStore = create<TocState>((set, get) => ({
       const containerSelector =
         activeContext?.source === "dsm" && activeContext.date
           ? `#dsm-entry-${activeContext.date}`
+          : activeContext?.source === "courses"
+          ? ".learning-canvas-container"
           : ".note-canvas-container";
 
       // 2a. Match by unique block ID if not a synthetic fallback ID

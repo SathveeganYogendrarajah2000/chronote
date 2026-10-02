@@ -26,7 +26,6 @@ import { PerformanceModal } from "./components/performance/PerformanceModal";
 import { ConflictModal } from "./components/conflict/ConflictModal";
 import { TopicModal } from "./components/courses/TopicModal";
 import { ResourceModal } from "./components/courses/ResourceModal";
-import { CourseNoteModal } from "./components/courses/CourseNoteModal";
 
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
@@ -200,7 +199,6 @@ export const App: React.FC = () => {
       <ConflictModal />
       <TopicModal />
       <ResourceModal />
-      <CourseNoteModal />
 
       {/* On-screen Zoom HUD Indicator */}
       {zoomNotification && (

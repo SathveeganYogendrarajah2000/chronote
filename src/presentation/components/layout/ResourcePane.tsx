@@ -12,6 +12,7 @@ import { toAssetUrl } from "@infrastructure/tauri/assetHelper";
 import { TableOfContents } from "../toc/TableOfContents";
 import { extractHeadings } from "@domain/toc.utils";
 import { useTocStore } from "@application/stores/useTocStore";
+import { useCoursesStore } from "@application/stores/useCoursesStore";
 
 export const ResourcePane: React.FC = () => {
   const {
@@ -243,20 +244,26 @@ export const ResourcePane: React.FC = () => {
 
   const currentTab = tabs.find((t) => t.id === activeTabId);
   const isDsmDoc = currentTab?.documentType === "dsm";
+  const isCoursesDoc = currentTab?.documentType === "courses";
   const activeNote = useNotesStore((s) => s.activeNote);
   const dsmDoc = useDsmStore((s) => s.dsmDoc);
   const highlightedDate = useDsmStore((s) => s.highlightedDate);
   const activeContext = useTocStore((s) => s.activeContext);
+  const coursesDoc = useCoursesStore((s) => s.coursesDoc);
+  const selectedTopicId = useCoursesStore((s) => s.selectedTopicId);
 
   const tocHeadingsCount = useMemo(() => {
     if (isDsmDoc) {
       const activeDate = activeContext?.date || highlightedDate || dsmDoc?.entries[0]?.date;
       const entry = activeDate ? dsmDoc?.entries.find((e) => e.date === activeDate) : null;
       return entry ? extractHeadings(entry.content).length : 0;
+    } else if (isCoursesDoc) {
+      const activeTopic = selectedTopicId && coursesDoc ? coursesDoc.topics.find((t) => t.id === selectedTopicId) : null;
+      return activeTopic && activeTopic.content ? extractHeadings(activeTopic.content).length : 0;
     } else {
       return activeNote ? extractHeadings(activeNote.content).length : 0;
     }
-  }, [isDsmDoc, activeContext?.date, highlightedDate, dsmDoc?.entries, activeNote]);
+  }, [isDsmDoc, isCoursesDoc, activeContext?.date, highlightedDate, dsmDoc?.entries, selectedTopicId, coursesDoc, activeNote]);
 
   const tabDefs: { id: ResourceType; label: string; count: number }[] = [
     { id: "outline", label: "Outline", count: tocHeadingsCount },

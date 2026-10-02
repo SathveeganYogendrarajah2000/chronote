@@ -43,10 +43,19 @@ export interface LearningResource {
 export interface LearningTopic {
   readonly id: string;            // Prefixed e.g. "top_01JC..."
   parentId: string | null;        // null if root topic; parent topic id if subtopic
-  title: string;                  // e.g. "Distributed Systems" or "Raft Consensus"
+  title: string;                  // e.g. "Distributed Systems" or "AWS Solutions Architect"
   description: string;            // Overview / objectives
   tags: string[];                 // Normalized lowercase tags
-  notes?: string | ProseMirrorNode | undefined; // Optional synthesis notes for the topic
+  platform?: LearningPlatform | undefined;
+  url?: string | undefined;
+  author?: string | undefined;
+  status?: LearningStatus | undefined;
+  progress?: number | undefined;
+  completedItems?: number | undefined;
+  totalItems?: number | undefined;
+  rating?: number | undefined;
+  content: ProseMirrorNode;       // ProseMirror document tree for notes
+  notes?: string | ProseMirrorNode | undefined; // Backwards compatibility
   createdAt: string;              // ISO 8601 UTC
   updatedAt: string;              // ISO 8601 UTC
 }

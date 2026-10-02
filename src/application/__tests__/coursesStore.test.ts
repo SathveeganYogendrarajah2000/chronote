@@ -149,4 +149,60 @@ describe("useCoursesStore", () => {
     useCoursesStore.getState().clearTagFilters();
     expect(useCoursesStore.getState().selectedTags).toEqual([]);
   });
+
+  it("supports user learning path: AWS root topic -> Udemy course subtopic -> rich notes content", async () => {
+    // 1. Create root topic "AWS"
+    const awsRoot = useCoursesStore.getState().createTopic("AWS", null, "Amazon Web Services study roadmap");
+    expect(awsRoot.id).toBeDefined();
+
+    // 2. Create subtopic "AWS Cloud Solutions Architect Associate" from Udemy
+    const udemyCourseSubtopic = useCoursesStore.getState().createTopic({
+      title: "AWS Cloud Solutions Architect Associate",
+      parentId: awsRoot.id,
+      platform: "udemy",
+      url: "https://www.udemy.com/course/aws-certified-solutions-architect-associate-saa-c03/",
+      author: "Stephane Maarek",
+      status: "in_progress",
+      progress: 35,
+      tags: ["aws", "cloud", "saa-c03"],
+    });
+
+    expect(udemyCourseSubtopic.parentId).toBe(awsRoot.id);
+    expect(udemyCourseSubtopic.platform).toBe("udemy");
+    expect(udemyCourseSubtopic.author).toBe("Stephane Maarek");
+    expect(udemyCourseSubtopic.progress).toBe(35);
+
+    // 3. Update notes content for the subtopic with rich ProseMirror document
+    const studyNotesDoc = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 1, blockId: "blk_saa_intro" },
+          content: [{ type: "text", text: "IAM & S3 Storage Architecture" }],
+        },
+        {
+          type: "paragraph",
+          attrs: { blockId: "blk_saa_p1" },
+          content: [{ type: "text", text: "IAM policies follow the principle of least privilege." }],
+        },
+      ],
+    };
+
+    useCoursesStore.getState().updateTopicContent(udemyCourseSubtopic.id, studyNotesDoc);
+
+    // Verify in store
+    const currentSubtopic = useCoursesStore
+      .getState()
+      .coursesDoc?.topics.find((t) => t.id === udemyCourseSubtopic.id);
+    expect(currentSubtopic?.content).toEqual(studyNotesDoc);
+
+    // Verify progress update
+    useCoursesStore.getState().updateTopicProgress(udemyCourseSubtopic.id, 100);
+    const completedSubtopic = useCoursesStore
+      .getState()
+      .coursesDoc?.topics.find((t) => t.id === udemyCourseSubtopic.id);
+    expect(completedSubtopic?.progress).toBe(100);
+    expect(completedSubtopic?.status).toBe("completed");
+  });
 });

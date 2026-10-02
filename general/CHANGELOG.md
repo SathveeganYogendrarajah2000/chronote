@@ -19,33 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.6] - 2026-10-02
 
 ### Added
-- **Hierarchical Topics & Learning Courses Tracker:**
-  - **New Section & Dedicated Tab:** Added "Courses & Topics" section to the navigation sidebar and dedicated `courses` document workspace view (`tab_courses_master`).
-  - **Arbitrary N-Level Topic Tree:** Create top-level topics (e.g. Distributed Systems, Rust, Frontend Architecture) and unlimited nested subtopics (e.g. Consensus Algorithms -> Raft -> Leader Election).
-  - **Multi-Resource Attachment:** Attach multiple learning resources to any topic or subtopic, including:
-    - **Udemy Courses** (purple brand badge)
-    - **YouTube Videos & Playlists** (red video badge)
-    - **Technical Articles & Research Papers** (green badge)
-    - **Online Courses** (Coursera, edX, etc. blue badge)
-    - **Technical Books & eBooks** (amber book badge)
-    - **Official Documentation** (cyan docs badge)
-    - **Custom / Other Resources** (podcasts, tutorials, repositories)
-  - **Clickable External Links:** Direct 1-click external URL opener via Tauri native desktop bridge (`ipcBridge.openExternalUrl`).
-  - **Interactive Progress Tracking:**
-    - Live percentage calculation (0% – 100%) with gradient visual fill bar.
-    - Completed vs. total lecture/item counters (e.g. `14 / 28 lectures done (50%)`).
-    - Quick increment/decrement steppers (`+` / `-`) directly on course cards for 1-click lecture completion tracking.
-    - Automatic status transitions: auto-sets `completed` when reaching 100%, and `in_progress` when progress > 0.
-  - **Star Ratings & Status Lifecycle:** 1-5 star ratings and status states (`Not Started`, `In Progress`, `Completed`, `On Hold`).
-  - **Dedicated Study Notes:**
-    - Attach dedicated takeaways, code references, timestamps, or lecture notes directly to any course/resource.
-    - Focused `CourseNoteModal` for full reading and editing of study notes.
-    - Support for overarching Topic synthesis notes to summarize learning across multiple courses and articles.
+- **Refined "Course and learning" Section & Canvas Notes Architecture:**
+  - **Single Master Learning Tab:** Unified under the primary `"Course and learning"` tab (`tab_courses_master`), giving immediate, dedicated access alongside DSM and General Notes.
+  - **Topic-First Knowledge Organization:** Tailored for real-world engineering learning journeys:
+    - Root Topics represent overarching domains (e.g. `AWS`, `Distributed Systems`).
+    - Subtopics capture specific courses or deep-dives (e.g. `AWS Cloud Solutions Architect Associate` from Udemy).
+    - Arbitrary N-level nested subtopics for granular concepts (e.g. `IAM & Security`, `S3 Storage Classes`).
+  - **First-Class On-Canvas Notes Canvas (No Popups):** Selecting any topic or subtopic immediately renders the full notes canvas powered by `ChronoteEditor` directly on screen. Features identical markdown capabilities to General Notes (headings, syntax-highlighted code blocks, checklists, callouts, block IDs) with continuous debounced autosaving into `notes/courses.json`.
+  - **Resource Inspector & Outline Synchronization:** The right-hand Resource Inspector synchronizes live with the active topic, presenting an automated Table of Contents (H1/H2/H3 outline) with smooth scroll navigation and pulse animation, extracted code snippets, and tags.
+  - **Fluid Subtopics Bar:** A horizontal pill bar beneath the topic header provides instant switching between sibling subtopics and 1-click addition of new child subtopics without breaking focus.
+  - **Platform & Course Metadata Integration:**
+    - Attach platform metadata to topics/subtopics: **Udemy**, **YouTube**, **Articles / Whitepapers**, **Online Courses**, **Books**, **Official Documentation**, or **Other**.
+    - 1-click external URL launcher (`↗ Open Course Link`) via Tauri native desktop bridge (`ipcBridge.openExternalUrl`).
+    - Instructor/author attribution, status lifecycle (`Not Started`, `In Progress`, `Completed`, `On Hold`), and interactive percentage stepper controls (`-` / `+`).
   - **Breadcrumb Navigation:** Seamless ancestor trail navigation (`Courses Hub > Topic > Subtopic > Sub-subtopic`) with 1-click jump.
-  - **Sidebar Topic Tree:** Collapsible/expandable hierarchical topic tree in the navigation sidebar with indentation, resource count badges, and hover `+` button to quickly create subtopics.
+  - **Sidebar Topic Tree:** Collapsible/expandable hierarchical topic tree in the navigation sidebar with indentation, status badges, and hover `+` button to quickly create subtopics.
   - **Integrated Tags:** Courses and topics tags seamlessly integrate with workspace dynamic tags, `useWorkspaceTags`, and the `TagPicker` component.
   - **Atomic Local-First Storage:** Saved to human-readable `notes/courses.json` with atomic file I/O (`tmp -> fsync -> rename`) in the Rust native core.
-  - **167 Vitest tests** and **23 native Rust tests** passing with zero errors.
+  - **168 Vitest tests** and **23 native Rust tests** passing with zero errors.
 
 ---
 

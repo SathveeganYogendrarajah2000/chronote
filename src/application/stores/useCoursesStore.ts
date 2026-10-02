@@ -6,11 +6,14 @@ import type {
   LearningPlatform,
   LearningStatus,
 } from "@domain/courses.types";
+import type { ProseMirrorNode } from "@domain/document.types";
 import {
   createDefaultCoursesDocument,
+  createDefaultTopicContent,
   createLearningTopic,
   createLearningResource,
   getAllDescendantTopicIds,
+  type CreateTopicOptions,
 } from "@domain/courses.utils";
 import { normalizeTag, normalizeTagList } from "@domain/tagNormalizer";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
@@ -51,8 +54,15 @@ export interface CoursesState {
   toggleTopicExpanded: (topicId: string) => void;
   setTopicExpanded: (topicId: string, expanded: boolean) => void;
 
-  createTopic: (title: string, parentId?: string | null, description?: string, tags?: string[]) => LearningTopic;
+  createTopic: (
+    titleOrData: string | CreateTopicOptions,
+    parentId?: string | null,
+    description?: string,
+    tags?: string[]
+  ) => LearningTopic;
   updateTopic: (id: string, updates: Partial<LearningTopic>) => void;
+  updateTopicContent: (topicId: string, content: ProseMirrorNode) => void;
+  updateTopicProgress: (id: string, progress: number, completedItems?: number | undefined, totalItems?: number | undefined) => void;
   deleteTopic: (id: string) => Promise<void>;
 
   createResource: (data: {
@@ -139,6 +149,13 @@ export const useCoursesStore = create<CoursesState>((set, get) => {
         if (!doc || !Array.isArray(doc.topics) || !Array.isArray(doc.resources)) {
           doc = createDefaultCoursesDocument();
           await ipcBridge.saveCoursesDocument(doc);
+        } else {
+          // Normalize topics to ensure content: ProseMirrorNode exists on every topic
+          const normalizedTopics = doc.topics.map((t) => ({
+            ...t,
+            content: t.content && typeof t.content === "object" ? t.content : createDefaultTopicContent(),
+          }));
+          doc = { ...doc, topics: normalizedTopics };
         }
         set({ coursesDoc: doc, isLoading: false, isDirty: false });
       } catch (err) {
@@ -210,10 +227,15 @@ export const useCoursesStore = create<CoursesState>((set, get) => {
       });
     },
 
-    createTopic: (title: string, parentId: string | null = null, description: string = "", tags: string[] = []) => {
+    createTopic: (
+      titleOrData: string | CreateTopicOptions,
+      parentId: string | null = null,
+      description: string = "",
+      tags: string[] = []
+    ) => {
       const { coursesDoc } = get();
       const currentDoc = coursesDoc ?? createDefaultCoursesDocument();
-      const newTopic = createLearningTopic(title, parentId, description, tags);
+      const newTopic = createLearningTopic(titleOrData, parentId, description, tags);
 
       const updatedTopics = [...currentDoc.topics, newTopic];
       const updatedDoc: CoursesDocument = {
@@ -224,7 +246,7 @@ export const useCoursesStore = create<CoursesState>((set, get) => {
 
       // Auto-expand parent if exists
       const expanded = new Set(get().expandedTopicIds);
-      if (parentId) expanded.add(parentId);
+      if (newTopic.parentId) expanded.add(newTopic.parentId);
       expanded.add(newTopic.id);
 
       set({
@@ -258,6 +280,41 @@ export const useCoursesStore = create<CoursesState>((set, get) => {
         coursesDoc: { ...coursesDoc, topics: updatedTopics, updatedAt: now },
       });
       triggerDebouncedSave();
+    },
+
+    updateTopicContent: (topicId: string, content: ProseMirrorNode) => {
+      const { coursesDoc } = get();
+      if (!coursesDoc) return;
+
+      const now = new Date().toISOString();
+      const updatedTopics = coursesDoc.topics.map((t) => {
+        if (t.id === topicId) {
+          return {
+            ...t,
+            content,
+            updatedAt: now,
+          };
+        }
+        return t;
+      });
+
+      set({
+        coursesDoc: { ...coursesDoc, topics: updatedTopics, updatedAt: now },
+      });
+      triggerDebouncedSave();
+    },
+
+    updateTopicProgress: (id: string, progress: number, completedItems?: number | undefined, totalItems?: number | undefined) => {
+      const cleanProgress = Math.max(0, Math.min(100, progress));
+      const status: LearningStatus =
+        cleanProgress >= 100 ? "completed" : cleanProgress > 0 ? "in_progress" : "not_started";
+
+      get().updateTopic(id, {
+        progress: cleanProgress,
+        completedItems,
+        totalItems,
+        status,
+      });
     },
 
     deleteTopic: async (id: string) => {

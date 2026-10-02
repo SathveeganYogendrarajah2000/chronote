@@ -1,14 +1,18 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useCoursesStore } from "@application/stores/useCoursesStore";
+import { useTocStore } from "@application/stores/useTocStore";
 import {
   getTopicPath,
-  filterResources,
   calculateTopicProgress,
   calculateOverallCoursesProgress,
   getPlatformLabel,
   getStatusLabel,
 } from "@domain/courses.utils";
 import type { LearningPlatform, LearningStatus } from "@domain/courses.types";
+import type { ProseMirrorNode } from "@domain/document.types";
+import { proseMirrorDocToText } from "@domain/note.utils";
+import { navigateToNoteOrDsm } from "@application/navigationHelper";
+import { ChronoteEditor } from "@presentation/editor/ChronoteEditor";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import { TagPicker } from "../common/TagPicker";
 
@@ -42,18 +46,15 @@ export const LearningCanvas: React.FC = () => {
     setSelectedPlatform,
     selectedStatus,
     setSelectedStatus,
-    selectedTags,
-    tagMatchMode,
     openCreateTopicModal,
     openEditTopicModal,
     deleteTopic,
-    openCreateResourceModal,
-    openEditResourceModal,
-    deleteResource,
-    incrementResourceProgress,
-    openNoteModal,
     updateTopic,
+    updateTopicContent,
+    updateTopicProgress,
   } = useCoursesStore();
+
+  const { setActiveContext } = useTocStore();
 
   const topics = useMemo(() => coursesDoc?.topics ?? [], [coursesDoc]);
   const resources = useMemo(() => coursesDoc?.resources ?? [], [coursesDoc]);
@@ -69,35 +70,79 @@ export const LearningCanvas: React.FC = () => {
     return getTopicPath(topics, selectedTopicId);
   }, [topics, selectedTopicId]);
 
-  // Child subtopics of currently active topic (or root topics if none selected)
-  const childSubtopics = useMemo(() => {
-    return topics.filter((t) => t.parentId === selectedTopicId);
-  }, [topics, selectedTopicId]);
+  // Direct child subtopics of the active topic
+  const directChildSubtopics = useMemo(() => {
+    if (!activeTopic) return [];
+    return topics.filter((t) => t.parentId === activeTopic.id);
+  }, [topics, activeTopic?.id]);
 
-  // Filtered resources
-  const filteredResources = useMemo(() => {
-    return filterResources(resources, {
-      topicId: selectedTopicId,
-      includeSubtopics: false, // In topic view, show direct resources for that topic/subtopic
-      allTopics: topics,
-      platform: selectedPlatform,
-      status: selectedStatus,
-      query: searchQuery,
-      tags: selectedTags,
-      tagMatchMode,
-    });
-  }, [resources, selectedTopicId, topics, selectedPlatform, selectedStatus, searchQuery, selectedTags, tagMatchMode]);
+  // Root topics (parentId === null)
+  const rootTopics = useMemo(() => {
+    return topics.filter((t) => t.parentId === null);
+  }, [topics]);
 
-  // Metrics for active topic
+  // Synchronize TOC and inspector context with the active topic
+  useEffect(() => {
+    if (activeTopic) {
+      setActiveContext({
+        source: "courses",
+        documentId: activeTopic.id,
+        title: activeTopic.title,
+      });
+    } else {
+      setActiveContext({
+        source: "courses",
+        documentId: "courses_master",
+        title: "Course and learning",
+      });
+    }
+  }, [activeTopic?.id, activeTopic?.title, setActiveContext]);
+
+  // Quick stats from topic notes
+  const textContent = useMemo(() => {
+    if (!activeTopic || !activeTopic.content) return "";
+    return proseMirrorDocToText(activeTopic.content);
+  }, [activeTopic?.id, activeTopic?.content]);
+
+  const charCount = textContent.length;
+  const wordCount = textContent.trim() ? textContent.trim().split(/\s+/).length : 0;
+
+  // Active topic aggregate progress
   const activeTopicProgress = useMemo(() => {
     if (!selectedTopicId) return 0;
     return calculateTopicProgress(selectedTopicId, topics, resources);
   }, [selectedTopicId, topics, resources]);
 
-  // Metrics for entire workspace
+  // Overall workspace courses progress
   const overallProgress = useMemo(() => {
-    return calculateOverallCoursesProgress(resources);
-  }, [resources]);
+    return calculateOverallCoursesProgress(topics, resources);
+  }, [topics, resources]);
+
+  // Filter root topics on hub
+  const filteredRootTopics = useMemo(() => {
+    let list = rootTopics;
+
+    if (selectedPlatform && selectedPlatform !== "all") {
+      list = list.filter((t) => t.platform === selectedPlatform);
+    }
+
+    if (selectedStatus && selectedStatus !== "all") {
+      list = list.filter((t) => (t.status ?? "not_started") === selectedStatus);
+    }
+
+    if (searchQuery && searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.description.toLowerCase().includes(q) ||
+          (t.author && t.author.toLowerCase().includes(q)) ||
+          t.tags.some((tag) => tag.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [rootTopics, selectedPlatform, selectedStatus, searchQuery]);
 
   const handleOpenExternal = (url: string) => {
     if (!url) return;
@@ -105,14 +150,12 @@ export const LearningCanvas: React.FC = () => {
   };
 
   const handleDeleteTopic = (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete topic "${title}"? This will also remove any subtopics and courses under it.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete topic "${title}"? This will also remove any subtopics and notes under it.`
+      )
+    ) {
       void deleteTopic(id);
-    }
-  };
-
-  const handleDeleteResource = (id: string, title: string) => {
-    if (window.confirm(`Delete course "${title}"?`)) {
-      void deleteResource(id);
     }
   };
 
@@ -128,6 +171,17 @@ export const LearningCanvas: React.FC = () => {
         tags: activeTopic.tags.filter((t) => t !== tagToRemove),
       });
     }
+  };
+
+  const handleStepProgress = (delta: number) => {
+    if (!activeTopic) return;
+    const current = activeTopic.progress ?? 0;
+    const next = Math.max(0, Math.min(100, current + delta));
+    updateTopicProgress(activeTopic.id, next);
+  };
+
+  const handleNavigateToNote = (targetId: string) => {
+    void navigateToNoteOrDsm(targetId);
   };
 
   return (
@@ -171,80 +225,49 @@ export const LearningCanvas: React.FC = () => {
               style={{ fontSize: "var(--font-size-xs)", padding: "4px 10px" }}
               onClick={() => openCreateTopicModal(selectedTopicId)}
             >
-              + {selectedTopicId ? "New Subtopic" : "New Topic"}
+              + {selectedTopicId ? "New Subtopic" : "New Root Topic"}
             </button>
-            <button
-              type="button"
-              className="btn-primary"
-              style={{ fontSize: "var(--font-size-xs)", padding: "4px 12px" }}
-              onClick={() => openCreateResourceModal(selectedTopicId ?? undefined)}
-            >
-              + Add Course / Resource
-            </button>
-          </div>
-        </div>
-
-        {/* Search & Platform / Status Filters */}
-        <div className="learning-filter-toolbar">
-          <div className="learning-search-box">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ color: "var(--text-muted)", flexShrink: 0 }}>
-              <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-            </svg>
-            <input
-              type="text"
-              className="learning-search-input"
-              placeholder="Search courses, videos, instructors, notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "12px", padding: 0 }}
-              >
-                ×
-              </button>
+            {activeTopic && (
+              <>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ fontSize: "var(--font-size-xs)", padding: "4px 10px" }}
+                  onClick={() => openEditTopicModal(activeTopic)}
+                  title="Edit topic & course details"
+                >
+                  ✎ Edit Topic
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ fontSize: "var(--font-size-xs)", padding: "4px 10px", color: "#f87171" }}
+                  onClick={() => handleDeleteTopic(activeTopic.id, activeTopic.title)}
+                  title="Delete topic"
+                >
+                  Delete
+                </button>
+              </>
             )}
-          </div>
-
-          <div className="learning-pill-group">
-            {PLATFORMS.map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                className={`learning-pill-btn ${selectedPlatform === p.key ? "active" : ""}`}
-                onClick={() => setSelectedPlatform(p.key)}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="learning-pill-group">
-            {STATUSES.map((s) => (
-              <button
-                key={s.key}
-                type="button"
-                className={`learning-pill-btn ${selectedStatus === s.key ? "active" : ""}`}
-                onClick={() => setSelectedStatus(s.key)}
-              >
-                {s.label}
-              </button>
-            ))}
           </div>
         </div>
       </div>
 
-      {/* VIEW A: Active Topic View */}
+      {/* VIEW A: Active Topic Notes Canvas */}
       {activeTopic ? (
-        <>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", flex: 1 }}>
           {/* Topic Detail Header Banner */}
           <div className="topic-detail-card">
             <div className="topic-detail-header-row">
               <div className="topic-detail-title-area">
                 <h1 className="topic-detail-title">
-                  <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style={{ color: "var(--accent-hover)", flexShrink: 0 }}>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                    style={{ color: "var(--accent-hover)", flexShrink: 0 }}
+                  >
                     <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z" />
                   </svg>
                   {activeTopic.title}
@@ -254,26 +277,83 @@ export const LearningCanvas: React.FC = () => {
                 )}
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  style={{ fontSize: "11px", padding: "3px 8px" }}
-                  onClick={() => openEditTopicModal(activeTopic)}
-                  title="Edit topic details"
-                >
-                  Edit Topic
-                </button>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  style={{ fontSize: "11px", padding: "3px 8px", color: "#f87171" }}
-                  onClick={() => handleDeleteTopic(activeTopic.id, activeTopic.title)}
-                  title="Delete topic"
-                >
-                  Delete
-                </button>
+              {/* Progress & Stepper */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span className="topic-progress-badge">
+                  Progress: {activeTopicProgress}%
+                  <div className="topic-progress-bar-mini">
+                    <div
+                      className="topic-progress-bar-fill"
+                      style={{ width: `${activeTopicProgress}%` }}
+                    />
+                  </div>
+                </span>
+
+                <div className="resource-stepper">
+                  <button
+                    type="button"
+                    className="resource-step-btn"
+                    title="Decrease progress (-5%)"
+                    onClick={() => handleStepProgress(-5)}
+                  >
+                    -
+                  </button>
+                  <button
+                    type="button"
+                    className="resource-step-btn"
+                    title="Increase progress (+5%)"
+                    onClick={() => handleStepProgress(5)}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
+            </div>
+
+            {/* Course Metadata Row (Platform, URL, Instructor, Status) */}
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
+              {activeTopic.platform && (
+                <span className={`platform-badge ${activeTopic.platform}`}>
+                  {getPlatformLabel(activeTopic.platform)}
+                </span>
+              )}
+
+              {activeTopic.url && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 8px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    color: "var(--accent-hover)",
+                  }}
+                  onClick={() => handleOpenExternal(activeTopic.url!)}
+                  title={activeTopic.url}
+                >
+                  <span>↗ Open Course Link</span>
+                </button>
+              )}
+
+              {activeTopic.author && (
+                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                  Instructor: <strong style={{ color: "var(--text-primary)" }}>{activeTopic.author}</strong>
+                </span>
+              )}
+
+              {activeTopic.status && (
+                <span className={`resource-status-badge ${activeTopic.status}`}>
+                  {getStatusLabel(activeTopic.status)}
+                </span>
+              )}
+
+              {directChildSubtopics.length > 0 && (
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  • {directChildSubtopics.length} {directChildSubtopics.length === 1 ? "subtopic" : "subtopics"}
+                </span>
+              )}
             </div>
 
             {/* Tags Row */}
@@ -308,271 +388,200 @@ export const LearningCanvas: React.FC = () => {
                 placeholder="+ Add topic tag"
               />
             </div>
-
-            {/* Meta & Progress Row */}
-            <div className="topic-detail-meta-row">
-              <span className="topic-progress-badge">
-                Progress: {activeTopicProgress}%
-                <div className="topic-progress-bar-mini">
-                  <div
-                    className="topic-progress-bar-fill"
-                    style={{ width: `${activeTopicProgress}%` }}
-                  />
-                </div>
-              </span>
-              <span>•</span>
-              <span>{childSubtopics.length} {childSubtopics.length === 1 ? "Subtopic" : "Subtopics"}</span>
-              <span>•</span>
-              <span>{filteredResources.length} {filteredResources.length === 1 ? "Resource" : "Resources"}</span>
-              {activeTopic.notes && (
-                <>
-                  <span>•</span>
-                  <button
-                    type="button"
-                    className="resource-notes-toggle-btn has-notes"
-                    onClick={() => openNoteModal({ topic: activeTopic })}
-                  >
-                    📝 View Topic Synthesis
-                  </button>
-                </>
-              )}
-            </div>
           </div>
 
-          {/* Subtopics Section (N-level tree) */}
-          <div className="subtopics-section">
-            <div className="section-title-row">
-              <span className="section-title-label">
-                Subtopics ({childSubtopics.length})
-              </span>
-              <button
-                type="button"
-                className="btn-secondary"
-                style={{ fontSize: "11px", padding: "2px 8px" }}
-                onClick={() => openCreateTopicModal(activeTopic.id)}
-              >
-                + Add Subtopic
-              </button>
-            </div>
-
-            <div className="subtopics-grid">
-              {childSubtopics.map((subtopic) => {
-                const subProgress = calculateTopicProgress(subtopic.id, topics, resources);
-                const subResourcesCount = resources.filter((r) => r.topicId === subtopic.id).length;
-                const nestedChildCount = topics.filter((t) => t.parentId === subtopic.id).length;
-
-                return (
-                  <div
-                    key={subtopic.id}
-                    className="subtopic-card"
-                    onClick={() => selectTopic(subtopic.id)}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <div className="subtopic-card-title">
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ color: "var(--accent-hover)", flexShrink: 0 }}>
-                          <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z" />
-                        </svg>
-                        <span>{subtopic.title}</span>
-                      </div>
-                      <p className="subtopic-card-desc">
-                        {subtopic.description || "No description provided."}
-                      </p>
-                    </div>
-
-                    <div className="subtopic-card-footer">
-                      <span>{subResourcesCount} {subResourcesCount === 1 ? "course" : "courses"}</span>
-                      {nestedChildCount > 0 && <span>• {nestedChildCount} sub</span>}
-                      <span style={{ fontWeight: 600, color: "var(--accent-hover)" }}>{subProgress}%</span>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <button
-                type="button"
-                className="add-subtopic-card-btn"
-                onClick={() => openCreateTopicModal(activeTopic.id)}
-              >
-                <span style={{ fontSize: "18px" }}>+</span>
-                <span>Add Subtopic</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Resources / Courses Section */}
-          <div className="resources-section">
-            <div className="section-title-row">
-              <span className="section-title-label">
-                Followed Courses, Videos & Articles ({filteredResources.length})
-              </span>
-              <button
-                type="button"
-                className="btn-primary"
-                style={{ fontSize: "11px", padding: "2px 8px" }}
-                onClick={() => openCreateResourceModal(activeTopic.id)}
-              >
-                + Add Resource
-              </button>
-            </div>
-
-            {filteredResources.length === 0 ? (
-              <div className="courses-empty-state">
-                <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.3 }}>
-                  <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z" />
-                </svg>
-                <p style={{ color: "var(--text-secondary)", fontSize: "var(--font-size-sm)", margin: 0 }}>
-                  No courses, videos, or articles added for this topic yet.
-                </p>
+          {/* Subtopics Bar */}
+          <div className="topic-subtopics-bar">
+            <span className="topic-subtopics-label">Subtopics:</span>
+            {directChildSubtopics.map((sub) => {
+              const subProg = calculateTopicProgress(sub.id, topics, resources);
+              return (
                 <button
+                  key={sub.id}
                   type="button"
-                  className="btn-secondary"
-                  style={{ fontSize: "var(--font-size-xs)" }}
-                  onClick={() => openCreateResourceModal(activeTopic.id)}
+                  className="topic-subtopic-pill"
+                  onClick={() => selectTopic(sub.id)}
+                  title={`Open notes for "${sub.title}" (${subProg}%)`}
                 >
-                  + Add Course, YouTube Video, or Article
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.8 }}>
+                    <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z" />
+                  </svg>
+                  <span>{sub.title}</span>
+                  <span style={{ fontSize: "10px", opacity: 0.75, fontWeight: 600 }}>{subProg}%</span>
                 </button>
-              </div>
-            ) : (
-              <div className="resources-grid">
-                {filteredResources.map((res) => (
-                  <div key={res.id} className="resource-card">
-                    <div className="resource-card-header">
-                      <span className={`platform-badge ${res.platform}`}>
-                        {getPlatformLabel(res.platform)}
-                      </span>
+              );
+            })}
 
-                      <div className="resource-card-actions">
-                        {res.url && (
-                          <button
-                            type="button"
-                            className="note-action-btn"
-                            style={{ fontSize: "12px", width: "24px", height: "24px" }}
-                            title="Open link in browser"
-                            onClick={() => handleOpenExternal(res.url)}
-                          >
-                            ↗
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="note-action-btn"
-                          style={{ fontSize: "12px", width: "24px", height: "24px" }}
-                          title="Edit course"
-                          onClick={() => openEditResourceModal(res)}
-                        >
-                          ✎
-                        </button>
-                        <button
-                          type="button"
-                          className="note-action-btn"
-                          style={{ fontSize: "12px", width: "24px", height: "24px", color: "#f87171" }}
-                          title="Delete course"
-                          onClick={() => handleDeleteResource(res.id, res.title)}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-
-                    <h4 className="resource-card-title">{res.title}</h4>
-                    {res.author && (
-                      <span className="resource-card-author">by {res.author}</span>
-                    )}
-
-                    {/* Progress Control */}
-                    <div className="resource-progress-control">
-                      <div className="resource-progress-meta">
-                        <span>Progress: {res.progress}%</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          {res.totalItems && (
-                            <span>
-                              {res.completedItems ?? 0} / {res.totalItems} done
-                            </span>
-                          )}
-                          <div className="resource-stepper">
-                            <button
-                              type="button"
-                              className="resource-step-btn"
-                              title="Decrement completed lecture"
-                              onClick={() => incrementResourceProgress(res.id, -1)}
-                            >
-                              -
-                            </button>
-                            <button
-                              type="button"
-                              className="resource-step-btn"
-                              title="Increment completed lecture (+1)"
-                              onClick={() => incrementResourceProgress(res.id, 1)}
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="resource-progress-bar">
-                        <div
-                          className={`resource-progress-fill ${res.progress >= 100 ? "completed" : ""}`}
-                          style={{ width: `${res.progress}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Footer with status, rating, and notes button */}
-                    <div className="resource-card-footer">
-                      <span className={`resource-status-badge ${res.status}`}>
-                        {getStatusLabel(res.status)}
-                      </span>
-
-                      {res.rating && (
-                        <div className="star-rating-display">
-                          {"★".repeat(res.rating)}
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        className={`resource-notes-toggle-btn ${res.notes ? "has-notes" : ""}`}
-                        onClick={() => openNoteModal({ resource: res })}
-                        title="Study notes for this course"
-                      >
-                        📝 {res.notes ? "View Notes" : "+ Add Notes"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <button
+              type="button"
+              className="topic-subtopic-pill"
+              style={{ borderStyle: "dashed", color: "var(--accent-hover)" }}
+              onClick={() => openCreateTopicModal(activeTopic.id)}
+            >
+              + Add Subtopic
+            </button>
           </div>
-        </>
+
+          {/* The Topic Notes Canvas (ChronoteEditor) */}
+          <div className="topic-notes-editor-wrapper">
+            <ChronoteEditor
+              content={activeTopic.content}
+              editorContextKey={`courses_${activeTopic.id}`}
+              onChange={(newContent: ProseMirrorNode) => updateTopicContent(activeTopic.id, newContent)}
+              onNavigateToNote={handleNavigateToNote}
+              onEditorFocus={() => {
+                setActiveContext({
+                  source: "courses",
+                  documentId: activeTopic.id,
+                  title: activeTopic.title,
+                });
+              }}
+            />
+
+            <div className="topic-notes-editor-footer">
+              <span>
+                {wordCount} {wordCount === 1 ? "word" : "words"} • {charCount} characters
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", opacity: 0.8 }}>
+                Topic ID: {activeTopic.id}
+              </span>
+            </div>
+          </div>
+        </div>
       ) : (
-        /* VIEW B: Root Overview (Courses Hub) */
+        /* VIEW B: Root Courses Hub */
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           {/* Metric Summary Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--space-4)" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "var(--space-4)",
+            }}
+          >
             <div className="topic-detail-card" style={{ padding: "var(--space-4)", margin: 0 }}>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Total Topics</span>
-              <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--text-primary)" }}>{topics.length}</span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                }}
+              >
+                Total Topics
+              </span>
+              <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--text-primary)" }}>
+                {topics.length}
+              </span>
             </div>
             <div className="topic-detail-card" style={{ padding: "var(--space-4)", margin: 0 }}>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Followed Resources</span>
-              <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--text-primary)" }}>{resources.length}</span>
-            </div>
-            <div className="topic-detail-card" style={{ padding: "var(--space-4)", margin: 0 }}>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>In Progress</span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                }}
+              >
+                In Progress
+              </span>
               <span style={{ fontSize: "28px", fontWeight: 700, color: "#60a5fa" }}>
-                {resources.filter((r) => r.status === "in_progress").length}
+                {topics.filter((t) => t.status === "in_progress").length}
               </span>
             </div>
             <div className="topic-detail-card" style={{ padding: "var(--space-4)", margin: 0 }}>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Completed</span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                }}
+              >
+                Completed
+              </span>
               <span style={{ fontSize: "28px", fontWeight: 700, color: "#34d399" }}>
-                {resources.filter((r) => r.status === "completed").length}
+                {topics.filter((t) => t.status === "completed").length}
               </span>
             </div>
             <div className="topic-detail-card" style={{ padding: "var(--space-4)", margin: 0 }}>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Overall Progress</span>
-              <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--accent-hover)" }}>{overallProgress}%</span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                }}
+              >
+                Overall Progress
+              </span>
+              <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--accent-hover)" }}>
+                {overallProgress}%
+              </span>
+            </div>
+          </div>
+
+          {/* Search & Platform / Status Filters */}
+          <div className="learning-filter-toolbar">
+            <div className="learning-search-box">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                style={{ color: "var(--text-muted)", flexShrink: 0 }}
+              >
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+              </svg>
+              <input
+                type="text"
+                className="learning-search-input"
+                placeholder="Search topics, instructors, courses, tags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    padding: 0,
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            <div className="learning-pill-group">
+              {PLATFORMS.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  className={`learning-pill-btn ${selectedPlatform === p.key ? "active" : ""}`}
+                  onClick={() => setSelectedPlatform(p.key)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="learning-pill-group">
+              {STATUSES.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  className={`learning-pill-btn ${selectedStatus === s.key ? "active" : ""}`}
+                  onClick={() => setSelectedStatus(s.key)}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -580,7 +589,7 @@ export const LearningCanvas: React.FC = () => {
           <div className="subtopics-section">
             <div className="section-title-row">
               <span className="section-title-label">
-                Topics ({childSubtopics.length})
+                Learning Topics ({filteredRootTopics.length})
               </span>
               <button
                 type="button"
@@ -592,16 +601,17 @@ export const LearningCanvas: React.FC = () => {
               </button>
             </div>
 
-            {childSubtopics.length === 0 ? (
+            {filteredRootTopics.length === 0 ? (
               <div className="courses-empty-state">
                 <svg width="36" height="36" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.3 }}>
                   <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z" />
                 </svg>
                 <p style={{ color: "var(--text-secondary)", fontSize: "var(--font-size-base)", margin: 0 }}>
-                  No learning topics created yet.
+                  {searchQuery ? "No learning topics match your filter." : "No learning topics created yet."}
                 </p>
-                <p style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", margin: 0, maxWidth: 400 }}>
-                  Organize your study goals by creating topics (e.g. Distributed Systems, Rust, Machine Learning) and subtopics, then attach Udemy courses, YouTube videos, articles, and books.
+                <p style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", margin: 0, maxWidth: 440 }}>
+                  Organize your learning path (e.g. AWS &gt; AWS Cloud Solutions Architect Associate &gt; Subtopics),
+                  and take structured study notes with rich markdown, headings, and code snippets.
                 </p>
                 <button
                   type="button"
@@ -613,10 +623,9 @@ export const LearningCanvas: React.FC = () => {
               </div>
             ) : (
               <div className="subtopics-grid">
-                {childSubtopics.map((topic) => {
+                {filteredRootTopics.map((topic) => {
                   const subtopicCount = topics.filter((t) => t.parentId === topic.id).length;
                   const topicProgress = calculateTopicProgress(topic.id, topics, resources);
-                  const directCount = resources.filter((r) => r.topicId === topic.id).length;
 
                   return (
                     <div
@@ -624,21 +633,41 @@ export const LearningCanvas: React.FC = () => {
                       className="subtopic-card"
                       onClick={() => selectTopic(topic.id)}
                     >
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                         <div className="subtopic-card-title">
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ color: "var(--accent-hover)", flexShrink: 0 }}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="currentColor"
+                            style={{ color: "var(--accent-hover)", flexShrink: 0 }}
+                          >
                             <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z" />
                           </svg>
                           <span>{topic.title}</span>
                         </div>
+
+                        {topic.platform && (
+                          <span
+                            className={`platform-badge ${topic.platform}`}
+                            style={{ alignSelf: "flex-start", fontSize: "10px", padding: "1px 6px" }}
+                          >
+                            {getPlatformLabel(topic.platform)}
+                          </span>
+                        )}
+
                         <p className="subtopic-card-desc">
-                          {topic.description || "Click to view subtopics, courses, and resources."}
+                          {topic.description || "Click to open full notes canvas and subtopics."}
                         </p>
                       </div>
 
                       <div className="subtopic-card-footer">
-                        <span>{subtopicCount} subtopics • {directCount} courses</span>
-                        <span style={{ fontWeight: 600, color: "var(--accent-hover)" }}>{topicProgress}%</span>
+                        <span>
+                          {subtopicCount} {subtopicCount === 1 ? "subtopic" : "subtopics"}
+                        </span>
+                        <span style={{ fontWeight: 600, color: "var(--accent-hover)" }}>
+                          {topicProgress}%
+                        </span>
                       </div>
                     </div>
                   );
@@ -655,105 +684,6 @@ export const LearningCanvas: React.FC = () => {
               </div>
             )}
           </div>
-
-          {/* All Resources Stream */}
-          {resources.length > 0 && (
-            <div className="resources-section">
-              <div className="section-title-row">
-                <span className="section-title-label">
-                  All Learning Resources ({filteredResources.length})
-                </span>
-              </div>
-
-              <div className="resources-grid">
-                {filteredResources.map((res) => {
-                  const parentTopic = topics.find((t) => t.id === res.topicId);
-                  return (
-                    <div key={res.id} className="resource-card">
-                      <div className="resource-card-header">
-                        <span className={`platform-badge ${res.platform}`}>
-                          {getPlatformLabel(res.platform)}
-                        </span>
-
-                        {parentTopic && (
-                          <button
-                            type="button"
-                            onClick={() => selectTopic(parentTopic.id)}
-                            style={{
-                              background: "transparent",
-                              border: "none",
-                              color: "var(--text-secondary)",
-                              fontSize: "11px",
-                              cursor: "pointer",
-                              textDecoration: "underline",
-                            }}
-                          >
-                            📁 {parentTopic.title}
-                          </button>
-                        )}
-
-                        <div className="resource-card-actions">
-                          {res.url && (
-                            <button
-                              type="button"
-                              className="note-action-btn"
-                              style={{ fontSize: "12px", width: "24px", height: "24px" }}
-                              title="Open link in browser"
-                              onClick={() => handleOpenExternal(res.url)}
-                            >
-                              ↗
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="note-action-btn"
-                            style={{ fontSize: "12px", width: "24px", height: "24px" }}
-                            title="Edit course"
-                            onClick={() => openEditResourceModal(res)}
-                          >
-                            ✎
-                          </button>
-                        </div>
-                      </div>
-
-                      <h4 className="resource-card-title">{res.title}</h4>
-                      {res.author && (
-                        <span className="resource-card-author">by {res.author}</span>
-                      )}
-
-                      <div className="resource-progress-control">
-                        <div className="resource-progress-meta">
-                          <span>Progress: {res.progress}%</span>
-                          {res.totalItems && (
-                            <span>{res.completedItems ?? 0} / {res.totalItems} lectures</span>
-                          )}
-                        </div>
-                        <div className="resource-progress-bar">
-                          <div
-                            className={`resource-progress-fill ${res.progress >= 100 ? "completed" : ""}`}
-                            style={{ width: `${res.progress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="resource-card-footer">
-                        <span className={`resource-status-badge ${res.status}`}>
-                          {getStatusLabel(res.status)}
-                        </span>
-                        <button
-                          type="button"
-                          className={`resource-notes-toggle-btn ${res.notes ? "has-notes" : ""}`}
-                          onClick={() => openNoteModal({ resource: res })}
-                        >
-                          📝 {res.notes ? "View Notes" : "+ Add Notes"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

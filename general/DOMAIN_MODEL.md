@@ -228,6 +228,61 @@ type ResourceType = "outline" | "code" | "image" | "link" | "attachment" | "back
 type TagMatchMode = "and" | "or";
 ```
 
+### 2.9 Learning Topic & Courses Document Entities
+Represents the structured learning roadmap, courses, and topic-specific study notes:
+```typescript
+type LearningPlatform = "udemy" | "youtube" | "article" | "course" | "book" | "documentation" | "other";
+type LearningStatus = "not_started" | "in_progress" | "completed" | "on_hold";
+
+interface LearningTopic {
+  readonly id: string;            // Prefixed e.g. "top_01JC..."
+  parentId: string | null;        // null if root topic; parent topic id if subtopic
+  title: string;                  // e.g. "Distributed Systems" or "AWS Solutions Architect"
+  description: string;            // Overview / objectives
+  tags: string[];                 // Normalized lowercase tags
+  platform?: LearningPlatform;    // Optional platform association
+  url?: string;                   // External course or reference URL
+  author?: string;                // Instructor or creator
+  status?: LearningStatus;        // "not_started" | "in_progress" | "completed" | "on_hold"
+  progress?: number;              // 0 to 100 percentage
+  completedItems?: number;        // e.g. 20 lectures done
+  totalItems?: number;            // e.g. 50 lectures total
+  rating?: number;                // Optional 1-5 rating
+  content: ProseMirrorNode;       // Full rich-text document tree running in ChronoteEditor
+  notes?: string | ProseMirrorNode;// Legacy notes compatibility
+  createdAt: string;              // ISO 8601 UTC
+  updatedAt: string;              // ISO 8601 UTC
+}
+
+interface LearningResource {
+  readonly id: string;            // Prefixed e.g. "crs_01JC..."
+  topicId: string;                // References parent LearningTopic.id
+  title: string;                  // e.g. "Complete React & Next.js Masterclass"
+  platform: LearningPlatform;
+  url: string;
+  author: string;
+  status: LearningStatus;
+  progress: number;
+  completedItems?: number;
+  totalItems?: number;
+  rating?: number;
+  tags: string[];
+  notes: string | ProseMirrorNode;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CoursesDocument {
+  readonly id: "courses_master";
+  readonly schemaVersion: number; // Currently 1
+  title: string;                  // "Courses & Topics"
+  createdAt: string;              // ISO 8601 UTC
+  updatedAt: string;              // ISO 8601 UTC
+  topics: LearningTopic[];
+  resources: LearningResource[];
+}
+```
+
 ---
 
 ## 3. Domain Invariants and Validation Rules
@@ -300,5 +355,70 @@ export const GeneralNoteSchema = z.object({
   pinned: z.boolean().default(false),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+});
+
+export const LearningPlatformSchema = z.enum([
+  "udemy",
+  "youtube",
+  "article",
+  "course",
+  "book",
+  "documentation",
+  "other",
+]);
+
+export const LearningStatusSchema = z.enum([
+  "not_started",
+  "in_progress",
+  "completed",
+  "on_hold",
+]);
+
+export const LearningTopicSchema = z.object({
+  id: z.string().startsWith("top_"),
+  parentId: z.string().startsWith("top_").nullable(),
+  title: z.string().min(1),
+  description: z.string().default(""),
+  tags: z.array(TagSchema).default([]),
+  platform: LearningPlatformSchema.optional(),
+  url: z.string().optional(),
+  author: z.string().optional(),
+  status: LearningStatusSchema.optional(),
+  progress: z.number().min(0).max(100).optional(),
+  completedItems: z.number().nonnegative().optional(),
+  totalItems: z.number().nonnegative().optional(),
+  rating: z.number().min(1).max(5).optional(),
+  content: z.record(z.unknown()).default({ type: "doc", content: [{ type: "paragraph" }] }),
+  notes: z.union([z.string(), z.record(z.unknown())]).optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const LearningResourceSchema = z.object({
+  id: z.string().startsWith("crs_"),
+  topicId: z.string().startsWith("top_"),
+  title: z.string().min(1),
+  platform: LearningPlatformSchema,
+  url: z.string().default(""),
+  author: z.string().default(""),
+  status: LearningStatusSchema,
+  progress: z.number().min(0).max(100).default(0),
+  completedItems: z.number().nonnegative().optional(),
+  totalItems: z.number().nonnegative().optional(),
+  rating: z.number().min(1).max(5).optional(),
+  tags: z.array(TagSchema).default([]),
+  notes: z.union([z.string(), z.record(z.unknown())]).default(""),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const CoursesDocumentSchema = z.object({
+  id: z.literal("courses_master"),
+  schemaVersion: z.literal(1),
+  title: z.string().min(1),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  topics: z.array(LearningTopicSchema),
+  resources: z.array(LearningResourceSchema),
 });
 ```

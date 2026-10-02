@@ -97,7 +97,7 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Version bumped to `v0.1.6`. Implemented complete Courses & Topics learning tracker: N-level recursive topic/subtopic hierarchy, multi-platform course/article/video tracking (Udemy, YouTube, Articles, Books, Docs), lecture progress steppers, ratings, attached study notes, breadcrumbs, sidebar collapsible tree, atomic `notes/courses.json` storage, and IPC bridge commands. 167 Vitest + 23 Rust tests passing.
+- **Current Work:** Version `v0.1.6`. Refined "Course and learning" architecture: unified under a single primary tab (`tab_courses_master`) with topic-first hierarchy (Root topics like AWS -> Course subtopics from Udemy/YouTube/Articles -> Deep subtopics). Topics feature an embedded on-canvas `ChronoteEditor` (replacing popup modals) matching General Notes capabilities (markdown, block IDs, debounced auto-saving to `notes/courses.json`) and synchronized with the Resource Inspector pane (live TOC outline, code snippets, backlinks, tags). 168 Vitest + 23 Rust tests passing.
 - **Next Recommended Task:** Create git release tag `v0.1.6` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---

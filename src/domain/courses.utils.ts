@@ -10,6 +10,8 @@ import type {
 import { generateId } from "./id.utils";
 import { normalizeTagList } from "./tagNormalizer";
 
+import type { ProseMirrorNode } from "./document.types";
+
 export function createDefaultCoursesDocument(): CoursesDocument {
   const now = new Date().toISOString();
   return {
@@ -23,19 +25,73 @@ export function createDefaultCoursesDocument(): CoursesDocument {
   };
 }
 
+export function createDefaultTopicContent(): ProseMirrorNode {
+  return {
+    type: "doc",
+    content: [{ type: "paragraph" }],
+  };
+}
+
+export interface CreateTopicOptions {
+  title: string;
+  parentId?: string | null | undefined;
+  description?: string | undefined;
+  tags?: string[] | undefined;
+  platform?: LearningPlatform | undefined;
+  url?: string | undefined;
+  author?: string | undefined;
+  status?: LearningStatus | undefined;
+  progress?: number | undefined;
+  completedItems?: number | undefined;
+  totalItems?: number | undefined;
+  rating?: number | undefined;
+  content?: ProseMirrorNode | undefined;
+}
+
 export function createLearningTopic(
-  title: string,
+  titleOrData: string | CreateTopicOptions,
   parentId: string | null = null,
   description: string = "",
   tags: string[] = []
 ): LearningTopic {
   const now = new Date().toISOString();
+
+  if (typeof titleOrData === "object" && titleOrData !== null) {
+    const d = titleOrData;
+    let progress = d.progress ?? 0;
+    if (d.totalItems && d.totalItems > 0 && d.completedItems !== undefined) {
+      progress = Math.min(100, Math.round((d.completedItems / d.totalItems) * 100));
+    }
+
+    return {
+      id: generateId("top"),
+      parentId: d.parentId ?? null,
+      title: d.title.trim() || "Untitled Topic",
+      description: d.description?.trim() ?? "",
+      tags: normalizeTagList(d.tags ?? []),
+      platform: d.platform,
+      url: d.url?.trim(),
+      author: d.author?.trim(),
+      status: d.status ?? (progress >= 100 ? "completed" : progress > 0 ? "in_progress" : "not_started"),
+      progress: Math.max(0, Math.min(100, progress)),
+      completedItems: d.completedItems,
+      totalItems: d.totalItems,
+      rating: d.rating,
+      content: d.content ?? createDefaultTopicContent(),
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
   return {
     id: generateId("top"),
     parentId,
-    title: title.trim() || "Untitled Topic",
+    title: titleOrData.trim() || "Untitled Topic",
     description: description.trim(),
     tags: normalizeTagList(tags),
+    status: "not_started",
+    progress: 0,
+    content: createDefaultTopicContent(),
     createdAt: now,
     updatedAt: now,
   };
@@ -160,30 +216,71 @@ export function getAllDescendantTopicIds(topics: LearningTopic[], topicId: strin
 }
 
 /**
- * Calculates aggregate progress (0-100%) for a topic based on all its direct and subtopic resources.
+ * Calculates aggregate progress (0-100%) for a topic based on its direct progress, subtopics, and resources.
  */
 export function calculateTopicProgress(
   topicId: string,
   topics: LearningTopic[],
-  resources: LearningResource[]
+  resources: LearningResource[] = []
 ): number {
+  const currentTopic = topics.find((t) => t.id === topicId);
   const descendantIds = getAllDescendantTopicIds(topics, topicId);
+  const subtopics = topics.filter((t) => descendantIds.includes(t.id));
+
+  const progressList: number[] = [];
+
+  if (currentTopic && typeof currentTopic.progress === "number" && currentTopic.progress > 0) {
+    progressList.push(currentTopic.progress);
+  }
+
+  for (const st of subtopics) {
+    if (typeof st.progress === "number" && st.progress > 0) {
+      progressList.push(st.progress);
+    }
+  }
+
   const relevantTopicIds = new Set([topicId, ...descendantIds]);
   const relevantResources = resources.filter((r) => relevantTopicIds.has(r.topicId));
+  for (const r of relevantResources) {
+    if (typeof r.progress === "number") {
+      progressList.push(r.progress);
+    }
+  }
 
-  if (relevantResources.length === 0) return 0;
+  if (progressList.length === 0) {
+    return currentTopic?.progress ?? 0;
+  }
 
-  const totalProgress = relevantResources.reduce((sum, r) => sum + (r.progress || 0), 0);
-  return Math.round(totalProgress / relevantResources.length);
+  const totalProgress = progressList.reduce((sum, p) => sum + p, 0);
+  return Math.round(totalProgress / progressList.length);
 }
 
 /**
- * Calculates overall progress across all resources.
+ * Calculates overall progress across all topics and resources.
  */
-export function calculateOverallCoursesProgress(resources: LearningResource[]): number {
-  if (resources.length === 0) return 0;
-  const total = resources.reduce((sum, r) => sum + (r.progress || 0), 0);
-  return Math.round(total / resources.length);
+export function calculateOverallCoursesProgress(
+  topicsOrResources: LearningTopic[] | LearningResource[],
+  optionalResources?: LearningResource[]
+): number {
+  const progressList: number[] = [];
+
+  for (const item of topicsOrResources) {
+    if (typeof item.progress === "number" && item.progress > 0) {
+      progressList.push(item.progress);
+    }
+  }
+
+  if (optionalResources) {
+    for (const item of optionalResources) {
+      if (typeof item.progress === "number" && item.progress > 0) {
+        progressList.push(item.progress);
+      }
+    }
+  }
+
+  if (progressList.length === 0) return 0;
+  const total = progressList.reduce((sum, r) => sum + r, 0);
+  return Math.round(total / progressList.length);
 }
 
 /**

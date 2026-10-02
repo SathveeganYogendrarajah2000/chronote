@@ -152,6 +152,15 @@ A dedicated, indexed resource inspector categorized into:
 - **Resizable Splitters:** Left Navigation Sidebar and Right Resource Inspector feature interactive edge handles (`cursor: col-resize`) with min/max clamps, double-click reset, zero-latency dragging, and full-width responsive child filling.
 - **Multi-Tag Filtering:** Allows selecting multiple tags concurrently in the side navigation and DSM timeline, with `ALL` (AND) and `ANY` (OR) boolean matching modes.
 
+### 4.9 Courses & Learning Roadmap System
+A dedicated learning management environment designed for software engineers pursuing technical mastery across platforms (Udemy, YouTube playlists, engineering whitepapers, books, and official documentation):
+- **Single Master Learning Tab:** Unified under the permanent "Course and learning" tab (`tab_courses_master`), providing immediate access alongside DSM and General Notes.
+- **Hierarchical Topic & Subtopic Model:** Supports arbitrary N-level depth. Root topics represent overarching disciplines (e.g., `AWS`, `Distributed Systems`), while subtopics capture specialized tracks or specific courses (e.g., `AWS Cloud Solutions Architect Associate` from Udemy), with deeper subtopics for modules or domains.
+- **First-Class On-Canvas Notes Editor:** Selecting any topic or subtopic immediately opens its notes view directly on the main canvas powered by `ChronoteEditor`. Users enjoy full markdown formatting, code block syntax highlighting, checklists, block IDs, and continuous debounced autosaving into `notes/courses.json`.
+- **Resource Inspector & Outline Integration:** The right-hand Resource Inspector synchronizes live with the active topic, presenting an automated Table of Contents (H1/H2/H3 outline) with smooth scroll navigation and pulse highlight, extracted code blocks, and tags.
+- **Course Metadata & Tracking:** Topics and subtopics support rich metadata including Platform (`udemy`, `youtube`, `article`, `course`, `book`, `documentation`), external URL launcher (`↗ Open Course`), instructor/author attribution, status (`not_started`, `in_progress`, `completed`, `on_hold`), and percentage progress controls.
+- **Fluid Subtopic Navigation Bar:** When viewing any topic, a horizontal pill bar allows instant switching between sibling subtopics and 1-click addition of new child subtopics without leaving the editing flow.
+
 ---
 
 ## 5. Non-Functional & Engineering Principles

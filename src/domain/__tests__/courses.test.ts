@@ -76,6 +76,7 @@ describe("Courses & Topics Domain Logic", () => {
       title: "Distributed Systems",
       description: "",
       tags: [],
+      content: { type: "doc", content: [{ type: "paragraph" }] },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -86,6 +87,7 @@ describe("Courses & Topics Domain Logic", () => {
       title: "Consensus Algorithms",
       description: "",
       tags: [],
+      content: { type: "doc", content: [{ type: "paragraph" }] },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -96,6 +98,7 @@ describe("Courses & Topics Domain Logic", () => {
       title: "Raft",
       description: "",
       tags: [],
+      content: { type: "doc", content: [{ type: "paragraph" }] },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -130,10 +133,11 @@ describe("Courses & Topics Domain Logic", () => {
   });
 
   it("resolves breadcrumb path from child up to root", () => {
+    const defaultDoc = { type: "doc", content: [{ type: "paragraph" }] };
     const topics: LearningTopic[] = [
-      { id: "top_1", parentId: null, title: "Backend", description: "", tags: [], createdAt: "", updatedAt: "" },
-      { id: "top_2", parentId: "top_1", title: "Databases", description: "", tags: [], createdAt: "", updatedAt: "" },
-      { id: "top_3", parentId: "top_2", title: "PostgreSQL", description: "", tags: [], createdAt: "", updatedAt: "" },
+      { id: "top_1", parentId: null, title: "Backend", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
+      { id: "top_2", parentId: "top_1", title: "Databases", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
+      { id: "top_3", parentId: "top_2", title: "PostgreSQL", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
     ];
 
     const path = getTopicPath(topics, "top_3");
@@ -144,11 +148,12 @@ describe("Courses & Topics Domain Logic", () => {
   });
 
   it("calculates all descendant topic IDs recursively", () => {
+    const defaultDoc = { type: "doc", content: [{ type: "paragraph" }] };
     const topics: LearningTopic[] = [
-      { id: "top_1", parentId: null, title: "A", description: "", tags: [], createdAt: "", updatedAt: "" },
-      { id: "top_2", parentId: "top_1", title: "B", description: "", tags: [], createdAt: "", updatedAt: "" },
-      { id: "top_3", parentId: "top_2", title: "C", description: "", tags: [], createdAt: "", updatedAt: "" },
-      { id: "top_4", parentId: "top_1", title: "D", description: "", tags: [], createdAt: "", updatedAt: "" },
+      { id: "top_1", parentId: null, title: "A", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
+      { id: "top_2", parentId: "top_1", title: "B", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
+      { id: "top_3", parentId: "top_2", title: "C", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
+      { id: "top_4", parentId: "top_1", title: "D", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
     ];
 
     const descendants = getAllDescendantTopicIds(topics, "top_1");
@@ -156,9 +161,10 @@ describe("Courses & Topics Domain Logic", () => {
   });
 
   it("calculates progress aggregates across parent topic and subtopics", () => {
+    const defaultDoc = { type: "doc", content: [{ type: "paragraph" }] };
     const topics: LearningTopic[] = [
-      { id: "top_parent", parentId: null, title: "Frontend", description: "", tags: [], createdAt: "", updatedAt: "" },
-      { id: "top_child", parentId: "top_parent", title: "React", description: "", tags: [], createdAt: "", updatedAt: "" },
+      { id: "top_parent", parentId: null, title: "Frontend", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
+      { id: "top_child", parentId: "top_parent", title: "React", description: "", tags: [], content: defaultDoc, createdAt: "", updatedAt: "" },
     ];
 
     const resources: LearningResource[] = [

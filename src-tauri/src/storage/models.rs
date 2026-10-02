@@ -108,6 +108,13 @@ pub struct LearningResource {
     pub updated_at: String,
 }
 
+fn default_topic_content() -> serde_json::Value {
+    serde_json::json!({
+        "type": "doc",
+        "content": [{ "type": "paragraph" }]
+    })
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LearningTopic {
@@ -116,6 +123,16 @@ pub struct LearningTopic {
     pub title: String,
     pub description: String,
     pub tags: Vec<String>,
+    pub platform: Option<String>,
+    pub url: Option<String>,
+    pub author: Option<String>,
+    pub status: Option<String>,
+    pub progress: Option<u32>,
+    pub completed_items: Option<u32>,
+    pub total_items: Option<u32>,
+    pub rating: Option<u32>,
+    #[serde(default = "default_topic_content")]
+    pub content: serde_json::Value,
     pub notes: Option<serde_json::Value>,
     pub created_at: String,
     pub updated_at: String,
