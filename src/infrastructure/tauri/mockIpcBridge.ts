@@ -2,6 +2,8 @@ import type { IpcBridge, AppInfo, IndexStats, PerformanceMetrics, SyncConflictIn
 import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import { DEFAULT_WORKSPACE_SETTINGS } from "@domain/workspace.types";
 import type { DsmDocument } from "@domain/dsm.types";
+import type { CoursesDocument } from "@domain/courses.types";
+import { createDefaultCoursesDocument } from "@domain/courses.utils";
 import type { GeneralNote, NoteMetadata } from "@domain/note.types";
 import type { SearchResultItem } from "@domain/search.types";
 import type { ResourceReference, BacklinkReference, ResourceType } from "@domain/resource.types";
@@ -19,6 +21,7 @@ export class MockIpcBridge implements IpcBridge {
     updatedAt: new Date().toISOString(),
     entries: [],
   };
+  private coursesDoc: CoursesDocument = createDefaultCoursesDocument();
   private notes: Map<string, GeneralNote> = new Map();
   private mockConflicts: SyncConflictInfo[] = [];
 
@@ -26,6 +29,7 @@ export class MockIpcBridge implements IpcBridge {
     this.activeWorkspace = null;
     this.notes.clear();
     this.mockConflicts = [];
+    this.coursesDoc = createDefaultCoursesDocument();
     this.dsmDoc = {
       id: "dsm_master",
       schemaVersion: 1,
@@ -39,7 +43,7 @@ export class MockIpcBridge implements IpcBridge {
   async getAppInfo(): Promise<AppInfo> {
     return {
       name: "Chronote (Mock Environment)",
-      version: "0.1.5-mock",
+      version: "0.1.6-mock",
       description: "Mock IPC Bridge for development and testing",
     };
   }
@@ -166,6 +170,15 @@ export class MockIpcBridge implements IpcBridge {
 
   async saveDsmDocument(doc: DsmDocument): Promise<void> {
     this.dsmDoc = { ...doc, updatedAt: new Date().toISOString() };
+  }
+
+  async readCoursesDocument(): Promise<CoursesDocument> {
+    return JSON.parse(JSON.stringify(this.coursesDoc));
+  }
+
+  async saveCoursesDocument(doc: CoursesDocument): Promise<void> {
+    this.coursesDoc = JSON.parse(JSON.stringify(doc));
+    this.coursesDoc.updatedAt = new Date().toISOString();
   }
 
   async readGeneralNote(id: string): Promise<GeneralNote> {

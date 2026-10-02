@@ -90,3 +90,60 @@ export const WorkspaceSchema = z.object({
   updatedAt: z.string().datetime(),
   settings: WorkspaceSettingsSchema,
 });
+
+export const LearningPlatformSchema = z.enum([
+  "udemy",
+  "youtube",
+  "article",
+  "course",
+  "book",
+  "documentation",
+  "other",
+]);
+
+export const LearningStatusSchema = z.enum([
+  "not_started",
+  "in_progress",
+  "completed",
+  "on_hold",
+]);
+
+export const LearningResourceSchema = z.object({
+  id: z.string().startsWith("crs_"),
+  topicId: z.string().startsWith("top_"),
+  title: z.string().min(1),
+  platform: LearningPlatformSchema,
+  url: z.string().default(""),
+  author: z.string().default(""),
+  status: LearningStatusSchema,
+  progress: z.number().min(0).max(100).default(0),
+  completedItems: z.number().nonnegative().optional(),
+  totalItems: z.number().nonnegative().optional(),
+  rating: z.number().min(1).max(5).optional(),
+  tags: z.array(TagSchema).default([]),
+  notes: z.union([z.string(), z.record(z.unknown())]).default(""),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const LearningTopicSchema = z.object({
+  id: z.string().startsWith("top_"),
+  parentId: z.string().startsWith("top_").nullable(),
+  title: z.string().min(1),
+  description: z.string().default(""),
+  tags: z.array(TagSchema).default([]),
+  notes: z.union([z.string(), z.record(z.unknown())]).optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const CoursesDocumentSchema = z.object({
+  id: z.literal("courses_master"),
+  schemaVersion: z.literal(1),
+  title: z.string().min(1),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  topics: z.array(LearningTopicSchema),
+  resources: z.array(LearningResourceSchema),
+});
+

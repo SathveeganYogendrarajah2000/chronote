@@ -8,9 +8,11 @@
  * - blk_ : Content Block
  * - img_ : Image Asset
  * - att_ : File Attachment
+ * - top_ : Learning Topic
+ * - crs_ : Course / Learning Resource
  */
 
-export type IdPrefix = "wsp" | "ent" | "not" | "blk" | "img" | "att";
+export type IdPrefix = "wsp" | "ent" | "not" | "blk" | "img" | "att" | "top" | "crs";
 
 export function generateId(prefix: IdPrefix): string {
   // Use timestamp + random alphanumeric suffix for chronological sortability

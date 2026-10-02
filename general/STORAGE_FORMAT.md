@@ -11,6 +11,7 @@ my-engineering-workspace/
 ├── .stignore                       # Syncthing ignore file (auto-generated)
 ├── notes/
 │   ├── dsm.json                    # Single logical DSM document containing date entries
+│   ├── courses.json                # Single logical Courses & Topics learning tracker document
 │   ├── not_01JC87XK89.json         # General note
 │   └── not_01JC87Y11Z.json         # General note
 ├── assets/
@@ -147,6 +148,57 @@ Stores standalone general engineering notes.
       }
     ]
   }
+}
+```
+
+### 2.4 `notes/courses.json`
+Stores the continuous Courses & Topics learning journal. Contains hierarchical topics and attached learning resources.
+```json
+{
+  "id": "courses_master",
+  "schemaVersion": 1,
+  "title": "Courses & Topics",
+  "createdAt": "2026-10-02T10:00:00.000Z",
+  "updatedAt": "2026-10-02T16:00:00.000Z",
+  "topics": [
+    {
+      "id": "top_01JC8814CC",
+      "parentId": null,
+      "title": "Distributed Systems",
+      "description": "Consensus, storage engines, and network protocols",
+      "tags": ["systems", "architecture"],
+      "createdAt": "2026-10-02T10:00:00.000Z",
+      "updatedAt": "2026-10-02T10:00:00.000Z"
+    },
+    {
+      "id": "top_01JC8815DD",
+      "parentId": "top_01JC8814CC",
+      "title": "Consensus Algorithms",
+      "description": "Paxos, Raft, Viewstamped Replication",
+      "tags": ["consensus", "raft"],
+      "createdAt": "2026-10-02T10:05:00.000Z",
+      "updatedAt": "2026-10-02T10:05:00.000Z"
+    }
+  ],
+  "resources": [
+    {
+      "id": "crs_01JC8825EE",
+      "topicId": "top_01JC8815DD",
+      "title": "Raft Consensus Algorithm Explained",
+      "platform": "youtube",
+      "url": "https://www.youtube.com/watch?v=vYp4LYbnnW8",
+      "author": "Heidi Howard",
+      "status": "in_progress",
+      "progress": 60,
+      "completedItems": 3,
+      "totalItems": 5,
+      "rating": 5,
+      "tags": ["raft", "youtube"],
+      "notes": "Key concept: randomized election timeouts prevent split votes.",
+      "createdAt": "2026-10-02T10:15:00.000Z",
+      "updatedAt": "2026-10-02T11:00:00.000Z"
+    }
+  ]
 }
 ```
 

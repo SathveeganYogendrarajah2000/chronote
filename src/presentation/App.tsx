@@ -11,6 +11,7 @@ import "./styles/print.css";
 import "./styles/performance.css";
 import "./styles/conflict.css";
 import "./styles/toc.css";
+import "./styles/courses.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";
@@ -23,6 +24,9 @@ import { SearchModal } from "./components/search/SearchModal";
 import { ExportModal } from "./components/export/ExportModal";
 import { PerformanceModal } from "./components/performance/PerformanceModal";
 import { ConflictModal } from "./components/conflict/ConflictModal";
+import { TopicModal } from "./components/courses/TopicModal";
+import { ResourceModal } from "./components/courses/ResourceModal";
+import { CourseNoteModal } from "./components/courses/CourseNoteModal";
 
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
@@ -194,6 +198,9 @@ export const App: React.FC = () => {
       <ExportModal />
       <PerformanceModal />
       <ConflictModal />
+      <TopicModal />
+      <ResourceModal />
+      <CourseNoteModal />
 
       {/* On-screen Zoom HUD Indicator */}
       {zoomNotification && (

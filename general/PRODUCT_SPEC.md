@@ -68,6 +68,14 @@ To preserve extreme lightweight simplicity and focus, Phase 1 strictly supports 
 - **Flexible Hierarchy:** Managed via tags and direct cross-references rather than deep, fragile folder trees.
 - **Rich Media & Attachments:** Supports code blocks, inline images, file attachments, and internal wiki-links.
 
+### 3.3 Courses & Learning Journal (Added in v0.1.6)
+- **Hierarchical Knowledge Tree:** Organizes study topics into arbitrary N-level nested hierarchies (Topic -> Subtopic -> Sub-subtopic...).
+- **Multi-Resource Tracking:** Attach multiple courses, tutorials, video playlists, technical articles, and documentation to any topic or subtopic.
+- **Supported Platforms:** First-class visual badges and metadata for Udemy, YouTube, Technical Articles, Courses (Coursera/edX), Books, Official Documentation, and custom links.
+- **Progress Tracking & Steppers:** Real-time percentage progress bar, completed vs total lecture counters with 1-click `+1` / `-1` steppers directly on cards, and automatic status transitions.
+- **Study Notes:** Integrated dedicated study notes for each course and overarching synthesis notes for each topic.
+- **Ratings & Status:** 1-5 star ratings and status states (`Not Started`, `In Progress`, `Completed`, `On Hold`).
+
 ---
 
 ## 4. Functional Requirements

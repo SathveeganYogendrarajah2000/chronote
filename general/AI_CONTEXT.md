@@ -15,8 +15,8 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Release 0.1.5 (Interactive Image Resizing, User-Friendly Tag Picker & Outline Navigation Precision)** — Completed. Ready for release tagging. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
-- **Status:** Release **0.1.5 COMPLETED**. Delivers interactive drag-to-resize images with presets (25%, 50%, 75%, 100%), alignment toggles (left/center/right), and live dimension badge tooltip; user-friendly TagPicker popover with workspace tag suggestions, usage frequency counts, keyboard navigation, and instant creation across General Notes and DSM entries; precision outline heading navigation matching exact document index and unique block IDs across General Notes and DSM entries. **151/151 Vitest tests** across 24 test suites and **22/22 native Rust tests + 1 stress test** passing with zero errors.
+- **Current Phase:** **Release 0.1.6 (Hierarchical Topics & Learning Courses Tracker)** — Completed. Ready for release tagging.
+- **Status:** Release **0.1.6 COMPLETED**. Delivers dedicated "Courses & Topics" journal section and workspace canvas. Supports arbitrary N-level nested topics and subtopics (Topic -> Subtopic -> Sub-subtopic...), attaching multiple learning resources per topic/subtopic across platforms (Udemy, YouTube, Articles, Courses, Books, Documentation, Other), clickable external links, progress percentage and lecture counter steppers (+1/-1), status lifecycle, ratings, attached rich study notes, breadcrumb navigation, and collapsible topic tree in the navigation sidebar. **167/167 Vitest tests** across 26 test suites and **23/23 native Rust tests + 1 stress test** passing with zero errors.
 - **Next Milestone:** Phase 3: Cloud Integrations & Advanced Navigation (direct Google Drive / OneDrive OAuth sync adapters, interactive 3-way conflict resolution wizard for concurrent edits, and interactive visual backlinks graph).
 
 ---
@@ -74,6 +74,7 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ## 6. Document & Schema Versions
 - `workspace.json` schema version: `1`
 - `dsm.json` document schema version: `1`
+- `notes/courses.json` document schema version: `1`
 - `notes/*.json` document schema version: `1`
 - SQLite `PRAGMA user_version`: `1`
 
@@ -96,8 +97,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Version bumped to `v0.1.5`. Outline heading cursor navigation fixed with exact document index and unique block ID matching; interactive image resizing in notes with edge/corner drag handles, live dimension badges, and quick presets (25%, 50%, 75%, 100%); user-friendly TagPicker popover with workspace tag suggestions, usage frequency counts, keyboard navigation, and instant creation across General Notes and DSM entries. 151 Vitest + 22 Rust tests passing.
-- **Next Recommended Task:** Create git release tag `v0.1.5` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
+- **Current Work:** Version bumped to `v0.1.6`. Implemented complete Courses & Topics learning tracker: N-level recursive topic/subtopic hierarchy, multi-platform course/article/video tracking (Udemy, YouTube, Articles, Books, Docs), lecture progress steppers, ratings, attached study notes, breadcrumbs, sidebar collapsible tree, atomic `notes/courses.json` storage, and IPC bridge commands. 167 Vitest + 23 Rust tests passing.
+- **Next Recommended Task:** Create git release tag `v0.1.6` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---
 

@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use super::atomic::{atomic_write, cleanup_orphan_tmp_files};
 use super::error::StorageError;
-use super::models::{DsmDocument, GeneralNote, NoteMetadata, Workspace, WorkspaceSettings};
+use super::models::{CoursesDocument, DsmDocument, GeneralNote, NoteMetadata, Workspace, WorkspaceSettings};
 
 /// Validates that `subpath` remains within the bounds of `workspace_root`.
 /// Defends against directory traversal attacks (SECURITY.md Section 3).
@@ -113,7 +113,24 @@ pub fn init_workspace(root: &Path, name: &str) -> Result<Workspace, StorageError
         atomic_write(&dsm_path, &bytes)?;
     }
 
-    // 5. Sweep orphan .tmp files
+    // 5. Initialize notes/courses.json if missing
+    let courses_path = notes_dir.join("courses.json");
+    if !courses_path.exists() {
+        let now = Utc::now().to_rfc3339();
+        let initial_courses = CoursesDocument {
+            id: "courses_master".to_string(),
+            schema_version: 1,
+            title: "Courses & Topics".to_string(),
+            created_at: now.clone(),
+            updated_at: now,
+            topics: Vec::new(),
+            resources: Vec::new(),
+        };
+        let bytes = serde_json::to_vec_pretty(&initial_courses)?;
+        atomic_write(&courses_path, &bytes)?;
+    }
+
+    // 6. Sweep orphan .tmp files
     let _ = cleanup_orphan_tmp_files(&notes_dir, Duration::from_secs(300));
 
     Ok(workspace)
@@ -190,6 +207,35 @@ pub fn save_dsm(root: &Path, doc: &DsmDocument) -> Result<(), StorageError> {
     let dsm_path = root.join("notes").join("dsm.json");
     let bytes = serde_json::to_vec_pretty(doc)?;
     atomic_write(&dsm_path, &bytes)?;
+    Ok(())
+}
+
+/// Reads the continuous Courses & Topics master document.
+pub fn read_courses(root: &Path) -> Result<CoursesDocument, StorageError> {
+    let courses_path = root.join("notes").join("courses.json");
+    if !courses_path.exists() {
+        let now = Utc::now().to_rfc3339();
+        return Ok(CoursesDocument {
+            id: "courses_master".to_string(),
+            schema_version: 1,
+            title: "Courses & Topics".to_string(),
+            created_at: now.clone(),
+            updated_at: now,
+            topics: Vec::new(),
+            resources: Vec::new(),
+        });
+    }
+
+    let content = fs::read_to_string(&courses_path)?;
+    let doc: CoursesDocument = serde_json::from_str(&content)?;
+    Ok(doc)
+}
+
+/// Atomically saves the continuous Courses & Topics master document.
+pub fn save_courses(root: &Path, doc: &CoursesDocument) -> Result<(), StorageError> {
+    let courses_path = root.join("notes").join("courses.json");
+    let bytes = serde_json::to_vec_pretty(doc)?;
+    atomic_write(&courses_path, &bytes)?;
     Ok(())
 }
 
@@ -389,5 +435,23 @@ mod tests {
         let malicious = Path::new("../../etc/passwd");
         let result = validate_workspace_path(root, malicious);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_save_and_read_courses() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+        init_workspace(root, "Courses Test").unwrap();
+
+        let doc = read_courses(root).unwrap();
+        assert_eq!(doc.id, "courses_master");
+        assert_eq!(doc.topics.len(), 0);
+
+        let mut updated = doc.clone();
+        updated.title = "Engineering Courses Tracker".to_string();
+        save_courses(root, &updated).unwrap();
+
+        let reloaded = read_courses(root).unwrap();
+        assert_eq!(reloaded.title, "Engineering Courses Tracker");
     }
 }

@@ -15,6 +15,8 @@ To ensure global uniqueness, chronological sortability, and URL/filesystem safet
   - Content Block: `blk_` (e.g. `blk_01JC87Y45Q...`)
   - Asset (Image): `img_` (e.g. `img_01JC87Z1AA...`)
   - Asset (File): `att_` (e.g. `att_01JC8803BB...`)
+  - Learning Topic: `top_` (e.g. `top_01JC8814CC...`)
+  - Course / Learning Resource: `crs_` (e.g. `crs_01JC8825DD...`)
 - **Immutability of IDs:** An entity's ID is immutable. Internal links and resource index entries point exclusively to IDs, never to mutable titles or dates.
 
 ---
@@ -82,7 +84,50 @@ interface GeneralNote {
 }
 ```
 
-### 2.4 Canonical Structured Block Model (ProseMirror JSON)
+### 2.4 Courses & Topics Document (Learning Tracker)
+Represents structured engineering study and course tracking organized hierarchically.
+```typescript
+interface CoursesDocument {
+  readonly id: "courses_master";
+  readonly schemaVersion: number; // Currently 1
+  title: string;                  // "Courses & Topics"
+  createdAt: string;              // ISO 8601 UTC
+  updatedAt: string;              // ISO 8601 UTC
+  topics: LearningTopic[];
+  resources: LearningResource[];
+}
+
+interface LearningTopic {
+  readonly id: string;            // e.g. "top_01JC..."
+  parentId: string | null;        // null for root topics; parent topic id for subtopics
+  title: string;                  // Topic name
+  description: string;            // Learning goal or summary
+  tags: string[];                 // Normalized tags
+  notes?: string | ProseMirrorNode; // Synthesis notes for this topic
+  createdAt: string;              // ISO 8601 UTC
+  updatedAt: string;              // ISO 8601 UTC
+}
+
+interface LearningResource {
+  readonly id: string;            // e.g. "crs_01JC..."
+  topicId: string;                // References parent LearningTopic.id
+  title: string;                  // Resource title
+  platform: "udemy" | "youtube" | "article" | "course" | "book" | "documentation" | "other";
+  url: string;                    // Web link
+  author: string;                 // Instructor, creator, or author
+  status: "not_started" | "in_progress" | "completed" | "on_hold";
+  progress: number;               // 0 to 100 percentage
+  completedItems?: number;        // Completed lectures/items
+  totalItems?: number;            // Total lectures/items
+  rating?: number;                // 1-5 star rating
+  tags: string[];                 // Normalized tags
+  notes: string | ProseMirrorNode;// Full study takeaways and notes
+  createdAt: string;              // ISO 8601 UTC
+  updatedAt: string;              // ISO 8601 UTC
+}
+```
+
+### 2.5 Canonical Structured Block Model (ProseMirror JSON)
 All note contents are represented as a structured node tree:
 ```typescript
 interface ProseMirrorNode {

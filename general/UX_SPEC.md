@@ -57,6 +57,10 @@ Chronote utilizes a 3-pane responsive desktop layout with dynamically resizable 
 - **Full-Width Element Responsiveness:** Workspace card, navigation items, note lists, and tag chips flex to fill 100% of the sidebar width.
 - **DSM Journal Root:** Quick button with calendar badge to jump to Today’s DSM entry (`Ctrl+Shift+D`).
 - **DSM Date Tree:** Quick scroll targets for recent days (grouped by "This Week", "Last Week", "Older").
+- **Courses & Topics Tree (v0.1.6):**
+  - Section header displaying total topic count and quick `+` button to create a root topic.
+  - "Courses Hub" item navigating directly to the full learning tracker overview.
+  - Collapsible topic tree rendering arbitrary N-level nested topics with indentation, expand/collapse chevron toggles, course count badges, and hover `+` button to add subtopics directly.
 - **General Notes Catalog:** Pinned notes on top, followed by alphabetically sorted notes with search filter.
 - **Multi-Tag Search & Filter Bar:**
   - Clicking tags adds/removes them from the multi-tag filter set.
@@ -158,4 +162,16 @@ Chronote avoids generic primary colors in favor of a curated, ergonomic palette.
 - **Live Sizing Tooltip:** A dark glassmorphic badge displays real-time pixel width and percentage (`480px • 60%`) while dragging.
 - **Quick Preset Toolbar:** Appears on hover/selection with 1-click presets (`25%`, `50%`, `75%`, `100%`), alignment toggles, and deletion.
 - **Double-Click Reset:** Double-clicking any resize handle resets the image width back to `100%`.
+
+### 6.3 Courses & Learning Workspace Ergonomics (v0.1.6)
+- **Breadcrumb Navigation:** Ancestor trail (`Courses Hub / Distributed Systems / Consensus / Raft`) allows instantaneous 1-click jumps up the knowledge hierarchy.
+- **Platform Badge Indicators:** Color-coded platform badges with brand styling for Udemy (purple), YouTube (red), Technical Articles (emerald green), Online Courses (blue), Books (amber), Documentation (cyan), and Other (slate).
+- **Interactive Progress Controls:**
+  - Visual gradient progress bar displaying percentage and lecture completion (`14 / 28 done (50%)`).
+  - Quick increment/decrement buttons (`+` / `-`) for 1-click lecture progression without opening modals.
+  - Automatic status updates: switches to `completed` upon reaching 100%, and `in_progress` upon progression > 0%.
+- **Study Notes:**
+  - Dedicated course takeaways modal (`CourseNoteModal`) for in-depth lecture notes, timestamps, code snippets, and review points.
+  - Overarching topic synthesis notes to synthesize concepts learned across multiple courses and articles.
+- **Drill-Down Subtopics Grid:** Immediate visual cards for child subtopics displaying direct and nested resource counts, progress bars, and click-to-drill-down interaction.
 
