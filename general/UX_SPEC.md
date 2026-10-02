@@ -141,3 +141,21 @@ Chronote avoids generic primary colors in favor of a curated, ergonomic palette.
 - **Visible Focus Rings:** Strict keyboard focus outline (`2px solid var(--accent-primary)`) on all interactive inputs, buttons, and tab controls.
 - **Reduced Motion:** Respects `prefers-reduced-motion: reduce`. Disables scroll-smoothing and animations when enabled in OS settings.
 - **Screen Reader Semantics:** Uses standard HTML5 landmarks (`<nav>`, `<main>`, `<aside>`, `<header>`) and ARIA roles for tabs (`role="tablist"`, `role="tab"`).
+
+---
+
+## 6. Tagging & Media Ergonomics Specifications
+
+### 6.1 TagPicker Popover Interaction
+- **Trigger & Activation:** Activated via a clean `+ Add tag` pill in General Notes or `+ Tag` in DSM entries. Focus triggers an attached popover beneath the input.
+- **Auto-Suggestions:** Aggregates unique tags previously created across the workspace via `useWorkspaceTags`, displaying them with frequency counts (e.g. `(5)`). Tags already present on the active note/entry are excluded.
+- **1-Click Selection:** Clicking any suggestion instantly applies the tag without requiring typing.
+- **Instant Creation:** If a user types a new tag not in the workspace, a top `+ Create "#<name>"` action appears with an `Enter ↵` badge.
+- **Keyboard Ergonomics:** Full support for `ArrowDown` / `ArrowUp` navigation, `Enter` selection, `Tab` completion, and `Escape` dismissal.
+
+### 6.2 Image Resizing & Node View
+- **Interactive Drag Handles:** Edge handles (`.right`, `.left`) and corner handles (`.corner-br`, `.corner-bl`) with custom directional cursors (`ew-resize`, `nwse-resize`, `nesw-resize`).
+- **Live Sizing Tooltip:** A dark glassmorphic badge displays real-time pixel width and percentage (`480px • 60%`) while dragging.
+- **Quick Preset Toolbar:** Appears on hover/selection with 1-click presets (`25%`, `50%`, `75%`, `100%`), alignment toggles, and deletion.
+- **Double-Click Reset:** Double-clicking any resize handle resets the image width back to `100%`.
+

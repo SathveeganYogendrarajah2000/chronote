@@ -363,23 +363,46 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
     const key = editorContextKey || "default";
     const unregister = useTocStore.getState().registerEditorNavigator(key, (heading) => {
       let targetPos: number | null = null;
+      let currentHeadingIdx = 0;
+      let matchedByIdPos: number | null = null;
+      let matchedByIndexPos: number | null = null;
+      let matchedByTextAndLevelPos: number | null = null;
+
       editor.state.doc.descendants((node, pos) => {
-        if (targetPos !== null) return false;
         if (node.type.name === "heading") {
-          if (heading.id && node.attrs?.id === heading.id) {
-            targetPos = pos + 1;
-            return false;
+          // 1. Match by unique block ID if genuine
+          if (
+            heading.id &&
+            !heading.id.startsWith("heading-") &&
+            node.attrs?.id === heading.id
+          ) {
+            matchedByIdPos = pos + 1;
           }
-          if (node.textContent.trim() === heading.text.trim()) {
-            targetPos = pos + 1;
-            return false;
+
+          // 2. Match by exact heading index (ordinal position in document)
+          if (currentHeadingIdx === heading.index) {
+            matchedByIndexPos = pos + 1;
           }
+
+          // 3. Fallback match by text and heading level
+          if (
+            matchedByTextAndLevelPos === null &&
+            node.textContent.trim() === heading.text.trim() &&
+            node.attrs?.level === heading.level
+          ) {
+            matchedByTextAndLevelPos = pos + 1;
+          }
+
+          currentHeadingIdx++;
         }
         return true;
       });
 
+      // Priority: matched by ID -> matched by document index -> matched by text & level
+      targetPos = matchedByIdPos ?? matchedByIndexPos ?? matchedByTextAndLevelPos;
+
       if (targetPos !== null) {
-        editor.chain().focus().setTextSelection(targetPos).run();
+        editor.chain().focus().setTextSelection(targetPos).scrollIntoView().run();
         return true;
       }
       return false;

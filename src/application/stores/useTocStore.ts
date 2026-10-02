@@ -85,21 +85,42 @@ export const useTocStore = create<TocState>((set, get) => ({
 
       // 2. Find DOM element for scrolling and pulse animation
       let targetEl: HTMLElement | null = null;
-      if (heading.id) {
-        targetEl = document.querySelector(`[data-block-id="${heading.id}"]`) as HTMLElement;
+      const containerSelector =
+        activeContext?.source === "dsm" && activeContext.date
+          ? `#dsm-entry-${activeContext.date}`
+          : ".note-canvas-container";
+
+      // 2a. Match by unique block ID if not a synthetic fallback ID
+      if (heading.id && !heading.id.startsWith("heading-")) {
+        const matches = document.querySelectorAll<HTMLElement>(
+          `${containerSelector} [data-block-id="${heading.id}"]`
+        );
+        if (matches.length === 1) {
+          targetEl = matches[0];
+        }
       }
 
+      // 2b. Match by heading index within the active container
       if (!targetEl) {
-        const headings = document.querySelectorAll(
-          activeContext?.source === "dsm" && activeContext.date
-            ? `#dsm-entry-${activeContext.date} h1, #dsm-entry-${activeContext.date} h2, #dsm-entry-${activeContext.date} h3`
-            : ".note-canvas-container h1, .note-canvas-container h2, .note-canvas-container h3"
+        const headingEls = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            `${containerSelector} h1, ${containerSelector} h2, ${containerSelector} h3`
+          )
         );
 
-        for (const h of Array.from(headings)) {
-          if (h.textContent?.trim() === heading.text.trim()) {
-            targetEl = h as HTMLElement;
-            break;
+        if (
+          heading.index !== undefined &&
+          heading.index >= 0 &&
+          heading.index < headingEls.length
+        ) {
+          targetEl = headingEls[heading.index];
+        } else {
+          // Fallback: match by text
+          for (const h of headingEls) {
+            if (h.textContent?.trim() === heading.text.trim()) {
+              targetEl = h;
+              break;
+            }
           }
         }
       }

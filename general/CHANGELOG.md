@@ -16,6 +16,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.5] - 2026-10-02
+
+### Added
+- **Interactive Rich Image Resizing in Notes:**
+  - Dynamic drag-to-resize handles on edges and corners (`.chronote-image-resize-handle.right`, `.left`, `.corner-br`, `.corner-bl`) with fluid real-time scaling.
+  - Floating action toolbar on hover or selection with 1-click width presets: `25%`, `50%`, `75%`, and `100%`.
+  - Image alignment controls: Align Left (`⯇`), Align Center (`▬`), and Align Right (`⯈`).
+  - Live on-screen dimension tooltip badge displayed during drag with exact pixel width and container percentage (e.g. `450px • 62%`).
+  - Double-click on any resize handle to reset image width instantly to `100%`.
+  - Editable image captions with click-to-edit inline input and blur/enter persistence.
+  - Export and storage serialization: image `width` and `align` attributes preserved in canonical ProseMirror JSON and serialized cleanly in HTML export.
+- **User-Friendly Tag Selection & Autocomplete (`TagPicker`):**
+  - Autocomplete suggestion popover listing previously created tags across the entire workspace from both General Notes and Daily Stand-up entries (`useWorkspaceTags` hook).
+  - Displays usage frequency count for each existing tag.
+  - Allows 1-click selection of existing tags without retyping.
+  - Real-time search query filtering and keyboard navigation (`ArrowUp`, `ArrowDown`, `Enter`, `Tab`, `Escape`).
+  - Seamless inline creation for new tags (`+ Create #new-tag`) with automatic lowercase normalization and character validation.
+  - Integrated into both `NoteTagBar` (General Notes) and `DsmEntryHeader` (DSM Stand-up timeline entries).
+
+### Fixed
+- **Table of Contents Outline Heading Cursor Navigation:**
+  - Fixed an issue where clicking any heading under the Outline tab in the sidebar always sent the cursor and view to the first heading's row.
+  - Dynamic unique block ID assignment in `BlockIdExtension` via a ProseMirror `appendTransaction` plugin, eliminating duplicate default IDs across headings and paragraphs.
+  - Implemented exact heading ordinal index matching (`heading.index`) in both `ChronoteEditor` editor navigator and `useTocStore` container-scoped DOM selector, ensuring the cursor and highlight pulse target the exact clicked heading row even with identical heading text.
+
+---
+
 ## [0.1.4] - 2026-10-02
 
 ### Added

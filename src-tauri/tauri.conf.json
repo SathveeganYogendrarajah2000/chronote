@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "chronote",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "identifier": "com.chronote.app",
   "build": {
     "frontendDist": "../dist",

@@ -15,8 +15,8 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Release 0.1.4 (Adaptive Ergonomics & Navigation)** — Completed. Ready for release tagging. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
-- **Status:** Release **0.1.4 COMPLETED**. Delivers window-filling application zoom in/out with dynamic calc compensation, on-screen HUD overlay, and Tauri native webview zoom factor integration; interactive resizable sidebars (drag edge handles for left navigation sidebar and right Resource Inspector with min/max clamping, double-click reset to default width, and 100% full-width child responsiveness); automated Table of Contents with live cursor tracking across General Notes and DSM stand-up entries, outline search, and exact ProseMirror text selection navigation upon click; multi-tag search & filtering with `ALL`/`ANY` match mode toggling across sidebar and DSM timeline. **145/145 Vitest tests** across 23 test suites and **22/22 native Rust tests + 1 stress test** passing with zero errors.
+- **Current Phase:** **Release 0.1.5 (Interactive Image Resizing, User-Friendly Tag Picker & Outline Navigation Precision)** — Completed. Ready for release tagging. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
+- **Status:** Release **0.1.5 COMPLETED**. Delivers interactive drag-to-resize images with presets (25%, 50%, 75%, 100%), alignment toggles (left/center/right), and live dimension badge tooltip; user-friendly TagPicker popover with workspace tag suggestions, usage frequency counts, keyboard navigation, and instant creation across General Notes and DSM entries; precision outline heading navigation matching exact document index and unique block IDs across General Notes and DSM entries. **151/151 Vitest tests** across 24 test suites and **22/22 native Rust tests + 1 stress test** passing with zero errors.
 - **Next Milestone:** Phase 3: Cloud Integrations & Advanced Navigation (direct Google Drive / OneDrive OAuth sync adapters, interactive 3-way conflict resolution wizard for concurrent edits, and interactive visual backlinks graph).
 
 ---
@@ -96,8 +96,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Version bumped to `v0.1.4`. Window-filling application zoom in/out (`Ctrl+=`, `Ctrl+-`, `Ctrl+0`, wheel, HUD overlay & header controls), resizable sidebars with interactive edge drag handles and double-click reset, Multi-Tag filtering in Sidebar & DSM timeline with `ALL`/`ANY` match mode toggles, and automated Table of Contents with live cursor context tracking across General Notes and DSM entries with exact ProseMirror cursor navigation upon click. 145 Vitest + 22 Rust tests passing.
-- **Next Recommended Task:** Create git release tag `v0.1.4` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
+- **Current Work:** Version bumped to `v0.1.5`. Outline heading cursor navigation fixed with exact document index and unique block ID matching; interactive image resizing in notes with edge/corner drag handles, live dimension badges, and quick presets (25%, 50%, 75%, 100%); user-friendly TagPicker popover with workspace tag suggestions, usage frequency counts, keyboard navigation, and instant creation across General Notes and DSM entries. 151 Vitest + 22 Rust tests passing.
+- **Next Recommended Task:** Create git release tag `v0.1.5` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---
 

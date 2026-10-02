@@ -1,5 +1,7 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
 import { toAssetUrl } from "@infrastructure/tauri/assetHelper";
+import { ImageView } from "../components/ImageView";
 
 export interface ImageOptions {
   inline?: boolean;
@@ -16,6 +18,7 @@ declare module "@tiptap/core" {
         title?: string;
         assetId?: string;
         width?: number | string;
+        align?: "left" | "center" | "right";
         id?: string;
       }) => ReturnType;
     };
@@ -37,6 +40,7 @@ export const CustomImage = Node.create<ImageOptions>({
       title: { default: null },
       assetId: { default: null },
       width: { default: null },
+      align: { default: "center" },
       id: { default: null },
     };
   },
@@ -44,17 +48,49 @@ export const CustomImage = Node.create<ImageOptions>({
   parseHTML() {
     return [
       {
+        tag: "figure[data-type='image']",
+        getAttrs: (element) => {
+          if (typeof element === "string") return false;
+          const el = element as HTMLElement;
+          const img = el.querySelector("img");
+          return {
+            src: img?.getAttribute("src") || null,
+            alt: img?.getAttribute("alt") || null,
+            width: el.style.width || el.getAttribute("data-width") || null,
+            align: el.getAttribute("data-align") || "center",
+          };
+        },
+      },
+      {
         tag: "img[src]",
+        getAttrs: (element) => {
+          if (typeof element === "string") return false;
+          const el = element as HTMLElement;
+          return {
+            src: el.getAttribute("src"),
+            alt: el.getAttribute("alt"),
+            width: el.getAttribute("width") || el.style.width || null,
+          };
+        },
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    const { alt, ...imgAttrs } = HTMLAttributes;
+    const { alt, align, width, ...imgAttrs } = HTMLAttributes;
     const targetSrc = toAssetUrl(imgAttrs.src || HTMLAttributes.filePath);
+    const widthStyle = width ? `width: ${width}; max-width: 100%;` : "max-width: 100%;";
+    const alignClass = align ? `align-${align}` : "align-center";
+
     return [
-      "div",
-      { class: "chronote-image-wrapper" },
+      "figure",
+      {
+        class: `chronote-image-wrapper ${alignClass}`,
+        "data-type": "image",
+        "data-align": align || "center",
+        "data-width": width || "",
+        style: widthStyle,
+      },
       [
         "img",
         mergeAttributes(this.options.HTMLAttributes ?? {}, imgAttrs, {
@@ -63,8 +99,12 @@ export const CustomImage = Node.create<ImageOptions>({
           loading: "lazy",
         }),
       ],
-      alt ? ["div", { class: "chronote-image-caption" }, alt] : null,
+      alt ? ["figcaption", { class: "chronote-image-caption" }, alt] : null,
     ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ImageView);
   },
 
   addCommands() {
@@ -80,3 +120,4 @@ export const CustomImage = Node.create<ImageOptions>({
     };
   },
 });
+

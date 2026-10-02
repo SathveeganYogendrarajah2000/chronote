@@ -68,6 +68,10 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
   - [x] Multi-Tag Search & Filter across Side Navigation and DSM timeline with `ALL` (AND) / `ANY` (OR) match mode toggling.
   - [x] Automated Table of Contents with live cursor context tracking across General Notes and DSM entries, outline search, and exact ProseMirror text selection navigation upon click.
   - [x] Resizable Sidebars for Left Navigation Sidebar and Right Resource Inspector with interactive draggable handles, min/max bounds, double-click reset, and responsive full-width child filling.
+- **Milestone 1.9: Media Ergonomics & Tagging Precision (Delivered in v0.1.5)**
+  - [x] Interactive Image Resizing with edge/corner drag handles, live dimension badge indicator, quick presets (25%, 50%, 75%, 100%), alignment controls (left, center, right), and editable captions.
+  - [x] User-friendly TagPicker popover with workspace tag suggestions, usage frequency counts, keyboard navigation, and instant creation across General Notes and Daily Stand-up entries.
+  - [x] Outline Heading Row Navigation precision fix: unique dynamic block IDs and exact document ordinal index targeting across all heading levels.
 
 ---
 

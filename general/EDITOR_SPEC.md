@@ -151,8 +151,8 @@ Typing `/` on an empty line or at the end of a word opens the **Quick Insert Com
 Chronote provides an automated, real-time Table of Contents (Outline) that keeps the engineer oriented in long technical investigations and multi-section stand-ups.
 
 ### 7.1 Architecture & Block ID Extension
-- Every heading block (`h1`, `h2`, `h3`) is automatically stamped with a stable block ID via `BlockIdExtension` (`data-block-id="blk_..."`).
-- `extractHeadings(doc)` in `src/domain/toc.utils.ts` parses the ProseMirror JSON tree into ordered `TocHeadingItem` objects (`id`, `level`, `text`, `index`).
+- Every heading block (`h1`, `h2`, `h3`) is automatically stamped with a stable, unique block ID via `BlockIdExtension` (`data-block-id="blk_..."`) using a ProseMirror `appendTransaction` plugin to ensure uniqueness without collisions.
+- `extractHeadings(doc)` in `src/domain/toc.utils.ts` parses the ProseMirror JSON tree into ordered `TocHeadingItem` objects (`id`, `level`, `text`, `index`), guaranteeing each heading has an ordinal document index.
 
 ### 7.2 Dynamic Cursor Context Tracking
 - `ChronoteEditor` registers ProseMirror `onFocus` and `onSelectionUpdate` handlers.
@@ -162,7 +162,28 @@ Chronote provides an automated, real-time Table of Contents (Outline) that keeps
 ### 7.3 Exact Cursor Positioning on Jump
 - When an engineer clicks any heading in the Table of Contents (via the Resource Inspector Outline tab or the floating popover):
   1. If the target resides in a collapsed DSM date entry, the entry automatically uncollapses.
-  2. The registered editor navigator scans the ProseMirror document tree for the matching heading node.
-  3. Executes `editor.chain().focus().setTextSelection(targetPos).run()`: places the blinking typing cursor directly inside that heading.
-  4. Smoothly scrolls the target heading into view: `targetEl.scrollIntoView({ behavior: "smooth", block: "center" })`.
-  5. Triggers a prominent visual feedback pulse animation (`block-highlight-pulse`).
+  2. The registered editor navigator matches the target heading using exact ordinal document index (`heading.index`) and unique block ID.
+  3. Executes `editor.chain().focus().setTextSelection(targetPos).scrollIntoView().run()`: places the blinking typing cursor directly inside the clicked heading.
+  4. Scopes DOM lookup to the active note/entry container (`#dsm-entry-{date}` or `.note-canvas-container`) and selects the element at `heading.index`.
+  5. Smoothly scrolls the target heading into view: `targetEl.scrollIntoView({ behavior: "smooth", block: "center" })`.
+  6. Triggers a prominent visual feedback pulse animation (`block-highlight-pulse`).
+
+---
+
+## 8. Interactive Image Resizing & Media Ergonomics
+
+Chronote provides fluid, developer-friendly image manipulation within notes and daily stand-up logs.
+
+### 8.1 Architecture & Node View
+- Handled by `CustomImage` (`src/presentation/editor/extensions/ImageExtension.ts`) and rendered via `ReactNodeViewRenderer(ImageView)`.
+- Image attributes: `src`, `filePath`, `alt`, `title`, `assetId`, `width`, `align` ('left' | 'center' | 'right').
+- Sizing can be specified as a percentage (`"25%"`, `"50%"`, `"75%"`, `"100%"`) or explicit pixels (`"450px"`).
+
+### 8.2 Interactive Resizing Controls
+- **Drag-to-Resize Handles:** Positioned on the left, right, bottom-left, and bottom-right edges/corners (`.chronote-image-resize-handle`).
+- **Real-Time Scaling & HUD Tooltip:** Dragging handles computes delta scaled by application zoom (`useUiStore.zoomLevel`) and renders a live floating tooltip badge showing pixel dimensions and container percentage (e.g. `480px • 60%`).
+- **Width Clamping:** Bounds clamping between 120px and 100% of editor content width.
+- **Double-Click Reset:** Double-clicking any resize handle resets the image width back to `100%`.
+- **Quick Preset Toolbar:** Floating pill toolbar appearing on hover/selection offering instant 1-click presets: `25%`, `50%`, `75%`, `100%`, alignment toggles (`⯇`, `▬`, `⯈`), and delete.
+- **Editable Inline Caption:** Clickable caption under the image enabling instant inline caption editing with Enter/Blur persistence.
+
