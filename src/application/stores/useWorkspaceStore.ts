@@ -4,6 +4,7 @@ import type { NoteMetadata } from "@domain/note.types";
 import { ipcBridge, type IndexStats } from "@infrastructure/tauri/ipcBridge";
 import { useDsmStore } from "./useDsmStore";
 import { useTabsStore } from "./useTabsStore";
+import { useCoursesStore } from "./useCoursesStore";
 
 export interface RecentWorkspaceItem {
   path: string;
@@ -199,7 +200,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     try {
       const notes = await ipcBridge.listGeneralNotes();
       set({ recentNotes: notes });
-      await useDsmStore.getState().loadDsm();
+      await Promise.all([
+        useDsmStore.getState().loadDsm(),
+        useCoursesStore.getState().loadCourses(),
+      ]);
     } catch (err) {
       console.error("Failed to refresh notes:", err);
     }

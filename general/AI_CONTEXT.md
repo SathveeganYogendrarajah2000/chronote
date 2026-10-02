@@ -15,8 +15,8 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Release 0.1.4 (Adaptive Ergonomics & Navigation)** — Completed. Ready for release tagging. Transitioning to Phase 3 (Cloud Integrations & Advanced Navigation).
-- **Status:** Release **0.1.4 COMPLETED**. Delivers window-filling application zoom in/out with dynamic calc compensation, on-screen HUD overlay, and Tauri native webview zoom factor integration; interactive resizable sidebars (drag edge handles for left navigation sidebar and right Resource Inspector with min/max clamping, double-click reset to default width, and 100% full-width child responsiveness); automated Table of Contents with live cursor tracking across General Notes and DSM stand-up entries, outline search, and exact ProseMirror text selection navigation upon click; multi-tag search & filtering with `ALL`/`ANY` match mode toggling across sidebar and DSM timeline. **145/145 Vitest tests** across 23 test suites and **22/22 native Rust tests + 1 stress test** passing with zero errors.
+- **Current Phase:** **Release 0.1.6 (Hierarchical Topics & Learning Courses Tracker)** — Completed. Ready for release tagging.
+- **Status:** Release **0.1.6 COMPLETED**. Delivers dedicated "Courses & Topics" journal section and workspace canvas. Supports arbitrary N-level nested topics and subtopics (Topic -> Subtopic -> Sub-subtopic...), attaching multiple learning resources per topic/subtopic across platforms (Udemy, YouTube, Articles, Courses, Books, Documentation, Other), clickable external links, progress percentage and lecture counter steppers (+1/-1), status lifecycle, ratings, attached rich study notes, breadcrumb navigation, and collapsible topic tree in the navigation sidebar. **167/167 Vitest tests** across 26 test suites and **23/23 native Rust tests + 1 stress test** passing with zero errors.
 - **Next Milestone:** Phase 3: Cloud Integrations & Advanced Navigation (direct Google Drive / OneDrive OAuth sync adapters, interactive 3-way conflict resolution wizard for concurrent edits, and interactive visual backlinks graph).
 
 ---
@@ -74,6 +74,7 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ## 6. Document & Schema Versions
 - `workspace.json` schema version: `1`
 - `dsm.json` document schema version: `1`
+- `notes/courses.json` document schema version: `1`
 - `notes/*.json` document schema version: `1`
 - SQLite `PRAGMA user_version`: `1`
 
@@ -96,8 +97,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Version bumped to `v0.1.4`. Window-filling application zoom in/out (`Ctrl+=`, `Ctrl+-`, `Ctrl+0`, wheel, HUD overlay & header controls), resizable sidebars with interactive edge drag handles and double-click reset, Multi-Tag filtering in Sidebar & DSM timeline with `ALL`/`ANY` match mode toggles, and automated Table of Contents with live cursor context tracking across General Notes and DSM entries with exact ProseMirror cursor navigation upon click. 145 Vitest + 22 Rust tests passing.
-- **Next Recommended Task:** Create git release tag `v0.1.4` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
+- **Current Work:** Version `v0.1.6`. Refined "Course and learning" architecture: unified under a single primary tab (`tab_courses_master`) with topic-first hierarchy (Root topics like AWS -> Course subtopics from Udemy/YouTube/Articles -> Deep subtopics). Topics feature an embedded on-canvas `ChronoteEditor` (replacing popup modals) matching General Notes capabilities (markdown, block IDs, debounced auto-saving to `notes/courses.json`) and synchronized with the Resource Inspector pane (live TOC outline, code snippets, backlinks, tags). 168 Vitest + 23 Rust tests passing.
+- **Next Recommended Task:** Create git release tag `v0.1.6` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---
 

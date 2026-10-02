@@ -16,6 +16,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.6] - 2026-10-02
+
+### Added
+- **Refined "Course and learning" Section & Canvas Notes Architecture:**
+  - **Single Master Learning Tab:** Unified under the primary `"Course and learning"` tab (`tab_courses_master`), giving immediate, dedicated access alongside DSM and General Notes.
+  - **Topic-First Knowledge Organization:** Tailored for real-world engineering learning journeys:
+    - Root Topics represent overarching domains (e.g. `AWS`, `Distributed Systems`).
+    - Subtopics capture specific courses or deep-dives (e.g. `AWS Cloud Solutions Architect Associate` from Udemy).
+    - Arbitrary N-level nested subtopics for granular concepts (e.g. `IAM & Security`, `S3 Storage Classes`).
+  - **First-Class On-Canvas Notes Canvas (No Popups):** Selecting any topic or subtopic immediately renders the full notes canvas powered by `ChronoteEditor` directly on screen. Features identical markdown capabilities to General Notes (headings, syntax-highlighted code blocks, checklists, callouts, block IDs) with continuous debounced autosaving into `notes/courses.json`.
+  - **Resource Inspector & Outline Synchronization:** The right-hand Resource Inspector synchronizes live with the active topic, presenting an automated Table of Contents (H1/H2/H3 outline) with smooth scroll navigation and pulse animation, extracted code snippets, and tags.
+  - **Fluid Subtopics Bar:** A horizontal pill bar beneath the topic header provides instant switching between sibling subtopics and 1-click addition of new child subtopics without breaking focus.
+  - **Platform & Course Metadata Integration:**
+    - Attach platform metadata to topics/subtopics: **Udemy**, **YouTube**, **Articles / Whitepapers**, **Online Courses**, **Books**, **Official Documentation**, or **Other**.
+    - 1-click external URL launcher (`↗ Open Course Link`) via Tauri native desktop bridge (`ipcBridge.openExternalUrl`).
+    - Instructor/author attribution, status lifecycle (`Not Started`, `In Progress`, `Completed`, `On Hold`), and interactive percentage stepper controls (`-` / `+`).
+  - **Breadcrumb Navigation:** Seamless ancestor trail navigation (`Courses Hub > Topic > Subtopic > Sub-subtopic`) with 1-click jump.
+  - **Sidebar Topic Tree:** Collapsible/expandable hierarchical topic tree in the navigation sidebar with indentation, status badges, and hover `+` button to quickly create subtopics.
+  - **Integrated Tags:** Courses and topics tags seamlessly integrate with workspace dynamic tags, `useWorkspaceTags`, and the `TagPicker` component.
+  - **Atomic Local-First Storage:** Saved to human-readable `notes/courses.json` with atomic file I/O (`tmp -> fsync -> rename`) in the Rust native core.
+  - **168 Vitest tests** and **23 native Rust tests** passing with zero errors.
+
+---
+
+## [0.1.5] - 2026-10-02
+
+### Added
+- **Interactive Rich Image Resizing in Notes:**
+  - Dynamic drag-to-resize handles on edges and corners (`.chronote-image-resize-handle.right`, `.left`, `.corner-br`, `.corner-bl`) with fluid real-time scaling.
+  - Floating action toolbar on hover or selection with 1-click width presets: `25%`, `50%`, `75%`, and `100%`.
+  - Image alignment controls: Align Left (`⯇`), Align Center (`▬`), and Align Right (`⯈`).
+  - Live on-screen dimension tooltip badge displayed during drag with exact pixel width and container percentage (e.g. `450px • 62%`).
+  - Double-click on any resize handle to reset image width instantly to `100%`.
+  - Editable image captions with click-to-edit inline input and blur/enter persistence.
+  - Export and storage serialization: image `width` and `align` attributes preserved in canonical ProseMirror JSON and serialized cleanly in HTML export.
+- **User-Friendly Tag Selection & Autocomplete (`TagPicker`):**
+  - Autocomplete suggestion popover listing previously created tags across the entire workspace from both General Notes and Daily Stand-up entries (`useWorkspaceTags` hook).
+  - Displays usage frequency count for each existing tag.
+  - Allows 1-click selection of existing tags without retyping.
+  - Real-time search query filtering and keyboard navigation (`ArrowUp`, `ArrowDown`, `Enter`, `Tab`, `Escape`).
+  - Seamless inline creation for new tags (`+ Create #new-tag`) with automatic lowercase normalization and character validation.
+  - Integrated into both `NoteTagBar` (General Notes) and `DsmEntryHeader` (DSM Stand-up timeline entries).
+
+### Fixed
+- **Table of Contents Outline Heading Cursor Navigation:**
+  - Fixed an issue where clicking any heading under the Outline tab in the sidebar always sent the cursor and view to the first heading's row.
+  - Dynamic unique block ID assignment in `BlockIdExtension` via a ProseMirror `appendTransaction` plugin, eliminating duplicate default IDs across headings and paragraphs.
+  - Implemented exact heading ordinal index matching (`heading.index`) in both `ChronoteEditor` editor navigator and `useTocStore` container-scoped DOM selector, ensuring the cursor and highlight pulse target the exact clicked heading row even with identical heading text.
+
+---
+
 ## [0.1.4] - 2026-10-02
 
 ### Added

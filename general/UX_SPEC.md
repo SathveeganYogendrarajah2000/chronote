@@ -57,6 +57,10 @@ Chronote utilizes a 3-pane responsive desktop layout with dynamically resizable 
 - **Full-Width Element Responsiveness:** Workspace card, navigation items, note lists, and tag chips flex to fill 100% of the sidebar width.
 - **DSM Journal Root:** Quick button with calendar badge to jump to Today’s DSM entry (`Ctrl+Shift+D`).
 - **DSM Date Tree:** Quick scroll targets for recent days (grouped by "This Week", "Last Week", "Older").
+- **Courses & Topics Tree (v0.1.6):**
+  - Section header displaying total topic count and quick `+` button to create a root topic.
+  - "Courses Hub" item navigating directly to the full learning tracker overview.
+  - Collapsible topic tree rendering arbitrary N-level nested topics with indentation, expand/collapse chevron toggles, course count badges, and hover `+` button to add subtopics directly.
 - **General Notes Catalog:** Pinned notes on top, followed by alphabetically sorted notes with search filter.
 - **Multi-Tag Search & Filter Bar:**
   - Clicking tags adds/removes them from the multi-tag filter set.
@@ -141,3 +145,30 @@ Chronote avoids generic primary colors in favor of a curated, ergonomic palette.
 - **Visible Focus Rings:** Strict keyboard focus outline (`2px solid var(--accent-primary)`) on all interactive inputs, buttons, and tab controls.
 - **Reduced Motion:** Respects `prefers-reduced-motion: reduce`. Disables scroll-smoothing and animations when enabled in OS settings.
 - **Screen Reader Semantics:** Uses standard HTML5 landmarks (`<nav>`, `<main>`, `<aside>`, `<header>`) and ARIA roles for tabs (`role="tablist"`, `role="tab"`).
+
+---
+
+## 6. Tagging & Media Ergonomics Specifications
+
+### 6.1 TagPicker Popover Interaction
+- **Trigger & Activation:** Activated via a clean `+ Add tag` pill in General Notes or `+ Tag` in DSM entries. Focus triggers an attached popover beneath the input.
+- **Auto-Suggestions:** Aggregates unique tags previously created across the workspace via `useWorkspaceTags`, displaying them with frequency counts (e.g. `(5)`). Tags already present on the active note/entry are excluded.
+- **1-Click Selection:** Clicking any suggestion instantly applies the tag without requiring typing.
+- **Instant Creation:** If a user types a new tag not in the workspace, a top `+ Create "#<name>"` action appears with an `Enter ↵` badge.
+- **Keyboard Ergonomics:** Full support for `ArrowDown` / `ArrowUp` navigation, `Enter` selection, `Tab` completion, and `Escape` dismissal.
+
+### 6.2 Image Resizing & Node View
+- **Interactive Drag Handles:** Edge handles (`.right`, `.left`) and corner handles (`.corner-br`, `.corner-bl`) with custom directional cursors (`ew-resize`, `nwse-resize`, `nesw-resize`).
+- **Live Sizing Tooltip:** A dark glassmorphic badge displays real-time pixel width and percentage (`480px • 60%`) while dragging.
+- **Quick Preset Toolbar:** Appears on hover/selection with 1-click presets (`25%`, `50%`, `75%`, `100%`), alignment toggles, and deletion.
+- **Double-Click Reset:** Double-clicking any resize handle resets the image width back to `100%`.
+
+### 6.3 Courses & Learning Workspace Ergonomics (v0.1.6)
+- **Single Master Learning Tab:** The entire feature operates under the primary `"Course and learning"` tab (`tab_courses_master`) alongside General Notes and DSM.
+- **Hierarchical Knowledge Organization:** Organizes learning tracks from Root Topics (e.g. `AWS`) to Course Subtopics (e.g. `AWS Cloud Solutions Architect Associate` from Udemy) down to arbitrary N-level subtopics (e.g. `IAM & Security`, `S3 Storage Classes`).
+- **On-Canvas Notes Canvas (No Popups):** Selecting any topic or subtopic immediately renders the complete notes canvas directly on screen via `ChronoteEditor`. Users write rich Markdown, code blocks with syntax highlighting, callouts, checklists, and headings. Autosaving occurs seamlessly in the background to `notes/courses.json`.
+- **Resource Inspector & Outline Integration:** The right-hand inspector synchronizes live with the active topic, showing an automated Table of Contents (H1/H2/H3 outline) with smooth scroll navigation and pulse highlight, extracted code blocks, and tags.
+- **Fluid Subtopics Bar:** A horizontal pill bar beneath the topic header provides instant switching between sibling subtopics and a 1-click `+ Add Subtopic` button without breaking focus.
+- **Course Metadata & External Linker:** Topics and subtopics support platform badges (Udemy, YouTube, Articles, Books, Documentation), 1-click external URL launcher (`↗ Open Course Link`), instructor/author attribution, status badge, and progress stepper controls (`-` / `+`).
+- **Breadcrumb Navigation:** Ancestor trail (`Courses Hub / AWS / AWS Cloud Solutions Architect Associate / IAM & Security`) enables instantaneous jumps up the knowledge hierarchy.
+

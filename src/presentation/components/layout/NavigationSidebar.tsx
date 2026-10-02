@@ -4,10 +4,104 @@ import { useTabsStore } from "@application/stores/useTabsStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { useDsmStore } from "@application/stores/useDsmStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
+import { useCoursesStore } from "@application/stores/useCoursesStore";
 import { formatDateLabel, sortDsmEntries } from "@domain/dsm.utils";
 import { filterNotes, filterNotesByTags } from "@domain/note.utils";
-import { DSM_TAB_ID } from "@domain/tabs.types";
+import { buildTopicTree } from "@domain/courses.utils";
+import type { TopicTreeNode } from "@domain/courses.types";
+import { DSM_TAB_ID, COURSES_TAB_ID, createCoursesTab } from "@domain/tabs.types";
 import { TagChip } from "../common/TagChip";
+
+interface TopicTreeItemProps {
+  node: TopicTreeNode;
+  depth: number;
+  activeTopicId: string | null;
+  isCoursesTabActive: boolean;
+  expandedIds: string[];
+  onSelectTopic: (id: string) => void;
+  onToggleExpand: (id: string, e: React.MouseEvent) => void;
+  onAddSubtopic: (id: string, e: React.MouseEvent) => void;
+}
+
+const TopicTreeItem: React.FC<TopicTreeItemProps> = ({
+  node,
+  depth,
+  activeTopicId,
+  isCoursesTabActive,
+  expandedIds,
+  onSelectTopic,
+  onToggleExpand,
+  onAddSubtopic,
+}) => {
+  const isExpanded = expandedIds.includes(node.id);
+  const hasChildren = node.children.length > 0;
+  const isSelected = isCoursesTabActive && activeTopicId === node.id;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <button
+        type="button"
+        className={`sidebar-topic-row ${isSelected ? "active" : ""}`}
+        style={{ paddingLeft: `${8 + depth * 14}px` }}
+        onClick={() => onSelectTopic(node.id)}
+        title={`${node.title} (${node.directResourceCount} courses)`}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 3, minWidth: 0, flex: 1 }}>
+          {hasChildren ? (
+            <span
+              className={`sidebar-topic-chevron ${isExpanded ? "expanded" : ""}`}
+              onClick={(e) => onToggleExpand(node.id, e)}
+            >
+              ▶
+            </span>
+          ) : (
+            <span style={{ width: 14, height: 14, display: "inline-block", flexShrink: 0 }} />
+          )}
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.8, flexShrink: 0 }}>
+            <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z" />
+          </svg>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {node.title}
+          </span>
+        </span>
+
+        <span style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          {node.directResourceCount > 0 && (
+            <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+              {node.directResourceCount}
+            </span>
+          )}
+          <span
+            className="sidebar-note-action-btn"
+            style={{ width: 16, height: 16, fontSize: 11 }}
+            title={`Add subtopic under "${node.title}"`}
+            onClick={(e) => onAddSubtopic(node.id, e)}
+          >
+            +
+          </span>
+        </span>
+      </button>
+
+      {hasChildren && isExpanded && (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {node.children.map((child) => (
+            <TopicTreeItem
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              activeTopicId={activeTopicId}
+              isCoursesTabActive={isCoursesTabActive}
+              expandedIds={expandedIds}
+              onSelectTopic={onSelectTopic}
+              onToggleExpand={onToggleExpand}
+              onAddSubtopic={onAddSubtopic}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const NavigationSidebar: React.FC = () => {
   const {
@@ -42,12 +136,38 @@ export const NavigationSidebar: React.FC = () => {
     togglePin,
     setDeleteCandidateId,
   } = useNotesStore();
+  const {
+    coursesDoc,
+    selectedTopicId,
+    expandedTopicIds,
+    selectTopic,
+    toggleTopicExpanded,
+    openCreateTopicModal,
+  } = useCoursesStore();
 
   const isDsmActive = activeTabId === DSM_TAB_ID;
+  const isCoursesActive = activeTabId === COURSES_TAB_ID;
 
   const handleOpenDsm = () => {
     switchTab(DSM_TAB_ID);
   };
+
+  const handleOpenCoursesHub = () => {
+    openTab(createCoursesTab());
+    switchTab(COURSES_TAB_ID);
+    selectTopic(null);
+  };
+
+  const handleSelectTopicFromSidebar = (topicId: string) => {
+    openTab(createCoursesTab());
+    switchTab(COURSES_TAB_ID);
+    selectTopic(topicId);
+  };
+
+  const topicTree = useMemo(() => {
+    if (!coursesDoc) return [];
+    return buildTopicTree(coursesDoc.topics, coursesDoc.resources, null);
+  }, [coursesDoc]);
 
   const handleJumpToDsmDate = (date: string) => {
     switchTab(DSM_TAB_ID);
@@ -120,10 +240,26 @@ export const NavigationSidebar: React.FC = () => {
       }
     }
 
+    // Aggregate tags from Courses Topics & Resources
+    if (coursesDoc?.topics) {
+      for (const topic of coursesDoc.topics) {
+        for (const tag of topic.tags) {
+          map.set(tag, (map.get(tag) ?? 0) + 1);
+        }
+      }
+    }
+    if (coursesDoc?.resources) {
+      for (const res of coursesDoc.resources) {
+        for (const tag of res.tags) {
+          map.set(tag, (map.get(tag) ?? 0) + 1);
+        }
+      }
+    }
+
     return Array.from(map.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
-  }, [recentNotes, dsmDoc]);
+  }, [recentNotes, dsmDoc, coursesDoc]);
 
   const handleMouseDownResize = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -328,6 +464,66 @@ export const NavigationSidebar: React.FC = () => {
                 </button>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Courses & Learning Section */}
+      <div className="sidebar-section">
+        <div className="sidebar-section-header">
+          <span>Courses & Topics</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: "11px" }}>{coursesDoc?.topics.length ?? 0}</span>
+            <button
+              type="button"
+              className="note-action-btn"
+              style={{ width: 18, height: 18, fontSize: 13, padding: 0 }}
+              title="Create New Root Topic"
+              onClick={(e) => {
+                e.stopPropagation();
+                openCreateTopicModal(null);
+              }}
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className={`sidebar-nav-item ${isCoursesActive && !selectedTopicId ? "active" : ""}`}
+          onClick={handleOpenCoursesHub}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8.211 2.047a.5.5 0 0 0-.422 0l-7.5 3.5a.5.5 0 0 0 .025.917l7.5 3a.5.5 0 0 0 .372 0L14 7.14V13a1 1 0 0 0-1 1v2h3v-2a1 1 0 0 0-1-1V6.739l.686-.275a.5.5 0 0 0 .025-.917l-7.5-3.5Z" />
+            <path d="M4.179 9.255 1.5 10.5V12a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-1.5l-2.679-1.245L8 11.245 4.179 9.255Z" />
+          </svg>
+          <span>Courses Hub</span>
+          <span className="nav-item-count">{coursesDoc?.resources.length ?? 0} courses</span>
+        </button>
+
+        {/* Topic Tree */}
+        {topicTree.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 1, marginTop: 4 }}>
+            {topicTree.map((node) => (
+              <TopicTreeItem
+                key={node.id}
+                node={node}
+                depth={0}
+                activeTopicId={selectedTopicId}
+                isCoursesTabActive={isCoursesActive}
+                expandedIds={expandedTopicIds}
+                onSelectTopic={handleSelectTopicFromSidebar}
+                onToggleExpand={(id, e) => {
+                  e.stopPropagation();
+                  toggleTopicExpanded(id);
+                }}
+                onAddSubtopic={(id, e) => {
+                  e.stopPropagation();
+                  openCreateTopicModal(id);
+                }}
+              />
+            ))}
           </div>
         )}
       </div>

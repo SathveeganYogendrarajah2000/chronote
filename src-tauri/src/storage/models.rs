@@ -87,3 +87,66 @@ pub struct IndexStats {
     pub indexed_blocks: usize,
     pub indexed_tags: usize,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LearningResource {
+    pub id: String,
+    pub topic_id: String,
+    pub title: String,
+    pub platform: String,
+    pub url: String,
+    pub author: String,
+    pub status: String,
+    pub progress: u32,
+    pub completed_items: Option<u32>,
+    pub total_items: Option<u32>,
+    pub rating: Option<u32>,
+    pub tags: Vec<String>,
+    pub notes: serde_json::Value,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+fn default_topic_content() -> serde_json::Value {
+    serde_json::json!({
+        "type": "doc",
+        "content": [{ "type": "paragraph" }]
+    })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LearningTopic {
+    pub id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub platform: Option<String>,
+    pub url: Option<String>,
+    pub author: Option<String>,
+    pub status: Option<String>,
+    pub progress: Option<u32>,
+    pub completed_items: Option<u32>,
+    pub total_items: Option<u32>,
+    pub rating: Option<u32>,
+    #[serde(default = "default_topic_content")]
+    pub content: serde_json::Value,
+    pub notes: Option<serde_json::Value>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CoursesDocument {
+    pub id: String,
+    pub schema_version: u32,
+    pub title: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub topics: Vec<LearningTopic>,
+    pub resources: Vec<LearningResource>,
+}
+

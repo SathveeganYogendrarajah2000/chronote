@@ -2,8 +2,8 @@ use tauri::State;
 
 use crate::database::{index_dsm, index_general_note, remove_general_note};
 use crate::state::AppState;
-use crate::storage::models::{DsmDocument, GeneralNote, NoteMetadata};
-use crate::storage::{delete_note, list_notes, read_dsm, read_note, save_dsm, save_note};
+use crate::storage::models::{CoursesDocument, DsmDocument, GeneralNote, NoteMetadata};
+use crate::storage::{delete_note, list_notes, read_courses, read_dsm, read_note, save_courses, save_dsm, save_note};
 
 #[tauri::command]
 pub fn read_dsm_document(state: State<AppState>) -> Result<DsmDocument, String> {
@@ -25,6 +25,22 @@ pub fn save_dsm_document(doc: DsmDocument, state: State<AppState>) -> Result<(),
     index_dsm(&mut ctx.db, &doc).map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn read_courses_document(state: State<AppState>) -> Result<CoursesDocument, String> {
+    let lock = state.context.lock().map_err(|_| "State lock poisoned".to_string())?;
+    let ctx = lock.as_ref().ok_or_else(|| "No active workspace open".to_string())?;
+
+    read_courses(&ctx.root).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn save_courses_document(doc: CoursesDocument, state: State<AppState>) -> Result<(), String> {
+    let mut lock = state.context.lock().map_err(|_| "State lock poisoned".to_string())?;
+    let ctx = lock.as_mut().ok_or_else(|| "No active workspace open".to_string())?;
+
+    save_courses(&ctx.root, &doc).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

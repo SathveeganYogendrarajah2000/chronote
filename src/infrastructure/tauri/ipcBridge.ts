@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import type { DsmDocument } from "@domain/dsm.types";
+import type { CoursesDocument } from "@domain/courses.types";
 import type { GeneralNote, NoteMetadata } from "@domain/note.types";
 import type { SearchResultItem } from "@domain/search.types";
 import type { ResourceReference, BacklinkReference, ResourceType } from "@domain/resource.types";
@@ -67,6 +68,8 @@ export interface IpcBridge {
   rebuildIndex(): Promise<IndexStats>;
   readDsmDocument(): Promise<DsmDocument>;
   saveDsmDocument(doc: DsmDocument): Promise<void>;
+  readCoursesDocument(): Promise<CoursesDocument>;
+  saveCoursesDocument(doc: CoursesDocument): Promise<void>;
   readGeneralNote(id: string): Promise<GeneralNote>;
   saveGeneralNote(note: GeneralNote): Promise<void>;
   listGeneralNotes(): Promise<NoteMetadata[]>;
@@ -203,6 +206,16 @@ export class TauriIpcBridge implements IpcBridge {
   async saveDsmDocument(doc: DsmDocument): Promise<void> {
     if (!this.isTauriAvailable()) return mockIpcBridge.saveDsmDocument(doc);
     return await invoke<void>("save_dsm_document", { doc });
+  }
+
+  async readCoursesDocument(): Promise<CoursesDocument> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.readCoursesDocument();
+    return await invoke<CoursesDocument>("read_courses_document");
+  }
+
+  async saveCoursesDocument(doc: CoursesDocument): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.saveCoursesDocument(doc);
+    return await invoke<void>("save_courses_document", { doc });
   }
 
   async readGeneralNote(id: string): Promise<GeneralNote> {

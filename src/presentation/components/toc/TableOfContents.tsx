@@ -3,6 +3,7 @@ import { useTocStore } from "@application/stores/useTocStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
 import { useDsmStore, getTodayIsoDate } from "@application/stores/useDsmStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
+import { useCoursesStore } from "@application/stores/useCoursesStore";
 import { extractHeadings } from "@domain/toc.utils";
 import type { TocHeadingItem } from "@domain/toc.utils";
 
@@ -19,6 +20,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
   const { activeNote } = useNotesStore();
   const { dsmDoc, highlightedDate, jumpToDate } = useDsmStore();
   const { tabs, activeTabId } = useTabsStore();
+  const { coursesDoc, selectedTopicId } = useCoursesStore();
 
   const [filterText, setFilterText] = useState("");
 
@@ -27,6 +29,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
   }, [tabs, activeTabId]);
 
   const isDsmActive = currentTab?.documentType === "dsm";
+  const isCoursesActive = currentTab?.documentType === "courses";
 
   // Resolve the active content and metadata based on where cursor is
   const { headings, contextTitle, contextType, activeDsmDate } = useMemo(() => {
@@ -49,6 +52,17 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
         contextType: "dsm" as const,
         activeDsmDate: date,
       };
+    } else if (isCoursesActive) {
+      const activeTopic = selectedTopicId && coursesDoc
+        ? coursesDoc.topics.find((t) => t.id === selectedTopicId)
+        : null;
+      const h = activeTopic && activeTopic.content ? extractHeadings(activeTopic.content) : [];
+      return {
+        headings: h,
+        contextTitle: activeTopic ? activeTopic.title : "Courses & Learning",
+        contextType: "courses" as const,
+        activeDsmDate: null,
+      };
     } else {
       // General note
       const note = activeNote;
@@ -60,7 +74,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
         activeDsmDate: null,
       };
     }
-  }, [isDsmActive, activeContext, highlightedDate, dsmDoc?.entries, activeNote]);
+  }, [isDsmActive, isCoursesActive, selectedTopicId, coursesDoc, activeContext, highlightedDate, dsmDoc?.entries, activeNote]);
 
   // Filter headings by search query if user types in search
   const filteredHeadings = useMemo(() => {
@@ -93,11 +107,11 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
         <div className="toc-context-card">
           <div className="toc-context-title-row">
             <span className="toc-context-name" title={contextTitle}>
-              {contextType === "dsm" ? "📅 " : "📄 "}
+              {contextType === "dsm" ? "📅 " : contextType === "courses" ? "🎓 " : "📄 "}
               {contextTitle}
             </span>
             <span className={`toc-context-type-badge ${contextType}`}>
-              {contextType === "dsm" ? "DSM" : "NOTE"}
+              {contextType === "dsm" ? "DSM" : contextType === "courses" ? "COURSE" : "NOTE"}
             </span>
           </div>
 

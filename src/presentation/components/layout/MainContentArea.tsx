@@ -3,12 +3,14 @@ import { useTabsStore } from "@application/stores/useTabsStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
 import { DsmTimeline } from "../dsm/DsmTimeline";
 import { NoteEditorCanvas } from "../notes/NoteEditorCanvas";
+import { LearningCanvas } from "../courses/LearningCanvas";
 
 export const MainContentArea: React.FC = () => {
   const { tabs, activeTabId } = useTabsStore();
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
 
   const isDsm = activeTab?.documentType === "dsm";
+  const isCourses = activeTab?.documentType === "courses";
 
   useEffect(() => {
     if (activeTab && activeTab.documentType === "general") {
@@ -18,7 +20,13 @@ export const MainContentArea: React.FC = () => {
 
   return (
     <main className="content-viewport">
-      {isDsm ? <DsmTimeline /> : <NoteEditorCanvas />}
+      {isDsm ? (
+        <DsmTimeline />
+      ) : isCourses ? (
+        <LearningCanvas />
+      ) : (
+        <NoteEditorCanvas />
+      )}
     </main>
   );
 };

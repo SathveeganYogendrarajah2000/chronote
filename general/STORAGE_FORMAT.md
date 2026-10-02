@@ -11,6 +11,7 @@ my-engineering-workspace/
 ├── .stignore                       # Syncthing ignore file (auto-generated)
 ├── notes/
 │   ├── dsm.json                    # Single logical DSM document containing date entries
+│   ├── courses.json                # Single logical Courses & Topics learning tracker document
 │   ├── not_01JC87XK89.json         # General note
 │   └── not_01JC87Y11Z.json         # General note
 ├── assets/
@@ -147,6 +148,78 @@ Stores standalone general engineering notes.
       }
     ]
   }
+}
+```
+
+### 2.4 `notes/courses.json`
+Stores the continuous Courses & Topics learning journal. Each topic and subtopic is an independently addressable document holding structured ProseMirror notes (`content`), hierarchical nesting (`parentId`), and optional course metadata (`platform`, `url`, `author`, `status`, `progress`).
+```json
+{
+  "id": "courses_master",
+  "schemaVersion": 1,
+  "title": "Courses & Topics",
+  "createdAt": "2026-10-02T10:00:00.000Z",
+  "updatedAt": "2026-10-02T16:00:00.000Z",
+  "topics": [
+    {
+      "id": "top_01JC8814CC",
+      "parentId": null,
+      "title": "AWS",
+      "description": "Amazon Web Services study roadmap and certifications",
+      "tags": ["aws", "cloud"],
+      "status": "in_progress",
+      "progress": 45,
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "heading",
+            "attrs": { "level": 1, "id": "blk_top_01" },
+            "content": [{ "type": "text", "text": "AWS Study Goals & Overview" }]
+          },
+          {
+            "type": "paragraph",
+            "attrs": { "id": "blk_top_02" },
+            "content": [{ "type": "text", "text": "High-level notes and architectural synthesis across AWS services." }]
+          }
+        ]
+      },
+      "createdAt": "2026-10-02T10:00:00.000Z",
+      "updatedAt": "2026-10-02T10:00:00.000Z"
+    },
+    {
+      "id": "top_01JC8815DD",
+      "parentId": "top_01JC8814CC",
+      "title": "AWS Cloud Solutions Architect Associate",
+      "description": "Udemy SAA-C03 preparation course",
+      "platform": "udemy",
+      "url": "https://www.udemy.com/course/aws-certified-solutions-architect-associate-saa-c03/",
+      "author": "Stephane Maarek",
+      "status": "in_progress",
+      "progress": 35,
+      "completedItems": 70,
+      "totalItems": 200,
+      "tags": ["aws", "udemy", "saa-c03"],
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "heading",
+            "attrs": { "level": 1, "id": "blk_saa_01" },
+            "content": [{ "type": "text", "text": "IAM, S3 & High Availability Architecture" }]
+          },
+          {
+            "type": "paragraph",
+            "attrs": { "id": "blk_saa_02" },
+            "content": [{ "type": "text", "text": "Notes covering multi-AZ deployment, Auto-scaling groups, and S3 lifecycle rules." }]
+          }
+        ]
+      },
+      "createdAt": "2026-10-02T10:05:00.000Z",
+      "updatedAt": "2026-10-02T10:05:00.000Z"
+    }
+  ],
+  "resources": []
 }
 ```
 

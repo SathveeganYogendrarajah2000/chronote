@@ -1,15 +1,18 @@
 import { create } from "zustand";
 import {
   type TabItem,
+  type DocumentType,
   createDsmTab,
   DSM_TAB_ID,
   DSM_DOCUMENT_ID,
+  COURSES_TAB_ID,
+  COURSES_DOCUMENT_ID,
 } from "@domain/tabs.types";
 
 export interface OpenTabParams {
   id?: string | undefined;
   documentId: string;
-  documentType: "dsm" | "general";
+  documentType: DocumentType;
   title: string;
   isPinned?: boolean | undefined;
   scrollPosition?: number | undefined;
@@ -291,6 +294,15 @@ export const useTabsStore = create<TabsState>((set, get) => ({
         if (tab.documentType === "dsm" || tab.documentId === DSM_DOCUMENT_ID) {
           filteredTabs.push({ ...createDsmTab(), isPinned: true });
           dsmFound = true;
+        } else if (tab.documentType === "courses" || tab.documentId === COURSES_DOCUMENT_ID) {
+          filteredTabs.push({
+            id: tab.id || COURSES_TAB_ID,
+            documentId: COURSES_DOCUMENT_ID,
+            documentType: "courses",
+            title: tab.title || "Courses & Learning",
+            isPinned: tab.isPinned ?? false,
+            ...(tab.scrollPosition !== undefined ? { scrollPosition: tab.scrollPosition } : {}),
+          });
         } else if (tab.documentType === "general") {
           if (!validNoteIds || validNoteIds.has(tab.documentId)) {
             filteredTabs.push({

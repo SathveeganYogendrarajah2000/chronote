@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { TagChip } from "../common/TagChip";
+import { TagPicker } from "../common/TagPicker";
 import { formatDateLabel } from "@domain/dsm.utils";
 import { useDsmStore } from "@application/stores/useDsmStore";
 
@@ -22,19 +23,7 @@ export const DsmEntryHeader: React.FC<DsmEntryHeaderProps> = ({
   onRemoveTag,
   onDeleteEntry,
 }) => {
-  const [isAddingTag, setIsAddingTag] = useState(false);
-  const [tagInput, setTagInput] = useState("");
-
   const { dayOfWeek, isToday, isYesterday } = formatDateLabel(date);
-
-  const handleTagSubmit = () => {
-    const trimmed = tagInput.trim();
-    if (trimmed.length > 0) {
-      onAddTag(trimmed);
-      setTagInput("");
-    }
-    setIsAddingTag(false);
-  };
 
   return (
     <div
@@ -80,35 +69,14 @@ export const DsmEntryHeader: React.FC<DsmEntryHeaderProps> = ({
             />
           ))}
 
-          {isAddingTag ? (
-            <input
-              type="text"
-              autoFocus
-              placeholder="tag name..."
-              className="dsm-tag-input"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onBlur={handleTagSubmit}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleTagSubmit();
-                } else if (e.key === "Escape") {
-                  setIsAddingTag(false);
-                  setTagInput("");
-                }
-              }}
-            />
-          ) : (
-            <button
-              type="button"
-              className="dsm-tag-add-btn"
-              onClick={() => setIsAddingTag(true)}
-              title="Add a tag to this stand-up entry"
-            >
-              + Tag
-            </button>
-          )}
+          <TagPicker
+            currentTags={tags}
+            onAddTag={onAddTag}
+            placeholder="+ tag..."
+            buttonLabel="+ Tag"
+            size="small"
+            className="dsm-tag-picker"
+          />
         </div>
 
         <button

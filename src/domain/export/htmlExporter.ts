@@ -166,7 +166,8 @@ export function serializeNodeToHtml(node: ProseMirrorNode): string {
       const src = (node.attrs?.src as string) || "";
       const alt = escapeHtml((node.attrs?.alt as string) || "image");
       const caption = node.attrs?.caption ? escapeHtml(String(node.attrs.caption)) : null;
-      return `<figure style="margin: 14px 0;"><img src="${src}" alt="${alt}" style="max-width: 100%; height: auto; border-radius: 4px;" />${caption ? `<figcaption style="font-size: 9pt; color: #64748b; margin-top: 4px;">${caption}</figcaption>` : ""}</figure>`;
+      const widthStyle = node.attrs?.width ? `width: ${escapeHtml(String(node.attrs.width))}; ` : "";
+      return `<figure style="margin: 14px 0;"><img src="${src}" alt="${alt}" style="${widthStyle}max-width: 100%; height: auto; border-radius: 4px;" />${caption ? `<figcaption style="font-size: 9pt; color: #64748b; margin-top: 4px;">${caption}</figcaption>` : ""}</figure>`;
     }
     case "attachment":
     case "fileAttachment": {

@@ -1,6 +1,6 @@
 [package]
 name = "chronote"
-version = "0.1.4"
+version = "0.1.6"
 description = "Chronote - Lightweight local-first desktop engineering notebook"
 authors = ["Chronote Authors"]
 license = "MIT"

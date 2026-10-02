@@ -8,8 +8,8 @@ use commands::asset::{get_asset_path, pick_asset_file, save_asset_binary};
 use commands::conflict::{get_sync_conflicts, resolve_conflict};
 use commands::export::{export_workspace_backup, pick_export_file_path, save_exported_file};
 use commands::note::{
-    delete_general_note, list_general_notes, read_dsm_document, read_general_note,
-    save_dsm_document, save_general_note,
+    delete_general_note, list_general_notes, read_courses_document, read_dsm_document,
+    read_general_note, save_courses_document, save_dsm_document, save_general_note,
 };
 use commands::performance::get_performance_metrics;
 use commands::search::{get_backlinks, get_resources, search_workspace};
@@ -52,6 +52,8 @@ pub fn run() {
             rebuild_index,
             read_dsm_document,
             save_dsm_document,
+            read_courses_document,
+            save_courses_document,
             read_general_note,
             save_general_note,
             list_general_notes,
