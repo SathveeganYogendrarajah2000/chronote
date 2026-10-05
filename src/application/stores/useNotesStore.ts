@@ -10,6 +10,7 @@ import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import { useTabsStore } from "./useTabsStore";
 import { useWorkspaceStore } from "./useWorkspaceStore";
 import { useResourceStore } from "./useResourceStore";
+import { useBinStore } from "./useBinStore";
 
 let noteSaveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -40,6 +41,7 @@ export interface NotesState {
   togglePin: (id: string) => Promise<void>;
   setDeleteCandidateId: (id: string | null) => void;
   deleteNote: (id: string) => Promise<void>;
+  deleteNotePermanently: (id: string) => Promise<void>;
   setFilterQuery: (query: string) => void;
   setSelectedTag: (tag: string | null) => void;
   toggleTagFilter: (tag: string) => void;
@@ -304,7 +306,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const { activeNote } = get();
 
     try {
-      await ipcBridge.deleteGeneralNote(id);
+      await ipcBridge.moveNoteToBin(id);
 
       // If active note is the one being deleted, clear it
       if (activeNote?.id === id) {
@@ -320,9 +322,33 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       // Refresh resource inspector
       void useResourceStore.getState().refresh();
 
+      // Refresh bin list
+      await useBinStore.getState().fetchBinnedNotes();
+
       set({ deleteCandidateId: null });
     } catch (err) {
-      console.error(`Failed to delete general note ${id}:`, err);
+      console.error(`Failed to move general note ${id} to bin:`, err);
+      throw err;
+    }
+  },
+
+  deleteNotePermanently: async (id: string) => {
+    const { activeNote } = get();
+
+    try {
+      await ipcBridge.deleteGeneralNote(id);
+
+      if (activeNote?.id === id) {
+        set({ activeNote: null, isDirty: false });
+      }
+
+      useTabsStore.getState().closeTab(`tab_${id}`);
+      await useWorkspaceStore.getState().refreshNotes();
+      void useResourceStore.getState().refresh();
+      await useBinStore.getState().fetchBinnedNotes();
+      set({ deleteCandidateId: null });
+    } catch (err) {
+      console.error(`Failed to permanently delete general note ${id}:`, err);
       throw err;
     }
   },

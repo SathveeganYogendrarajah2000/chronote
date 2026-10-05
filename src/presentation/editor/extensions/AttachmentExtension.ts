@@ -57,6 +57,7 @@ export const AttachmentExtension = Node.create({
       "div",
       mergeAttributes(HTMLAttributes, {
         "data-type": "attachment",
+        "data-block-id": HTMLAttributes.id || HTMLAttributes["data-block-id"],
         class: "chronote-attachment-card",
         "data-file-path": targetPath,
         "data-asset-src": HTMLAttributes.src || "",

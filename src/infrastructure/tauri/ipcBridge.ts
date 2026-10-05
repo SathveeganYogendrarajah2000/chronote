@@ -5,6 +5,7 @@ import type { CoursesDocument } from "@domain/courses.types";
 import type { GeneralNote, NoteMetadata } from "@domain/note.types";
 import type { SearchResultItem } from "@domain/search.types";
 import type { ResourceReference, BacklinkReference, ResourceType } from "@domain/resource.types";
+import type { BinnedNoteRecord } from "@domain/bin.types";
 import { mockIpcBridge } from "./mockIpcBridge";
 
 export interface IndexStats {
@@ -74,6 +75,11 @@ export interface IpcBridge {
   saveGeneralNote(note: GeneralNote): Promise<void>;
   listGeneralNotes(): Promise<NoteMetadata[]>;
   deleteGeneralNote(id: string): Promise<void>;
+  moveNoteToBin(id: string): Promise<BinnedNoteRecord>;
+  restoreNoteFromBin(id: string): Promise<GeneralNote>;
+  listBinnedNotes(): Promise<BinnedNoteRecord[]>;
+  deleteBinnedNotePermanently(id: string): Promise<void>;
+  emptyBin(): Promise<number>;
   searchWorkspace(query: string): Promise<SearchResultItem[]>;
   getResources(options?: { documentId?: string; resourceType?: ResourceType }): Promise<ResourceReference[]>;
   getBacklinks(targetNoteId: string): Promise<BacklinkReference[]>;
@@ -236,6 +242,31 @@ export class TauriIpcBridge implements IpcBridge {
   async deleteGeneralNote(id: string): Promise<void> {
     if (!this.isTauriAvailable()) return mockIpcBridge.deleteGeneralNote(id);
     return await invoke<void>("delete_general_note", { id });
+  }
+
+  async moveNoteToBin(id: string): Promise<BinnedNoteRecord> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.moveNoteToBin(id);
+    return await invoke<BinnedNoteRecord>("move_note_to_bin", { id });
+  }
+
+  async restoreNoteFromBin(id: string): Promise<GeneralNote> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.restoreNoteFromBin(id);
+    return await invoke<GeneralNote>("restore_note_from_bin", { id });
+  }
+
+  async listBinnedNotes(): Promise<BinnedNoteRecord[]> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.listBinnedNotes();
+    return await invoke<BinnedNoteRecord[]>("list_binned_notes");
+  }
+
+  async deleteBinnedNotePermanently(id: string): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.deleteBinnedNotePermanently(id);
+    return await invoke<void>("delete_binned_note_permanently", { id });
+  }
+
+  async emptyBin(): Promise<number> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.emptyBin();
+    return await invoke<number>("empty_bin");
   }
 
   async searchWorkspace(query: string): Promise<SearchResultItem[]> {

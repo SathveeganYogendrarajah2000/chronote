@@ -82,10 +82,10 @@ export const DsmEntryHeader: React.FC<DsmEntryHeaderProps> = ({
         <button
           type="button"
           className="dsm-entry-delete-btn"
-          title="Delete this date entry"
+          title="Move this date entry to Recycle Bin"
           onClick={(e) => {
             e.stopPropagation();
-            if (window.confirm(`Delete stand-up entry for ${date}?`)) {
+            if (window.confirm(`Move stand-up entry for ${date} to Recycle Bin? (Retained for 30 days)`)) {
               onDeleteEntry();
             }
           }}

@@ -5,6 +5,7 @@ import { ipcBridge, type IndexStats } from "@infrastructure/tauri/ipcBridge";
 import { useDsmStore } from "./useDsmStore";
 import { useTabsStore } from "./useTabsStore";
 import { useCoursesStore } from "./useCoursesStore";
+import { useBinStore } from "./useBinStore";
 
 export interface RecentWorkspaceItem {
   path: string;
@@ -204,6 +205,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         useDsmStore.getState().loadDsm(),
         useCoursesStore.getState().loadCourses(),
       ]);
+      void useBinStore.getState().fetchBinnedNotes();
     } catch (err) {
       console.error("Failed to refresh notes:", err);
     }
@@ -211,8 +213,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   deleteNote: async (id: string) => {
     try {
-      await ipcBridge.deleteGeneralNote(id);
+      await ipcBridge.moveNoteToBin(id);
       await get().refreshNotes();
+      void useBinStore.getState().fetchBinnedNotes();
     } catch (err) {
       console.error("Failed to delete note:", err);
       throw err;

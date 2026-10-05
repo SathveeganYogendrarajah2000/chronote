@@ -2,7 +2,15 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { generateId } from "@domain/id.utils";
 
-const TARGET_NODE_TYPES = ["paragraph", "heading", "blockquote", "taskItem"];
+const TARGET_NODE_TYPES = [
+  "paragraph",
+  "heading",
+  "blockquote",
+  "taskItem",
+  "codeBlock",
+  "image",
+  "attachment",
+];
 
 export const BlockId = Extension.create({
   name: "blockId",

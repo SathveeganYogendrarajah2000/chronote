@@ -332,8 +332,22 @@ export const useDsmStore = create<DsmState>((set, get) => ({
   },
 
   deleteEntry: async (entryId: string) => {
-    const { dsmDoc } = get();
+    const { dsmDoc, isDirty } = get();
     if (!dsmDoc) return;
+
+    if (saveDebounceTimer) {
+      clearTimeout(saveDebounceTimer);
+      saveDebounceTimer = null;
+    }
+
+    try {
+      if (isDirty) {
+        await ipcBridge.saveDsmDocument(dsmDoc);
+      }
+      await ipcBridge.moveNoteToBin(entryId);
+    } catch (err) {
+      console.error("Failed to move DSM entry to bin via IPC:", err);
+    }
 
     const updatedEntries = dsmDoc.entries.filter((entry) => entry.id !== entryId);
     const updatedDoc: DsmDocument = {
@@ -345,6 +359,9 @@ export const useDsmStore = create<DsmState>((set, get) => ({
     set({ dsmDoc: updatedDoc, isDirty: false });
     await ipcBridge.saveDsmDocument(updatedDoc);
     void useResourceStore.getState().refresh("dsm_master");
+
+    const { useBinStore } = await import("./useBinStore");
+    await useBinStore.getState().loadBinnedNotes();
   },
 
   jumpToDate: (date: string) => {

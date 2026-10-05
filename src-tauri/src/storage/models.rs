@@ -82,6 +82,20 @@ pub struct NoteMetadata {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct BinnedNoteRecord {
+    pub id: String,
+    pub title: String,
+    pub tags: Vec<String>,
+    pub deleted_at: String,
+    pub expires_at: String,
+    pub original_section: String,
+    pub note: GeneralNote,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dsm_date: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct IndexStats {
     pub indexed_documents: usize,
     pub indexed_blocks: usize,

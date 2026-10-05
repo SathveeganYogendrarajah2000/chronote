@@ -15,8 +15,8 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Release 0.1.6 (Hierarchical Topics & Learning Courses Tracker)** — Completed. Ready for release tagging.
-- **Status:** Release **0.1.6 COMPLETED**. Delivers dedicated "Courses & Topics" journal section and workspace canvas. Supports arbitrary N-level nested topics and subtopics (Topic -> Subtopic -> Sub-subtopic...), attaching multiple learning resources per topic/subtopic across platforms (Udemy, YouTube, Articles, Courses, Books, Documentation, Other), clickable external links, progress percentage and lecture counter steppers (+1/-1), status lifecycle, ratings, attached rich study notes, breadcrumb navigation, and collapsible topic tree in the navigation sidebar. **167/167 Vitest tests** across 26 test suites and **23/23 native Rust tests + 1 stress test** passing with zero errors.
+- **Current Phase:** **Release 0.1.7 (Resource Inspector Exact Cursor Navigation & 30-Day Recycle Bin)** — Completed. Ready for release tagging.
+- **Status:** Release **0.1.7 COMPLETED**. Delivers exact-point cursor and viewport navigation when clicking resource blocks (code blocks, embedded images, file attachments, external links, and backlinks) in the Resource Inspector tab, matching TOC outline behavior with smooth scrolling and block highlight pulse. Introduces a workspace Recycle Bin (`bin/notes/`) to retain deleted notes (both General Notes and Daily Stand-up entries) with a 30-day retention policy, automatic expiration cleanup, section-based grouping ("Daily Stand-up" and "General Notes"), dedicated search/filter modal, quick restore, permanent deletion, and empty bin capabilities. **179/179 Vitest tests** across 28 test suites and **27/27 native Rust tests + 1 stress test** passing with zero errors.
 - **Next Milestone:** Phase 3: Cloud Integrations & Advanced Navigation (direct Google Drive / OneDrive OAuth sync adapters, interactive 3-way conflict resolution wizard for concurrent edits, and interactive visual backlinks graph).
 
 ---
@@ -51,7 +51,7 @@ Chronote follows a strict **Clean Layered Architecture** with unidirectional dat
 Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) for full rationales:
 1. **Shell & Native Backend:** Tauri 2.x stable with Rust. Memory budget: < 90 MB idle, cold boot: < 800 ms ([ADR-001](file:///e:/workspace/chronote/general/DECISIONS/ADR-001-desktop-framework.md)).
 2. **Canonical Document Model:** Tiptap 3.x / ProseMirror structured JSON tree. **NOT raw Markdown**. Markdown is strictly an import/export interchange format ([ADR-002](file:///e:/workspace/chronote/general/DECISIONS/ADR-002-document-model.md)).
-3. **Storage Model:** Workspace directory with human-readable JSON files (`notes/dsm.json`, `notes/{id}.json`), static binary assets (`assets/images/`, `assets/files/`), and a disposable, fully rebuildable SQLite index database (`.chronote/index.db`) ([ADR-003](file:///e:/workspace/chronote/general/DECISIONS/ADR-003-storage-model.md)).
+3. **Storage Model:** Workspace directory with human-readable JSON files (`notes/dsm.json`, `notes/courses.json`, `notes/{id}.json`), soft-deleted notes with 30-day retention (`bin/notes/{id}.json`), static binary assets (`assets/images/`, `assets/files/`), and a disposable, fully rebuildable SQLite index database (`.chronote/index.db`) ([ADR-003](file:///e:/workspace/chronote/general/DECISIONS/ADR-003-storage-model.md)).
 4. **Search Engine:** Embedded SQLite FTS5 running in the Rust native core with trigram support for code tokens ([ADR-004](file:///e:/workspace/chronote/general/DECISIONS/ADR-004-search.md)).
 5. **Cloud & Sync:** 100% offline local-first in Phase 1. Users can sync the workspace folder via OneDrive/Dropbox/Syncthing/Git at their own risk. Zero proprietary server infrastructure ([ADR-005](file:///e:/workspace/chronote/general/DECISIONS/ADR-005-cloud-strategy.md)).
 6. **DSM Model:** One continuous logical journal composed of independently addressable date entry domain objects (`YYYY-MM-DD`). **NEVER one file per day** ([ADR-006](file:///e:/workspace/chronote/general/DECISIONS/ADR-006-dsm-model.md)).
@@ -76,6 +76,7 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 - `dsm.json` document schema version: `1`
 - `notes/courses.json` document schema version: `1`
 - `notes/*.json` document schema version: `1`
+- `bin/notes/*.json` document schema version: `1`
 - SQLite `PRAGMA user_version`: `1`
 
 ---
@@ -97,8 +98,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Version `v0.1.6`. Refined "Course and learning" architecture: unified under a single primary tab (`tab_courses_master`) with topic-first hierarchy (Root topics like AWS -> Course subtopics from Udemy/YouTube/Articles -> Deep subtopics). Topics feature an embedded on-canvas `ChronoteEditor` (replacing popup modals) matching General Notes capabilities (markdown, block IDs, debounced auto-saving to `notes/courses.json`) and synchronized with the Resource Inspector pane (live TOC outline, code snippets, backlinks, tags). 168 Vitest + 23 Rust tests passing.
-- **Next Recommended Task:** Create git release tag `v0.1.6` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
+- **Current Work:** Version `v0.1.7`. Implemented exact-point editor cursor navigation from the Resource Inspector tab across all resource items (code blocks, images, attachments, links, backlinks) with smooth scrolling and `.block-highlight-pulse` animation. Built complete workspace Recycle Bin system with 30-day retention (`bin/notes/{id}.json`) supporting both General Notes and Daily Stand-up entries, automatic expired note purging, section grouping ("Daily Stand-up" and "General Notes"), full note preview, restore, and permanent deletion. 179 Vitest tests + 27 Rust tests + 1 stress test passing.
+- **Next Recommended Task:** Create git release tag `v0.1.7` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
 
 ---
 

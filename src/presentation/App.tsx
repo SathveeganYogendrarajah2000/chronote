@@ -12,6 +12,7 @@ import "./styles/performance.css";
 import "./styles/conflict.css";
 import "./styles/toc.css";
 import "./styles/courses.css";
+import "./styles/bin.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";
@@ -20,6 +21,7 @@ import { MainContentArea } from "./components/layout/MainContentArea";
 import { ResourcePane } from "./components/layout/ResourcePane";
 import { WorkspaceModal } from "./components/workspace/WorkspaceModal";
 import { NoteDeleteModal } from "./components/notes/NoteDeleteModal";
+import { BinModal } from "./components/bin/BinModal";
 import { SearchModal } from "./components/search/SearchModal";
 import { ExportModal } from "./components/export/ExportModal";
 import { PerformanceModal } from "./components/performance/PerformanceModal";
@@ -193,6 +195,7 @@ export const App: React.FC = () => {
       </div>
       <WorkspaceModal />
       <NoteDeleteModal />
+      <BinModal />
       <SearchModal />
       <ExportModal />
       <PerformanceModal />

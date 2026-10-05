@@ -63,7 +63,7 @@ export const ResourcePane: React.FC = () => {
     void refresh(activeDocumentId);
   }, [activeDocumentId, noteUpdatedAt, dsmUpdatedAt, refresh]);
 
-  // Navigate to block and trigger pulse animation
+  // Navigate to block, position cursor, and trigger pulse animation
   const handleJumpToResource = (item: ResourceReference) => {
     if (item.parentDocumentType === "dsm") {
       switchTab(DSM_TAB_ID);
@@ -72,6 +72,7 @@ export const ResourcePane: React.FC = () => {
       }
     } else {
       openTab({
+        id: `tab_${item.parentDocumentId}`,
         documentId: item.parentDocumentId,
         documentType: "general",
         title: item.title || "Note",
@@ -79,20 +80,7 @@ export const ResourcePane: React.FC = () => {
       void loadNote(item.parentDocumentId);
     }
 
-    if (typeof document !== "undefined" && item.blockId) {
-      setTimeout(() => {
-        const el =
-          document.querySelector(`[data-block-id="${item.blockId}"]`) ||
-          document.getElementById(item.blockId);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          el.classList.remove("block-highlight-pulse");
-          void (el as HTMLElement).offsetWidth;
-          el.classList.add("block-highlight-pulse");
-          setTimeout(() => el.classList.remove("block-highlight-pulse"), 2600);
-        }
-      }, 120);
-    }
+    useResourceStore.getState().scrollToResource(item);
   };
 
   const handleJumpToBacklink = (bkl: BacklinkReference) => {

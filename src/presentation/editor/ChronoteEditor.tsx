@@ -30,7 +30,9 @@ import { BubbleMenuBar } from "./components/BubbleMenuBar";
 import { BlockId } from "./extensions/BlockIdExtension";
 import { processFileAsset } from "@infrastructure/tauri/assetHelper";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
+import { NodeSelection } from "@tiptap/pm/state";
 import { useTocStore } from "@application/stores/useTocStore";
+import { useResourceStore } from "@application/stores/useResourceStore";
 
 export interface ChronoteEditorProps {
   content: ProseMirrorNode;
@@ -409,6 +411,237 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
     });
 
     return unregister;
+  }, [editor, editorContextKey]);
+
+  // Register editor navigator with Resource Inspector for exact cursor navigation
+  useEffect(() => {
+    if (!editor) return;
+    const key = editorContextKey || "default";
+
+    const unregisterResource = useResourceStore
+      .getState()
+      .registerEditorResourceNavigator(key, (item) => {
+        let targetPos: number | null = null;
+        let isNodeSelection = false;
+
+        editor.state.doc.descendants((node, pos) => {
+          if (targetPos !== null) return false;
+
+          // 1. Match by genuine block ID
+          if (
+            item.blockId &&
+            !item.blockId.startsWith("blk_gen_") &&
+            node.attrs?.id === item.blockId
+          ) {
+            if (node.isTextblock) {
+              targetPos = pos + 1;
+            } else {
+              targetPos = pos;
+              isNodeSelection = true;
+            }
+            return false;
+          }
+
+          // 2. Resource-specific matching
+          if (item.resourceType === "code") {
+            if (node.type.name === "codeBlock" || node.type.name === "code") {
+              const text = node.textContent.trim();
+              const snippet = (item.snippet || item.title || "").trim();
+              if (
+                !snippet ||
+                text.includes(snippet.slice(0, 30)) ||
+                snippet.includes(text.slice(0, 30))
+              ) {
+                targetPos = pos + 1;
+                return false;
+              }
+            }
+          } else if (item.resourceType === "image") {
+            if (node.type.name === "image") {
+              const src =
+                (node.attrs?.src as string) || (node.attrs?.filePath as string);
+              if (
+                item.targetUrl &&
+                (src === item.targetUrl ||
+                  src?.includes(item.targetUrl) ||
+                  item.targetUrl.includes(src))
+              ) {
+                targetPos = pos;
+                isNodeSelection = true;
+                return false;
+              }
+              if (item.assetId && node.attrs?.assetId === item.assetId) {
+                targetPos = pos;
+                isNodeSelection = true;
+                return false;
+              }
+              if (item.title && node.attrs?.alt === item.title) {
+                targetPos = pos;
+                isNodeSelection = true;
+                return false;
+              }
+            }
+          } else if (item.resourceType === "attachment") {
+            if (
+              node.type.name === "attachment" ||
+              node.type.name === "fileAttachment"
+            ) {
+              const filePath =
+                (node.attrs?.filePath as string) || (node.attrs?.src as string);
+              if (
+                item.targetUrl &&
+                (filePath === item.targetUrl ||
+                  filePath?.includes(item.targetUrl))
+              ) {
+                targetPos = pos;
+                isNodeSelection = true;
+                return false;
+              }
+              if (
+                item.fileName &&
+                (node.attrs?.fileName === item.fileName ||
+                  node.attrs?.title === item.fileName)
+              ) {
+                targetPos = pos;
+                isNodeSelection = true;
+                return false;
+              }
+            }
+          } else if (item.resourceType === "link") {
+            if (node.isText && node.marks && node.marks.length > 0) {
+              for (const mark of node.marks) {
+                if (mark.type.name === "link") {
+                  const href = mark.attrs?.href as string;
+                  if (item.targetUrl && href === item.targetUrl) {
+                    targetPos = pos;
+                    return false;
+                  }
+                  if (item.title && node.text?.trim() === item.title.trim()) {
+                    targetPos = pos;
+                    return false;
+                  }
+                }
+              }
+            }
+          } else if (item.resourceType === "backlink") {
+            if (node.isText && node.marks && node.marks.length > 0) {
+              for (const mark of node.marks) {
+                if (mark.type.name === "internalLink") {
+                  if (
+                    item.targetNoteId &&
+                    mark.attrs?.targetNoteId === item.targetNoteId
+                  ) {
+                    targetPos = pos;
+                    return false;
+                  }
+                }
+              }
+            }
+          }
+
+          return true;
+        });
+
+        // 3. Fallback: match by synthetic block ID (blk_gen_X)
+        if (
+          targetPos === null &&
+          item.blockId &&
+          item.blockId.startsWith("blk_gen_")
+        ) {
+          const idx = parseInt(item.blockId.replace("blk_gen_", ""), 10);
+          if (!isNaN(idx) && editor.state.doc.childCount > idx) {
+            let currentOffset = 0;
+            for (let c = 0; c < idx; c++) {
+              currentOffset += editor.state.doc.child(c).nodeSize;
+            }
+            const targetChild = editor.state.doc.child(idx);
+            if (targetChild.isTextblock) {
+              targetPos = currentOffset + 1;
+            } else {
+              targetPos = currentOffset;
+              isNodeSelection = true;
+            }
+          }
+        }
+
+        if (targetPos !== null) {
+          if (isNodeSelection) {
+            try {
+              const tr = editor.state.tr.setSelection(
+                NodeSelection.create(editor.state.doc, targetPos)
+              );
+              editor.view.dispatch(tr.scrollIntoView());
+              editor.view.focus();
+            } catch {
+              editor
+                .chain()
+                .focus()
+                .setTextSelection(targetPos)
+                .scrollIntoView()
+                .run();
+            }
+          } else {
+            editor
+              .chain()
+              .focus()
+              .setTextSelection(targetPos)
+              .scrollIntoView()
+              .run();
+          }
+
+          // Pulse highlight animation on DOM
+          setTimeout(() => {
+            let targetEl: HTMLElement | null = null;
+            if (item.blockId && !item.blockId.startsWith("blk_gen_")) {
+              targetEl = document.querySelector(
+                `[data-block-id="${item.blockId}"]`
+              );
+            }
+            if (!targetEl) {
+              const domAtPos = editor.view.nodeDOM(
+                targetPos!
+              ) as HTMLElement | null;
+              targetEl =
+                domAtPos?.nodeType === 1
+                  ? domAtPos
+                  : domAtPos?.parentElement || null;
+            }
+            if (targetEl) {
+              targetEl.classList.remove("block-highlight-pulse");
+              void targetEl.offsetWidth;
+              targetEl.classList.add("block-highlight-pulse");
+              setTimeout(
+                () => targetEl?.classList.remove("block-highlight-pulse"),
+                2600
+              );
+            }
+          }, 50);
+
+          return true;
+        }
+        return false;
+      });
+
+    // Check if there is a pending jump for this editor context
+    const pending = useResourceStore.getState().pendingResourceJump;
+    if (pending) {
+      const targetKey =
+        pending.parentDocumentType === "dsm" && pending.entryDate
+          ? `dsm_${pending.entryDate}`
+          : `general_${pending.parentDocumentId}`;
+      if (
+        key === targetKey ||
+        key === pending.parentDocumentId ||
+        key.includes(pending.parentDocumentId)
+      ) {
+        setTimeout(() => {
+          useResourceStore.getState().scrollToResource(pending);
+          useResourceStore.getState().setPendingResourceJump(null);
+        }, 80);
+      }
+    }
+
+    return unregisterResource;
   }, [editor, editorContextKey]);
 
   // Handle internal link navigation clicks

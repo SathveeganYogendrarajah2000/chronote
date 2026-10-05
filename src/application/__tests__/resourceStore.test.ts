@@ -88,4 +88,38 @@ describe("useResourceStore", () => {
     store.setFilterQuery("rust");
     expect(useResourceStore.getState().filterQuery).toBe("rust");
   });
+
+  it("registers an editor resource navigator and dispatches scrollToResource", () => {
+    const store = useResourceStore.getState();
+    let navigatedItem: any = null;
+
+    const unregister = store.registerEditorResourceNavigator("general_not_1", (item) => {
+      navigatedItem = item;
+      return true;
+    });
+
+    const testResource = {
+      id: "res_code_blk_c1",
+      resourceType: "code" as const,
+      parentDocumentId: "not_1",
+      parentDocumentType: "general" as const,
+      blockId: "blk_c1",
+      title: "let auth = true;",
+      snippet: "let auth = true;",
+      language: "rust",
+    };
+
+    store.scrollToResource(testResource);
+
+    expect(useResourceStore.getState().pendingResourceJump).toEqual(testResource);
+
+    // After brief tick, the registered navigator is invoked
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        expect(navigatedItem).toEqual(testResource);
+        unregister();
+        resolve();
+      }, 100);
+    });
+  });
 });

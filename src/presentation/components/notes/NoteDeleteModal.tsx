@@ -3,7 +3,13 @@ import { useNotesStore } from "@application/stores/useNotesStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 
 export const NoteDeleteModal: React.FC = () => {
-  const { deleteCandidateId, setDeleteCandidateId, deleteNote, activeNote } = useNotesStore();
+  const {
+    deleteCandidateId,
+    setDeleteCandidateId,
+    deleteNote,
+    deleteNotePermanently,
+    activeNote,
+  } = useNotesStore();
   const { recentNotes } = useWorkspaceStore();
 
   useEffect(() => {
@@ -23,11 +29,19 @@ export const NoteDeleteModal: React.FC = () => {
     recentNotes.find((n) => n.id === deleteCandidateId)?.title ??
     "Untitled Note";
 
-  const handleDelete = async () => {
+  const handleMoveToBin = async () => {
     try {
       await deleteNote(deleteCandidateId);
     } catch (err) {
-      console.error("Failed to delete note:", err);
+      console.error("Failed to move note to bin:", err);
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    try {
+      await deleteNotePermanently(deleteCandidateId);
+    } catch (err) {
+      console.error("Failed to permanently delete note:", err);
     }
   };
 
@@ -44,12 +58,10 @@ export const NoteDeleteModal: React.FC = () => {
       >
         <div className="modal-dialog-header">
           <div className="modal-dialog-icon">
-            <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
-            </svg>
+            🗑️
           </div>
           <div>
-            <div className="modal-dialog-title">Delete Note</div>
+            <div className="modal-dialog-title">Move Note to Bin</div>
             <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: 2 }}>
               ID: {deleteCandidateId}
             </div>
@@ -57,27 +69,40 @@ export const NoteDeleteModal: React.FC = () => {
         </div>
 
         <div className="modal-dialog-body">
-          Are you sure you want to delete <strong>"{targetTitle}"</strong>?
+          Are you sure you want to move <strong>"{targetTitle}"</strong> to the Recycle Bin?
           <br />
-          This will permanently delete the JSON file from your workspace notes directory and close any open tabs.
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: 6, display: "inline-block" }}>
+            This note will be safely preserved in your workspace Bin for 30 days. You can restore it anytime from the Bin section.
+          </span>
         </div>
 
-        <div className="modal-dialog-actions">
+        <div className="modal-dialog-actions" style={{ justifyContent: "space-between" }}>
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => setDeleteCandidateId(null)}
+            onClick={handlePermanentDelete}
+            style={{ color: "#f87171", fontSize: "11px" }}
+            title="Bypass bin and permanently erase from disk"
           >
-            Cancel
+            Delete Permanently
           </button>
-          <button
-            type="button"
-            className="btn-danger"
-            onClick={handleDelete}
-            autoFocus
-          >
-            Delete Note
-          </button>
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setDeleteCandidateId(null)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              onClick={handleMoveToBin}
+              autoFocus
+            >
+              Move to Bin
+            </button>
+          </div>
         </div>
       </div>
     </div>

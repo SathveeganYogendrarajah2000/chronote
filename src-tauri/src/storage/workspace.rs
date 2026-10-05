@@ -7,7 +7,10 @@ use uuid::Uuid;
 
 use super::atomic::{atomic_write, cleanup_orphan_tmp_files};
 use super::error::StorageError;
-use super::models::{CoursesDocument, DsmDocument, GeneralNote, NoteMetadata, Workspace, WorkspaceSettings};
+use super::models::{
+    BinnedNoteRecord, CoursesDocument, DsmDocument, DsmEntry, GeneralNote, NoteMetadata, Workspace,
+    WorkspaceSettings,
+};
 
 /// Validates that `subpath` remains within the bounds of `workspace_root`.
 /// Defends against directory traversal attacks (SECURITY.md Section 3).
@@ -332,6 +335,227 @@ pub fn delete_note(root: &Path, id: &str) -> Result<(), StorageError> {
     Ok(())
 }
 
+/// Moves a note (general note or DSM entry) to bin/notes/{id}.json with 30-day retention metadata.
+pub fn move_note_to_bin(root: &Path, id: &str) -> Result<BinnedNoteRecord, StorageError> {
+    if !id.starts_with("not_") && !id.starts_with("ent_") {
+        return Err(StorageError::InvalidWorkspace(format!(
+            "Invalid note ID prefix: {id}"
+        )));
+    }
+
+    let now = Utc::now();
+    let expires = now + chrono::Duration::days(30);
+
+    let (note, original_section, dsm_date) = if id.starts_with("ent_") {
+        let mut dsm = read_dsm(root)?;
+        let entry_idx = dsm.entries.iter().position(|e| e.id == id).ok_or_else(|| {
+            StorageError::NotFound(format!("DSM entry not found: {id}"))
+        })?;
+        let entry = dsm.entries.remove(entry_idx);
+        dsm.updated_at = now.to_rfc3339();
+        save_dsm(root, &dsm)?;
+
+        let general_note = GeneralNote {
+            id: entry.id.clone(),
+            schema_version: 1,
+            title: format!("Daily Stand-up — {}", entry.date),
+            tags: entry.tags.clone(),
+            content: entry.content.clone(),
+            pinned: false,
+            created_at: entry.created_at.clone(),
+            updated_at: entry.updated_at.clone(),
+        };
+
+        (general_note, "Daily Stand-up".to_string(), Some(entry.date))
+    } else {
+        let note = read_note(root, id)?;
+        (note, "General Notes".to_string(), None)
+    };
+
+    let binned_record = BinnedNoteRecord {
+        id: note.id.clone(),
+        title: note.title.clone(),
+        tags: note.tags.clone(),
+        deleted_at: now.to_rfc3339(),
+        expires_at: expires.to_rfc3339(),
+        original_section,
+        note,
+        dsm_date,
+    };
+
+    let bin_notes_dir = root.join("bin").join("notes");
+    if !bin_notes_dir.exists() {
+        fs::create_dir_all(&bin_notes_dir)?;
+    }
+
+    let bin_file_path = bin_notes_dir.join(format!("{id}.json"));
+    let json_bytes = serde_json::to_vec_pretty(&binned_record)?;
+    atomic_write(&bin_file_path, &json_bytes)?;
+
+    // Remove original from notes/ if it was a general note
+    if id.starts_with("not_") {
+        let original_path = root.join("notes").join(format!("{id}.json"));
+        if original_path.exists() {
+            fs::remove_file(original_path)?;
+        }
+    }
+
+    Ok(binned_record)
+}
+
+/// Restores a note from bin/notes/{id}.json back to notes/{id}.json or notes/dsm.json.
+pub fn restore_note_from_bin(root: &Path, id: &str) -> Result<GeneralNote, StorageError> {
+    if !id.starts_with("not_") && !id.starts_with("ent_") {
+        return Err(StorageError::InvalidWorkspace(format!(
+            "Invalid note ID prefix: {id}"
+        )));
+    }
+
+    let bin_file_path = root.join("bin").join("notes").join(format!("{id}.json"));
+    if !bin_file_path.exists() {
+        return Err(StorageError::NotFound(format!(
+            "Binned note not found: {id}"
+        )));
+    }
+
+    let content = fs::read_to_string(&bin_file_path)?;
+    let record: BinnedNoteRecord = serde_json::from_str(&content)?;
+
+    if id.starts_with("ent_") || record.original_section == "Daily Stand-up" || record.dsm_date.is_some() {
+        let mut dsm = match read_dsm(root) {
+            Ok(d) => d,
+            Err(_) => {
+                let now_str = Utc::now().to_rfc3339();
+                DsmDocument {
+                    id: "dsm_master".to_string(),
+                    schema_version: 1,
+                    title: "Daily Stand-up Journal".to_string(),
+                    created_at: now_str.clone(),
+                    updated_at: now_str,
+                    entries: Vec::new(),
+                }
+            }
+        };
+
+        let date_str = record.dsm_date.clone().unwrap_or_else(|| {
+            record
+                .title
+                .split('—')
+                .last()
+                .map(|s| s.trim().to_string())
+                .unwrap_or_else(|| Utc::now().format("%Y-%m-%d").to_string())
+        });
+
+        let restored_entry = DsmEntry {
+            id: record.id.clone(),
+            date: date_str,
+            tags: record.note.tags.clone(),
+            collapsed: false,
+            content: record.note.content.clone(),
+            created_at: record.note.created_at.clone(),
+            updated_at: Utc::now().to_rfc3339(),
+        };
+
+        if let Some(pos) = dsm
+            .entries
+            .iter()
+            .position(|e| e.id == restored_entry.id || e.date == restored_entry.date)
+        {
+            dsm.entries[pos] = restored_entry;
+        } else {
+            dsm.entries.push(restored_entry);
+        }
+
+        dsm.entries.sort_by(|a, b| b.date.cmp(&a.date));
+        dsm.updated_at = Utc::now().to_rfc3339();
+        save_dsm(root, &dsm)?;
+    } else {
+        save_note(root, &record.note)?;
+    }
+
+    // Remove from bin
+    fs::remove_file(bin_file_path)?;
+
+    Ok(record.note)
+}
+
+/// Lists all binned notes in bin/notes/, automatically purging any notes older than 30 days.
+pub fn list_binned_notes(root: &Path) -> Result<Vec<BinnedNoteRecord>, StorageError> {
+    let bin_notes_dir = root.join("bin").join("notes");
+    if !bin_notes_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let now = Utc::now();
+    let mut binned_notes = Vec::new();
+
+    for entry in fs::read_dir(bin_notes_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() && path.extension().and_then(|e| e.to_str()) == Some("json") {
+            if let Ok(content) = fs::read_to_string(&path) {
+                if let Ok(record) = serde_json::from_str::<BinnedNoteRecord>(&content) {
+                    // Check 30 days retention policy: auto-purge if expired
+                    let is_expired = match chrono::DateTime::parse_from_rfc3339(&record.expires_at) {
+                        Ok(expires_dt) => expires_dt < now,
+                        Err(_) => match chrono::DateTime::parse_from_rfc3339(&record.deleted_at) {
+                            Ok(deleted_dt) => (now - deleted_dt.with_timezone(&Utc)) > chrono::Duration::days(30),
+                            Err(_) => false,
+                        },
+                    };
+
+                    if is_expired {
+                        let _ = fs::remove_file(&path);
+                    } else {
+                        binned_notes.push(record);
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort by deleted_at descending (most recently deleted first)
+    binned_notes.sort_by(|a, b| b.deleted_at.cmp(&a.deleted_at));
+
+    Ok(binned_notes)
+}
+
+/// Permanently removes a note from bin/notes/{id}.json.
+pub fn delete_binned_note_permanently(root: &Path, id: &str) -> Result<(), StorageError> {
+    if !id.starts_with("not_") && !id.starts_with("ent_") {
+        return Err(StorageError::InvalidWorkspace(format!(
+            "Invalid note ID prefix: {id}"
+        )));
+    }
+
+    let bin_file_path = root.join("bin").join("notes").join(format!("{id}.json"));
+    if bin_file_path.exists() {
+        fs::remove_file(bin_file_path)?;
+    }
+    Ok(())
+}
+
+/// Permanently removes all notes from bin/notes/. Returns the count of deleted notes.
+pub fn empty_bin(root: &Path) -> Result<usize, StorageError> {
+    let bin_notes_dir = root.join("bin").join("notes");
+    if !bin_notes_dir.exists() {
+        return Ok(0);
+    }
+
+    let mut count = 0;
+    for entry in fs::read_dir(&bin_notes_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() && path.extension().and_then(|e| e.to_str()) == Some("json") {
+            if fs::remove_file(&path).is_ok() {
+                count += 1;
+            }
+        }
+    }
+
+    Ok(count)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -453,5 +677,204 @@ mod tests {
 
         let reloaded = read_courses(root).unwrap();
         assert_eq!(reloaded.title, "Engineering Courses Tracker");
+    }
+
+    #[test]
+    fn test_bin_lifecycle() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+        init_workspace(root, "Bin Test").unwrap();
+
+        let note = GeneralNote {
+            id: "not_01JC87XK99".to_string(),
+            schema_version: 1,
+            title: "Temporary Architecture Plan".to_string(),
+            tags: vec!["arch".to_string()],
+            content: serde_json::json!({ "type": "doc", "content": [] }),
+            pinned: false,
+            created_at: Utc::now().to_rfc3339(),
+            updated_at: Utc::now().to_rfc3339(),
+        };
+
+        save_note(root, &note).unwrap();
+        assert_eq!(list_notes(root).unwrap().len(), 1);
+
+        // Move to bin
+        let binned = move_note_to_bin(root, &note.id).unwrap();
+        assert_eq!(binned.id, "not_01JC87XK99");
+        assert_eq!(binned.original_section, "General Notes");
+
+        // Should no longer be in notes/
+        assert_eq!(list_notes(root).unwrap().len(), 0);
+
+        // Should be in bin/
+        let binned_list = list_binned_notes(root).unwrap();
+        assert_eq!(binned_list.len(), 1);
+        assert_eq!(binned_list[0].id, "not_01JC87XK99");
+
+        // Restore note
+        let restored = restore_note_from_bin(root, &note.id).unwrap();
+        assert_eq!(restored.title, "Temporary Architecture Plan");
+
+        // Should be back in notes/ and gone from bin/
+        assert_eq!(list_notes(root).unwrap().len(), 1);
+        assert_eq!(list_binned_notes(root).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_dsm_bin_lifecycle() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+        init_workspace(root, "DSM Bin Test").unwrap();
+
+        let now = Utc::now().to_rfc3339();
+        let entry1 = DsmEntry {
+            id: "ent_01JC87DAY1".to_string(),
+            date: "2026-10-05".to_string(),
+            tags: vec!["standup".to_string(), "backend".to_string()],
+            collapsed: false,
+            content: serde_json::json!({ "type": "doc", "content": [] }),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+        };
+        let entry2 = DsmEntry {
+            id: "ent_01JC87DAY2".to_string(),
+            date: "2026-10-04".to_string(),
+            tags: vec!["standup".to_string()],
+            collapsed: true,
+            content: serde_json::json!({ "type": "doc", "content": [] }),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+        };
+
+        let dsm_doc = DsmDocument {
+            id: "dsm_master".to_string(),
+            schema_version: 1,
+            title: "Daily Stand-up Journal".to_string(),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+            entries: vec![entry1, entry2],
+        };
+        save_dsm(root, &dsm_doc).unwrap();
+
+        // Check initial state
+        let loaded = read_dsm(root).unwrap();
+        assert_eq!(loaded.entries.len(), 2);
+
+        // Move entry1 to bin
+        let binned = move_note_to_bin(root, "ent_01JC87DAY1").unwrap();
+        assert_eq!(binned.id, "ent_01JC87DAY1");
+        assert_eq!(binned.original_section, "Daily Stand-up");
+        assert_eq!(binned.dsm_date, Some("2026-10-05".to_string()));
+        assert_eq!(binned.title, "Daily Stand-up — 2026-10-05");
+
+        // DSM doc should now have only 1 entry
+        let dsm_after_bin = read_dsm(root).unwrap();
+        assert_eq!(dsm_after_bin.entries.len(), 1);
+        assert_eq!(dsm_after_bin.entries[0].id, "ent_01JC87DAY2");
+
+        // Bin should list the binned DSM entry
+        let binned_items = list_binned_notes(root).unwrap();
+        assert_eq!(binned_items.len(), 1);
+        assert_eq!(binned_items[0].id, "ent_01JC87DAY1");
+
+        // Restore entry1 from bin
+        let restored = restore_note_from_bin(root, "ent_01JC87DAY1").unwrap();
+        assert_eq!(restored.id, "ent_01JC87DAY1");
+
+        // Bin should now be empty
+        assert_eq!(list_binned_notes(root).unwrap().len(), 0);
+
+        // DSM doc should have both entries back, sorted descending by date
+        let dsm_restored = read_dsm(root).unwrap();
+        assert_eq!(dsm_restored.entries.len(), 2);
+        assert_eq!(dsm_restored.entries[0].date, "2026-10-05");
+        assert_eq!(dsm_restored.entries[1].date, "2026-10-04");
+    }
+
+    #[test]
+    fn test_bin_permanent_delete_and_empty() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+        init_workspace(root, "Bin Delete Test").unwrap();
+
+        let note1 = GeneralNote {
+            id: "not_01JC87XK01".to_string(),
+            schema_version: 1,
+            title: "Note 1".to_string(),
+            tags: vec![],
+            content: serde_json::json!({ "type": "doc", "content": [] }),
+            pinned: false,
+            created_at: Utc::now().to_rfc3339(),
+            updated_at: Utc::now().to_rfc3339(),
+        };
+        let note2 = GeneralNote {
+            id: "not_01JC87XK02".to_string(),
+            schema_version: 1,
+            title: "Note 2".to_string(),
+            tags: vec![],
+            content: serde_json::json!({ "type": "doc", "content": [] }),
+            pinned: false,
+            created_at: Utc::now().to_rfc3339(),
+            updated_at: Utc::now().to_rfc3339(),
+        };
+
+        save_note(root, &note1).unwrap();
+        save_note(root, &note2).unwrap();
+
+        move_note_to_bin(root, &note1.id).unwrap();
+        move_note_to_bin(root, &note2.id).unwrap();
+
+        assert_eq!(list_binned_notes(root).unwrap().len(), 2);
+
+        // Permanently delete note1
+        delete_binned_note_permanently(root, &note1.id).unwrap();
+        assert_eq!(list_binned_notes(root).unwrap().len(), 1);
+
+        // Empty bin removes note2
+        let count = empty_bin(root).unwrap();
+        assert_eq!(count, 1);
+        assert_eq!(list_binned_notes(root).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_bin_auto_purge_expired() {
+        let temp_dir = tempdir().unwrap();
+        let root = temp_dir.path();
+        init_workspace(root, "Purge Test").unwrap();
+
+        let bin_notes_dir = root.join("bin").join("notes");
+        fs::create_dir_all(&bin_notes_dir).unwrap();
+
+        // Write an already-expired binned record (e.g. 35 days ago)
+        let past_time = Utc::now() - chrono::Duration::days(35);
+        let expired_record = BinnedNoteRecord {
+            id: "not_01JC87OLD0".to_string(),
+            title: "Ancient Note".to_string(),
+            tags: vec![],
+            deleted_at: past_time.to_rfc3339(),
+            expires_at: (past_time + chrono::Duration::days(30)).to_rfc3339(),
+            original_section: "notes".to_string(),
+            note: GeneralNote {
+                id: "not_01JC87OLD0".to_string(),
+                schema_version: 1,
+                title: "Ancient Note".to_string(),
+                tags: vec![],
+                content: serde_json::json!({ "type": "doc", "content": [] }),
+                pinned: false,
+                created_at: past_time.to_rfc3339(),
+                updated_at: past_time.to_rfc3339(),
+            },
+            dsm_date: None,
+        };
+
+        let file_path = bin_notes_dir.join("not_01JC87OLD0.json");
+        let bytes = serde_json::to_vec_pretty(&expired_record).unwrap();
+        fs::write(&file_path, bytes).unwrap();
+
+        // Listing binned notes should automatically purge the expired file
+        let list = list_binned_notes(root).unwrap();
+        assert_eq!(list.len(), 0);
+        assert!(!file_path.exists());
     }
 }

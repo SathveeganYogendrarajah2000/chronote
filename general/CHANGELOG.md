@@ -14,6 +14,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Interactive 3-way conflict resolution engine for simultaneous edits.
 - Interactive backlinks graph and visual connection explorer.
 
+## [0.1.7] - 2026-10-05
+
+### Added
+- **Exact Cursor & Viewport Navigation in Resource Inspector:**
+  - Clicking any resource item (code snippet, embedded image, file attachment, external link, or internal backlink) in the Resource Inspector tab navigates the editor and scroll position to the exact block and line, mirroring Table of Contents (Outline) behavior.
+  - Editor instance registration: `ChronoteEditor` registers its active ProseMirror editor instance with `useResourceStore.registerEditorResourceNavigator`.
+  - ProseMirror text and node selection: Automatically identifies the exact document position and dispatches `setTextSelection` (for code blocks and inline text links) or `NodeSelection` (for atomic image and attachment nodes) before focusing the editor.
+  - Smooth visual tracking: Coordinates smooth element scrolling with `.block-highlight-pulse` CSS pulse animation highlighting the target block for immediate orientation.
+  - Collapsed entry auto-expansion: Automatically uncollapses DSM timeline entries if the target resource resides in a collapsed date.
+  - Cross-tab & note switching: Preserves `pendingResourceJump` to execute the exact cursor positioning and scroll immediately after opening a note in a new tab.
+
+- **Workspace Recycle Bin (Trash) with 30-Day Retention:**
+  - **Soft-Delete Note Lifecycle:** Deleting a General Note or Daily Stand-up entry moves it to `bin/notes/{id}.json` instead of immediate deletion, preventing accidental data loss.
+  - **30-Day Expiration Policy:** Every binned note records its `deletedAt` and `expiresAt` (+30 days) timestamps alongside its `originalSection` ("Daily Stand-up" or "General Notes") and optional `dsmDate`. Expired notes beyond 30 days are automatically purged upon querying the bin.
+  - **Recycle Bin Modal (`BinModal`):** Complete management dialog accessible from the sidebar. Includes real-time search filtering, section filter tabs ("All Notes", "📅 Daily Stand-up", "📝 General Notes", "⏳ Expiring Soon (≤ 5 days)"), days remaining countdown badges, live markdown/ProseMirror content preview, and 1-click **Restore Note** or **Delete Permanently**.
+  - **Sidebar Bin Section:** Collapsible "Recycle Bin" section in the navigation sidebar displaying current binned note count, days remaining, and instant restore and permanent delete actions.
+  - **Updated Delete Note Dialog (`NoteDeleteModal`):** Offers a safe "Move to Bin (Retained for 30 days)" action alongside an explicit permanent delete confirmation with normalized React hooks order.
+  - **Native Rust & SQLite Sync:** Implemented `move_note_to_bin`, `restore_note_from_bin`, `list_binned_notes`, `delete_binned_note_permanently`, and `empty_bin` in the Rust core with automatic SQLite FTS5 un-indexing on binning and re-indexing on restoration for both General Notes and DSM entries.
+  - **179 Vitest tests** across 28 suites and **27 native Rust tests + 1 stress test** passing.
+
 ---
 
 ## [0.1.6] - 2026-10-02
