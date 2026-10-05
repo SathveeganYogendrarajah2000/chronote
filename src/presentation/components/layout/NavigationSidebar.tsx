@@ -5,9 +5,11 @@ import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { useDsmStore } from "@application/stores/useDsmStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
 import { useCoursesStore } from "@application/stores/useCoursesStore";
+import { useBinStore } from "@application/stores/useBinStore";
 import { formatDateLabel, sortDsmEntries } from "@domain/dsm.utils";
 import { filterNotes, filterNotesByTags } from "@domain/note.utils";
 import { buildTopicTree } from "@domain/courses.utils";
+import { getDaysRemaining, formatDaysRemaining } from "@domain/bin.utils";
 import type { TopicTreeNode } from "@domain/courses.types";
 import { DSM_TAB_ID, COURSES_TAB_ID, createCoursesTab } from "@domain/tabs.types";
 import { TagChip } from "../common/TagChip";
@@ -144,6 +146,12 @@ export const NavigationSidebar: React.FC = () => {
     toggleTopicExpanded,
     openCreateTopicModal,
   } = useCoursesStore();
+  const {
+    binnedNotes,
+    openBinModal,
+    restoreNote,
+    deletePermanently,
+  } = useBinStore();
 
   const isDsmActive = activeTabId === DSM_TAB_ID;
   const isCoursesActive = activeTabId === COURSES_TAB_ID;
@@ -824,6 +832,106 @@ export const NavigationSidebar: React.FC = () => {
                 </span>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Recycle Bin Section */}
+      <div className="sidebar-section" style={{ borderBottom: "none", borderTop: "1px solid var(--border-subtle)", marginTop: "auto" }}>
+        <div className="sidebar-section-header">
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", width: "100%" }}
+            onClick={openBinModal}
+            title="Open Recycle Bin (keeps deleted notes for 30 days)"
+          >
+            <span>🗑️ Bin</span>
+            {binnedNotes.length > 0 && (
+              <span className="bin-days-pill normal" style={{ padding: "0 5px", fontSize: "9px" }}>
+                {binnedNotes.length}
+              </span>
+            )}
+          </div>
+          {binnedNotes.length > 0 && (
+            <button
+              type="button"
+              onClick={openBinModal}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--accent-hover)",
+                fontSize: "10px",
+                padding: 0,
+              }}
+              title="Manage Recycle Bin"
+            >
+              Open
+            </button>
+          )}
+        </div>
+        {binnedNotes.length === 0 ? (
+          <div style={{ padding: "4px var(--space-3)", fontSize: "11px", color: "var(--text-muted)" }}>
+            Bin is empty
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {binnedNotes.slice(0, 5).map((item) => {
+              const days = getDaysRemaining(item.expiresAt);
+              return (
+                <div
+                  key={item.id}
+                  className="sidebar-bin-item"
+                  onClick={openBinModal}
+                  title={`${item.title} (${formatDaysRemaining(days)})\nClick to view in Bin`}
+                >
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                    {item.title || "Untitled Note"}
+                  </span>
+                  <span style={{ fontSize: "10px", opacity: 0.7, marginRight: 6 }}>
+                    {days}d
+                  </span>
+                  <div className="sidebar-note-actions">
+                    <span
+                      className="sidebar-note-action-btn"
+                      title="Restore note"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void restoreNote(item.id);
+                      }}
+                    >
+                      ↺
+                    </span>
+                    <span
+                      className="sidebar-note-action-btn danger"
+                      title="Delete permanently"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void deletePermanently(item.id);
+                      }}
+                    >
+                      ❌
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            {binnedNotes.length > 5 && (
+              <button
+                type="button"
+                onClick={openBinModal}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--accent-hover)",
+                  fontSize: "11px",
+                  padding: "4px 8px 4px 22px",
+                  textAlign: "left",
+                }}
+              >
+                + {binnedNotes.length - 5} more in Bin...
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -14,6 +14,9 @@ my-engineering-workspace/
 │   ├── courses.json                # Single logical Courses & Topics learning tracker document
 │   ├── not_01JC87XK89.json         # General note
 │   └── not_01JC87Y11Z.json         # General note
+├── bin/
+│   └── notes/                      # Soft-deleted notes kept for 30-day retention
+│       └── not_01JC87XK89.json     # Binned note record with deletedAt & expiresAt
 ├── assets/
 │   ├── images/
 │   │   ├── img_01JC87Z1AA.png      # Embedded screenshots & diagrams
@@ -220,6 +223,35 @@ Stores the continuous Courses & Topics learning journal. Each topic and subtopic
     }
   ],
   "resources": []
+}
+```
+
+### 2.5 `bin/notes/{noteId}.json` (Binned Note Record)
+Stores soft-deleted general engineering notes with a 30-day retention window before automatic purge. Contains the original complete note document wrapped with deletion and expiration metadata.
+```json
+{
+  "note": {
+    "id": "not_01JC87XK89",
+    "schemaVersion": 1,
+    "title": "Spring Security Config Reference",
+    "tags": ["springboot", "java", "security"],
+    "pinned": false,
+    "createdAt": "2026-09-10T14:20:00.000Z",
+    "updatedAt": "2026-09-16T09:15:00.000Z",
+    "content": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": { "id": "blk_01JC8810" },
+          "content": [{ "type": "text", "text": "Core configuration patterns for JWT validation." }]
+        }
+      ]
+    }
+  },
+  "deletedAt": "2026-10-05T16:00:00.000Z",
+  "expiresAt": "2026-11-04T16:00:00.000Z",
+  "originalSection": "Engineering"
 }
 ```
 

@@ -49,7 +49,7 @@ export const CodeBlockView: React.FC<NodeViewProps> = ({
   };
 
   return (
-    <NodeViewWrapper className="code-block-wrapper">
+    <NodeViewWrapper className="code-block-wrapper" data-block-id={node.attrs.id}>
       <div className="code-block-header">
         <div className="code-block-header-left">
           <span className="code-block-lang-badge">

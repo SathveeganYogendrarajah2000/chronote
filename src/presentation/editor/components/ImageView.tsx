@@ -131,6 +131,7 @@ export const ImageView: React.FC<NodeViewProps> = ({
       className={`chronote-image-node-view align-${alignment} ${
         selected ? "is-selected" : ""
       } ${isResizing ? "is-resizing" : ""}`}
+      data-block-id={node.attrs.id}
       onMouseEnter={() => setShowToolbar(true)}
       onMouseLeave={() => {
         if (!isResizing && !isEditingCaption) {

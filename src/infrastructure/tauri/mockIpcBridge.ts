@@ -1,10 +1,11 @@
 import type { IpcBridge, AppInfo, IndexStats, PerformanceMetrics, SyncConflictInfo, AssetInfo } from "./ipcBridge";
 import type { Workspace, WorkspaceSettings } from "@domain/workspace.types";
 import { DEFAULT_WORKSPACE_SETTINGS } from "@domain/workspace.types";
-import type { DsmDocument } from "@domain/dsm.types";
+import type { DsmDocument, DsmEntry } from "@domain/dsm.types";
 import type { CoursesDocument } from "@domain/courses.types";
 import { createDefaultCoursesDocument } from "@domain/courses.utils";
 import type { GeneralNote, NoteMetadata } from "@domain/note.types";
+import type { BinnedNoteRecord } from "@domain/bin.types";
 import type { SearchResultItem } from "@domain/search.types";
 import type { ResourceReference, BacklinkReference, ResourceType } from "@domain/resource.types";
 import { parseSearchQuery } from "@domain/search.parser";
@@ -23,11 +24,13 @@ export class MockIpcBridge implements IpcBridge {
   };
   private coursesDoc: CoursesDocument = createDefaultCoursesDocument();
   private notes: Map<string, GeneralNote> = new Map();
+  private binnedNotes: Map<string, BinnedNoteRecord> = new Map();
   private mockConflicts: SyncConflictInfo[] = [];
 
   reset(): void {
     this.activeWorkspace = null;
     this.notes.clear();
+    this.binnedNotes.clear();
     this.mockConflicts = [];
     this.coursesDoc = createDefaultCoursesDocument();
     this.dsmDoc = {
@@ -43,7 +46,7 @@ export class MockIpcBridge implements IpcBridge {
   async getAppInfo(): Promise<AppInfo> {
     return {
       name: "Chronote (Mock Environment)",
-      version: "0.1.6-mock",
+      version: "0.1.7-mock",
       description: "Mock IPC Bridge for development and testing",
     };
   }
@@ -212,6 +215,131 @@ export class MockIpcBridge implements IpcBridge {
 
   async deleteGeneralNote(id: string): Promise<void> {
     this.notes.delete(id);
+  }
+
+  async moveNoteToBin(id: string): Promise<BinnedNoteRecord> {
+    const now = new Date();
+    const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // 1. Check if it's a general note
+    const note = this.notes.get(id);
+    if (note) {
+      const binned: BinnedNoteRecord = {
+        id: note.id,
+        title: note.title,
+        tags: [...note.tags],
+        deletedAt: now.toISOString(),
+        expiresAt: expires.toISOString(),
+        originalSection: "General Notes",
+        note: JSON.parse(JSON.stringify(note)),
+      };
+      this.binnedNotes.set(id, binned);
+      this.notes.delete(id);
+      return binned;
+    }
+
+    // 2. Check if it's a DSM entry
+    const dsmEntryIdx = this.dsmDoc.entries.findIndex((e) => e.id === id);
+    if (dsmEntryIdx !== -1) {
+      const entry = this.dsmDoc.entries[dsmEntryIdx];
+      this.dsmDoc.entries.splice(dsmEntryIdx, 1);
+      this.dsmDoc.updatedAt = now.toISOString();
+
+      const generalNote: GeneralNote = {
+        id: entry.id,
+        schemaVersion: 1,
+        title: `Daily Stand-up — ${entry.date}`,
+        tags: [...entry.tags],
+        content: JSON.parse(JSON.stringify(entry.content)),
+        pinned: false,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt,
+      };
+
+      const binned: BinnedNoteRecord = {
+        id: entry.id,
+        title: `Daily Stand-up — ${entry.date}`,
+        tags: [...entry.tags],
+        deletedAt: now.toISOString(),
+        expiresAt: expires.toISOString(),
+        originalSection: "Daily Stand-up",
+        dsmDate: entry.date,
+        note: generalNote,
+      };
+      this.binnedNotes.set(id, binned);
+      return binned;
+    }
+
+    throw new Error(`Note or DSM entry ${id} not found to move to bin`);
+  }
+
+  async restoreNoteFromBin(id: string): Promise<GeneralNote> {
+    const binned = this.binnedNotes.get(id);
+    if (!binned) {
+      throw new Error(`Binned note ${id} not found to restore`);
+    }
+
+    if (binned.originalSection === "Daily Stand-up" || binned.dsmDate || id.startsWith("ent_")) {
+      const date =
+        binned.dsmDate ||
+        binned.title.split("—").pop()?.trim() ||
+        new Date().toISOString().split("T")[0];
+      const restoredEntry: DsmEntry = {
+        id: binned.id,
+        date,
+        tags: [...binned.tags],
+        collapsed: false,
+        content: JSON.parse(JSON.stringify(binned.note.content)),
+        createdAt: binned.note.createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const existingIdx = this.dsmDoc.entries.findIndex(
+        (e) => e.id === restoredEntry.id || e.date === restoredEntry.date
+      );
+      if (existingIdx !== -1) {
+        this.dsmDoc.entries[existingIdx] = restoredEntry;
+      } else {
+        this.dsmDoc.entries.push(restoredEntry);
+      }
+      this.dsmDoc.entries.sort((a, b) => b.date.localeCompare(a.date));
+      this.dsmDoc.updatedAt = new Date().toISOString();
+      this.binnedNotes.delete(id);
+      return binned.note;
+    }
+
+    const restored: GeneralNote = {
+      ...binned.note,
+      updatedAt: new Date().toISOString(),
+    };
+    this.notes.set(id, restored);
+    this.binnedNotes.delete(id);
+    return restored;
+  }
+
+  async listBinnedNotes(): Promise<BinnedNoteRecord[]> {
+    const nowMs = Date.now();
+    const list: BinnedNoteRecord[] = [];
+    for (const [id, record] of Array.from(this.binnedNotes.entries())) {
+      const expiresMs = new Date(record.expiresAt).getTime();
+      if (!isNaN(expiresMs) && expiresMs < nowMs) {
+        this.binnedNotes.delete(id);
+      } else {
+        list.push(record);
+      }
+    }
+    list.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+    return list;
+  }
+
+  async deleteBinnedNotePermanently(id: string): Promise<void> {
+    this.binnedNotes.delete(id);
+  }
+
+  async emptyBin(): Promise<number> {
+    const count = this.binnedNotes.size;
+    this.binnedNotes.clear();
+    return count;
   }
 
   async searchWorkspace(query: string): Promise<SearchResultItem[]> {
