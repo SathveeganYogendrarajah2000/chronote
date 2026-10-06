@@ -1,8 +1,8 @@
-export type DocumentType = "dsm" | "general" | "courses";
+export type DocumentType = "dsm" | "general" | "courses" | "graph";
 
 export interface TabItem {
   readonly id: string;            // Unique tab instance ID
-  readonly documentId: string;    // "dsm_master" or general note ID or "courses_master"
+  readonly documentId: string;    // "dsm_master" or general note ID or "courses_master" or "graph_explorer"
   readonly documentType: DocumentType;
   title: string;                  // Display title
   isPinned: boolean;              // Pinned tabs (like DSM) cannot be closed accidentally
@@ -20,6 +20,9 @@ export const DSM_DOCUMENT_ID = "dsm_master";
 
 export const COURSES_TAB_ID = "tab_courses_master";
 export const COURSES_DOCUMENT_ID = "courses_master";
+
+export const GRAPH_TAB_ID = "tab_graph_explorer";
+export const GRAPH_DOCUMENT_ID = "graph_explorer";
 
 export function createDsmTab(): TabItem {
   return {
@@ -40,4 +43,15 @@ export function createCoursesTab(): TabItem {
     isPinned: false,
   };
 }
+
+export function createGraphTab(): TabItem {
+  return {
+    id: GRAPH_TAB_ID,
+    documentId: GRAPH_DOCUMENT_ID,
+    documentType: "graph",
+    title: "Backlinks Graph",
+    isPinned: false,
+  };
+}
+
 

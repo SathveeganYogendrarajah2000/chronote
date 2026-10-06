@@ -11,7 +11,7 @@ import { filterNotes, filterNotesByTags } from "@domain/note.utils";
 import { buildTopicTree } from "@domain/courses.utils";
 import { getDaysRemaining, formatDaysRemaining } from "@domain/bin.utils";
 import type { TopicTreeNode } from "@domain/courses.types";
-import { DSM_TAB_ID, COURSES_TAB_ID, createCoursesTab } from "@domain/tabs.types";
+import { DSM_TAB_ID, COURSES_TAB_ID, GRAPH_TAB_ID, GRAPH_DOCUMENT_ID, createCoursesTab } from "@domain/tabs.types";
 import { TagChip } from "../common/TagChip";
 
 interface TopicTreeItemProps {
@@ -297,6 +297,20 @@ export const NavigationSidebar: React.FC = () => {
     window.addEventListener("mouseup", handleMouseUp);
   };
 
+  const handleOpenGraph = () => {
+    const hasTab = useTabsStore.getState().tabs.find((t) => t.id === GRAPH_TAB_ID);
+    if (hasTab) {
+      switchTab(GRAPH_TAB_ID);
+    } else {
+      openTab({
+        id: GRAPH_TAB_ID,
+        documentId: GRAPH_DOCUMENT_ID,
+        documentType: "graph",
+        title: "Backlinks Graph",
+      });
+    }
+  };
+
   return (
     <aside
       className={`navigation-sidebar ${sidebarCollapsed ? "collapsed" : ""} ${isResizing ? "resizing" : ""}`}
@@ -335,6 +349,25 @@ export const NavigationSidebar: React.FC = () => {
             Open Workspace
           </button>
         )}
+      </div>
+
+      {/* Knowledge Graph Section (Phase 3) */}
+      <div className="sidebar-section">
+        <div className="sidebar-section-header">
+          <span>Knowledge Graph</span>
+          <span style={{ fontSize: "10px", color: "var(--accent-primary)", fontWeight: 600 }}>v0.2.0</span>
+        </div>
+        <button
+          type="button"
+          className={`sidebar-nav-item ${activeTabId === GRAPH_TAB_ID ? "active" : ""}`}
+          onClick={handleOpenGraph}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488 1.05l-6.718-3.12a2.5 2.5 0 1 1 0-3.604l6.718-3.12A2.485 2.485 0 0 1 11 2.5z" />
+          </svg>
+          <span>Backlinks Graph</span>
+          <span className="nav-item-count">Explorer</span>
+        </button>
       </div>
 
       {/* DSM Journal Section */}

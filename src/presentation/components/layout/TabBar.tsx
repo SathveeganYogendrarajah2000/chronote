@@ -93,6 +93,11 @@ export const TabBar: React.FC = () => {
                 {isDsm ? "★" : "📌"}
               </span>
             )}
+            {tab.documentType === "graph" && (
+              <span style={{ fontSize: "11px", marginRight: 4, opacity: 0.8 }} title="Backlinks Graph">
+                🕸️
+              </span>
+            )}
             <span className="tab-title" title={tab.title}>
               {tab.title}
             </span>
