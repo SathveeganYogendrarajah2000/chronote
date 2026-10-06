@@ -15,9 +15,9 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Release 0.1.7 (Resource Inspector Exact Cursor Navigation & 30-Day Recycle Bin)** — Completed. Ready for release tagging.
-- **Status:** Release **0.1.7 COMPLETED**. Delivers exact-point cursor and viewport navigation when clicking resource blocks (code blocks, embedded images, file attachments, external links, and backlinks) in the Resource Inspector tab, matching TOC outline behavior with smooth scrolling and block highlight pulse. Introduces a workspace Recycle Bin (`bin/notes/`) to retain deleted notes (both General Notes and Daily Stand-up entries) with a 30-day retention policy, automatic expiration cleanup, section-based grouping ("Daily Stand-up" and "General Notes"), dedicated search/filter modal, quick restore, permanent deletion, and empty bin capabilities. **179/179 Vitest tests** across 28 test suites and **27/27 native Rust tests + 1 stress test** passing with zero errors.
-- **Next Milestone:** Phase 3: Cloud Integrations & Advanced Navigation (direct Google Drive / OneDrive OAuth sync adapters, interactive 3-way conflict resolution wizard for concurrent edits, and interactive visual backlinks graph).
+- **Current Phase:** **Release 0.2.0 (Phase 3: Cloud Integrations & Advanced Navigation)** — Completed. Ready for release tagging.
+- **Status:** Release **0.2.0 COMPLETED**. Delivers direct Google Drive and Microsoft OneDrive OAuth sync adapters (with Sandbox mock mode), automated differential cloud sync engine, an interactive 3-way conflict resolution engine & wizard for concurrent offline/cloud edits (handling titles, tags, content blocks, and DSM date journals), and an interactive visual backlinks knowledge graph explorer powered by a high-performance 60fps Canvas 2D force-directed physics engine. **222/222 Vitest tests** across 33 test suites and **29/29 native Rust tests + 1 stress test** passing with zero errors.
+- **Next Milestone:** Phase 4: Linux Desktop Compatibility (WebKitGTK compatibility audit, AppImage, `.deb`, and Flatpak packaging).
 
 ---
 
@@ -98,8 +98,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Version `v0.1.7`. Implemented exact-point editor cursor navigation from the Resource Inspector tab across all resource items (code blocks, images, attachments, links, backlinks) with smooth scrolling and `.block-highlight-pulse` animation. Built complete workspace Recycle Bin system with 30-day retention (`bin/notes/{id}.json`) supporting both General Notes and Daily Stand-up entries, automatic expired note purging, section grouping ("Daily Stand-up" and "General Notes"), full note preview, restore, and permanent deletion. 179 Vitest tests + 27 Rust tests + 1 stress test passing.
-- **Next Recommended Task:** Create git release tag `v0.1.7` and trigger GitHub Actions automated release pipeline. Proceed to Phase 3 (direct OAuth adapters for Google Drive and OneDrive, 3-way conflict resolution engine, interactive visual backlinks graph).
+- **Current Work:** Version `v0.2.0` (Phase 3). Direct Google Drive and OneDrive OAuth sync adapters, differential sync engine, 3-way AST conflict resolution engine & wizard, and Canvas 2D backlinks graph explorer with force-directed physics. 222 Vitest tests + 29 Rust tests + 1 stress test passing with zero errors.
+- **Next Recommended Task:** Create git release tag `v0.2.0` and trigger GitHub Actions automated release pipeline. Proceed to Phase 4 (Linux Desktop Compatibility: WebKitGTK audit, AppImage, `.deb`, and Flatpak packaging).
 
 ---
 

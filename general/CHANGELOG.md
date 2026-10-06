@@ -9,12 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for [0.2.0] - Phase 3 Cloud Integrations & Advanced Navigation
-- Direct Google Drive and Microsoft OneDrive OAuth sync adapters.
-- Interactive 3-way conflict resolution engine for simultaneous edits.
-- Interactive backlinks graph and visual connection explorer.
+### Planned for [0.3.0] - Phase 4 Linux Desktop Compatibility
+- WebKitGTK compatibility audit and automated Linux CI builds.
+- Linux packaging: AppImage, `.deb`, and Flatpak.
+- Linux system tray integration and desktop entry shortcuts.
 
-## [0.1.7] - 2026-10-05
+## [0.2.0] - 2026-10-06
+
+### Added
+- **Direct Cloud Sync Adapters (Google Drive, Microsoft OneDrive, and Sandbox Mock):**
+  - Direct integration with Google Drive API v3 and Microsoft Graph API v1.0 without requiring any intermediate Chronote-owned servers or proprietary telemetry (complying strictly with ADR-005).
+  - Supports user-supplied OAuth bearer access tokens with encrypted configuration stored in machine-isolated `.chronote/cloud_sync.json` (git-ignored).
+  - Automated bi-directional differential sync engine (`cloudSyncEngine.ts`):
+    - Compares local file modified timestamps against remote cloud drive metadata across General Notes (`notes/*.json`), Daily Stand-up Journal (`notes/dsm.json`), and Courses & Topics (`notes/courses.json`).
+    - Handles automatic upload of newly created local notes and automatic download of newer remote revisions.
+    - Cloud Sync status indicator and configuration modal (`CloudSyncModal`) accessible via the application header.
+    - Built-in Sandbox Mock Cloud adapter for offline development and end-to-end testing.
+
+- **Interactive 3-Way AST Conflict Resolution Engine & Wizard:**
+  - Robust 3-way AST merge algorithm for concurrent offline and multi-device edits (`conflictMerge.ts`).
+  - **Granular Conflict Breakdown:**
+    - Title resolution: choose Local, Remote, or enter a custom harmonized title.
+    - Tag resolution: choose Local, Remote, or automated Union deduplication.
+    - Block-by-block ProseMirror comparison: visually inspect differing content blocks with clean merge counters for unchanged or newly appended blocks. Choose Local, Remote, Both (in order), or type custom text.
+    - DSM Date Journal merger: automatically unions distinct journal dates and combines content blocks when same-day notes overlap.
+  - Interactive 3-Way Resolution Wizard UI (`ThreeWayConflictWizard`) integrated directly into `ConflictModal` alongside legacy quick-resolve actions.
+  - Native Rust atomic merge persistence: `resolve_3way_conflict` command writes merged documents atomically (`.tmp` -> `fsync` -> rename) and instantly updates SQLite FTS5 index.
+
+- **Interactive Visual Backlinks Knowledge Graph Explorer:**
+  - 60fps Canvas 2D force-directed graph visualization (`BacklinksGraphView`) modeling knowledge connections across the entire workspace.
+  - Mathematical simulation engine (`graph.physics.ts`):
+    - Coulomb electrostatic repulsion, Hooke spring attraction along backlinks, center gravity anchoring, and velocity damping.
+    - Golden-ratio spiral initial distribution to avoid overlapping singularities.
+    - Node visual radius dynamically scaled based on in-degree + out-degree connectivity.
+  - Semantic styling:
+    - Cyan `#06b6d4` for General Notes, Emerald `#10b981` for Daily Stand-up entries, Amber `#f59e0b` for Courses & Topics.
+    - Directional arrowheads indicating link provenance.
+    - Interactive glowing halos and neighbor highlighting on hover.
+  - Interactive controls:
+    - Drag-to-move and drag-to-pin/unpin node coordinates.
+    - Smooth pan and zoom (0.2x to 4.0x) with floating HUD controls and viewport reset.
+    - Live filter drawer: instant search filtering across node titles and tags, document type toggles, minimum connection degree slider, and orphan node toggle.
+    - Node detail flyout inspector: shows incoming backlinks, outgoing references, tags, and 1-click **Open Document** navigation.
+    - Dedicated tab integration (`DocumentType: "graph"`, `tab_graph_explorer`) with keyboard shortcut `Ctrl+G` and header/sidebar navigation entries.
+
+### Changed
+- Bumped application version to `0.2.0` across `package.json`, `Cargo.toml`, and `tauri.conf.json`.
+- Extended test coverage to **222 Vitest tests** across 33 test suites and **29 native Rust tests + 1 stress test** passing with zero errors.
 
 ### Added
 - **Exact Cursor & Viewport Navigation in Resource Inspector:**

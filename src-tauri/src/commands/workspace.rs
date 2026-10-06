@@ -84,3 +84,22 @@ pub fn rebuild_index(state: State<AppState>) -> Result<IndexStats, String> {
     let stats = rebuild_index_from_disk(&mut ctx.db, &ctx.root).map_err(|e| e.to_string())?;
     Ok(stats)
 }
+
+#[tauri::command]
+pub fn save_cloud_sync_config(
+    config_json: String,
+    state: State<AppState>,
+) -> Result<(), String> {
+    let lock = state.context.lock().map_err(|_| "State lock poisoned".to_string())?;
+    let ctx = lock.as_ref().ok_or_else(|| "No active workspace open".to_string())?;
+    crate::storage::save_cloud_sync_config(&ctx.root, &config_json).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn read_cloud_sync_config(
+    state: State<AppState>,
+) -> Result<Option<String>, String> {
+    let lock = state.context.lock().map_err(|_| "State lock poisoned".to_string())?;
+    let ctx = lock.as_ref().ok_or_else(|| "No active workspace open".to_string())?;
+    crate::storage::read_cloud_sync_config(&ctx.root).map_err(|e| e.to_string())
+}

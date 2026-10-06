@@ -253,3 +253,130 @@
     transform: scale(0.98);
   }
 }
+
+/* ==========================================================================
+   3-Way Interactive Merge Wizard Styles
+   ========================================================================== */
+
+.conflict-wizard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.wizard-view-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wizard-tab-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--color-bg-surface, #0d1117);
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.12));
+  color: var(--color-text-secondary, #8b949e);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wizard-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-primary, #f0f6fc);
+}
+
+.wizard-tab-btn.active {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.wizard-3way-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 12px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.wizard-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-bg-surface, #0d1117);
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 240px;
+}
+
+.wizard-column.merged-result {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.03);
+}
+
+.wizard-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.wizard-column-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary, #f0f6fc);
+}
+
+.wizard-section-card {
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wizard-section-card.conflicted {
+  border-color: rgba(210, 153, 34, 0.4);
+  background: rgba(210, 153, 34, 0.05);
+}
+
+.wizard-choice-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.wizard-choice-btn {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: var(--color-text-secondary, #8b949e);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wizard-choice-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary, #f0f6fc);
+}
+
+.wizard-choice-btn.selected {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  font-weight: 600;
+}
+

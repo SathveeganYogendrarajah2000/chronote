@@ -8,6 +8,8 @@ import type { GeneralNote, NoteMetadata } from "@domain/note.types";
 import type { BinnedNoteRecord } from "@domain/bin.types";
 import type { SearchResultItem } from "@domain/search.types";
 import type { ResourceReference, BacklinkReference, ResourceType } from "@domain/resource.types";
+import type { BacklinksGraphData, GraphNode, GraphEdge } from "@domain/graph.types";
+import type { CloudSyncConfig } from "@domain/cloudSync.types";
 import { parseSearchQuery } from "@domain/search.parser";
 import { extractResourcesFromDoc } from "@domain/resourceExtractor";
 import { proseMirrorDocToText } from "@domain/dsm.utils";
@@ -26,12 +28,14 @@ export class MockIpcBridge implements IpcBridge {
   private notes: Map<string, GeneralNote> = new Map();
   private binnedNotes: Map<string, BinnedNoteRecord> = new Map();
   private mockConflicts: SyncConflictInfo[] = [];
+  private cloudSyncConfig: CloudSyncConfig | null = null;
 
   reset(): void {
     this.activeWorkspace = null;
     this.notes.clear();
     this.binnedNotes.clear();
     this.mockConflicts = [];
+    this.cloudSyncConfig = null;
     this.coursesDoc = createDefaultCoursesDocument();
     this.dsmDoc = {
       id: "dsm_master",
@@ -46,7 +50,7 @@ export class MockIpcBridge implements IpcBridge {
   async getAppInfo(): Promise<AppInfo> {
     return {
       name: "Chronote (Mock Environment)",
-      version: "0.1.7-mock",
+      version: "0.2.0-mock",
       description: "Mock IPC Bridge for development and testing",
     };
   }
@@ -609,6 +613,87 @@ export class MockIpcBridge implements IpcBridge {
     _resolution: "keep_local" | "use_conflicted" | "keep_both"
   ): Promise<void> {
     this.mockConflicts = this.mockConflicts.filter((c) => c.conflictFilePath !== conflictFilePath);
+  }
+
+  async getBacklinksGraph(): Promise<BacklinksGraphData> {
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    const inDegrees = new Map<string, number>();
+    const outDegrees = new Map<string, number>();
+
+    for (const note of this.notes.values()) {
+      nodes.push({
+        id: note.id,
+        title: note.title,
+        docType: "general",
+        tags: note.tags,
+        updatedAt: note.updatedAt,
+        inDegree: 0,
+        outDegree: 0,
+      });
+
+      const { backlinks } = extractResourcesFromDoc(note.content, {
+        parentDocumentId: note.id,
+        parentDocumentType: "general",
+        parentDocumentTitle: note.title,
+      });
+      for (const bkl of backlinks) {
+        if (bkl.targetNoteId) {
+          const targetId = bkl.targetNoteId;
+          const targetNote = this.notes.get(targetId);
+          edges.push({
+            sourceId: note.id,
+            sourceTitle: note.title,
+            targetId,
+            targetTitle: targetNote ? targetNote.title : "Untitled Note",
+          });
+          outDegrees.set(note.id, (outDegrees.get(note.id) || 0) + 1);
+          inDegrees.set(targetId, (inDegrees.get(targetId) || 0) + 1);
+        }
+      }
+    }
+
+    nodes.push({
+      id: this.dsmDoc.id,
+      title: this.dsmDoc.title,
+      docType: "dsm",
+      tags: [],
+      updatedAt: this.dsmDoc.updatedAt,
+      inDegree: 0,
+      outDegree: 0,
+    });
+
+    for (const node of nodes) {
+      node.inDegree = inDegrees.get(node.id) || 0;
+      node.outDegree = outDegrees.get(node.id) || 0;
+    }
+
+    return { nodes, edges };
+  }
+
+  async resolve3WayConflict(
+    conflictFilePath: string,
+    _targetId: string,
+    documentType: string,
+    mergedDataJson: string
+  ): Promise<void> {
+    if (documentType === "dsm") {
+      this.dsmDoc = JSON.parse(mergedDataJson);
+    } else if (documentType === "courses") {
+      this.coursesDoc = JSON.parse(mergedDataJson);
+    } else {
+      const note: GeneralNote = JSON.parse(mergedDataJson);
+      this.notes.set(note.id, note);
+    }
+    this.mockConflicts = this.mockConflicts.filter((c) => c.conflictFilePath !== conflictFilePath);
+  }
+
+  async saveCloudSyncConfig(config: CloudSyncConfig): Promise<void> {
+    this.cloudSyncConfig = { ...config };
+  }
+
+  async readCloudSyncConfig(): Promise<CloudSyncConfig | null> {
+    return this.cloudSyncConfig ? { ...this.cloudSyncConfig } : null;
   }
 }
 

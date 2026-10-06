@@ -556,6 +556,27 @@ pub fn empty_bin(root: &Path) -> Result<usize, StorageError> {
     Ok(count)
 }
 
+/// Saves cloud sync configuration atomically in .chronote/cloud_sync.json.
+pub fn save_cloud_sync_config(root: &Path, config_json: &str) -> Result<(), StorageError> {
+    let cache_dir = root.join(".chronote");
+    if !cache_dir.exists() {
+        fs::create_dir_all(&cache_dir)?;
+    }
+    let config_path = cache_dir.join("cloud_sync.json");
+    atomic_write(&config_path, config_json.as_bytes())?;
+    Ok(())
+}
+
+/// Reads cloud sync configuration from .chronote/cloud_sync.json if present.
+pub fn read_cloud_sync_config(root: &Path) -> Result<Option<String>, StorageError> {
+    let config_path = root.join(".chronote").join("cloud_sync.json");
+    if !config_path.exists() {
+        return Ok(None);
+    }
+    let content = fs::read_to_string(&config_path)?;
+    Ok(Some(content))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

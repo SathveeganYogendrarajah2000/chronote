@@ -4,7 +4,7 @@ import { useResourceStore } from "@application/stores/useResourceStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
 import { useDsmStore } from "@application/stores/useDsmStore";
-import { DSM_TAB_ID } from "@domain/tabs.types";
+import { DSM_TAB_ID, GRAPH_TAB_ID, GRAPH_DOCUMENT_ID } from "@domain/tabs.types";
 import type { ResourceType, ResourceReference, BacklinkReference } from "@domain/resource.types";
 import { IconButton } from "../common/IconButton";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
@@ -611,6 +611,38 @@ export const ResourcePane: React.FC = () => {
             >
               💡 <strong>Backlinks</strong> show all notes and daily stand-ups that reference this document via <code>[[Note Title]]</code>.
             </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{
+                width: "100%",
+                fontSize: "11px",
+                padding: "6px 10px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                color: "#38bdf8",
+                borderColor: "rgba(56, 189, 248, 0.3)",
+              }}
+              onClick={() => {
+                const hasTab = useTabsStore.getState().tabs.find((t) => t.id === GRAPH_TAB_ID);
+                if (hasTab) {
+                  switchTab(GRAPH_TAB_ID);
+                } else {
+                  openTab({
+                    id: GRAPH_TAB_ID,
+                    documentId: GRAPH_DOCUMENT_ID,
+                    documentType: "graph",
+                    title: "Backlinks Graph",
+                  });
+                }
+              }}
+            >
+              <span>🕸️ Open in Backlinks Graph Explorer ↗</span>
+            </button>
+
             {filteredBacklinks.length === 0 ? (
               <div style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", textAlign: "center", padding: "var(--space-4) var(--space-2)", lineHeight: 1.5 }}>
                 No incoming backlinks to this document. Link to it from any note using <code>[[{activeTabTitle}]]</code>.

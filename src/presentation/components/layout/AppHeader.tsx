@@ -3,6 +3,9 @@ import { useUiStore } from "@application/stores/useUiStore";
 import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
 import { useConflictStore } from "@application/stores/useConflictStore";
+import { useCloudSyncStore } from "@application/stores/useCloudSyncStore";
+import { useTabsStore } from "@application/stores/useTabsStore";
+import { GRAPH_TAB_ID, GRAPH_DOCUMENT_ID } from "@domain/tabs.types";
 import { IconButton } from "../common/IconButton";
 
 export const AppHeader: React.FC = () => {
@@ -23,8 +26,24 @@ export const AppHeader: React.FC = () => {
   } = useUiStore();
 
   const { conflicts, setConflictModalOpen } = useConflictStore();
+  const { config: cloudConfig, isSyncing: isCloudSyncing, setSyncModalOpen } = useCloudSyncStore();
   const { workspace, setWorkspaceModalOpen } = useWorkspaceStore();
   const { createNote } = useNotesStore();
+  const { tabs, openTab, switchTab } = useTabsStore();
+
+  const handleOpenGraph = () => {
+    const hasTab = tabs.find((t) => t.id === GRAPH_TAB_ID);
+    if (hasTab) {
+      switchTab(GRAPH_TAB_ID);
+    } else {
+      openTab({
+        id: GRAPH_TAB_ID,
+        documentId: GRAPH_DOCUMENT_ID,
+        documentType: "graph",
+        title: "Backlinks Graph",
+      });
+    }
+  };
 
   const handleCreateNote = async () => {
     try {
@@ -82,6 +101,43 @@ export const AppHeader: React.FC = () => {
             <span>{conflicts.length} Sync Conflict{conflicts.length > 1 ? "s" : ""}</span>
           </button>
         )}
+
+        {/* Cloud Sync Button */}
+        <button
+          type="button"
+          className={`header-cloud-btn ${cloudConfig.account ? "connected" : ""} ${isCloudSyncing ? "syncing" : ""}`}
+          onClick={() => setSyncModalOpen(true)}
+          title={
+            cloudConfig.account
+              ? `Cloud Sync: Connected (${cloudConfig.provider})\nClick to sync or configure`
+              : "Cloud Sync (Google Drive / OneDrive): Click to connect"
+          }
+        >
+          <svg
+            className={isCloudSyncing ? "spin-icon" : ""}
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+          >
+            <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383zm.653.757c-.57.491-.98 1.137-1.127 1.838a.5.5 0 0 1-.418.39c-1.39.227-2.514 1.408-2.514 2.991 0 1.636 1.341 2.96 2.781 2.96h8.906C13.987 12.278 15 11.16 15 9.773c0-1.306-.93-2.39-2.195-2.502a.5.5 0 0 1-.448-.362C12.016 4.606 10.198 3 8 3c-1.258 0-2.428.534-3.235 1.442a.5.5 0 0 1-.706-.343z" />
+          </svg>
+          <span>{isCloudSyncing ? "Syncing..." : cloudConfig.account ? "Cloud" : "Sync"}</span>
+        </button>
+
+        {/* Backlinks Graph View Button */}
+        <button
+          type="button"
+          className="header-workspace-btn"
+          onClick={handleOpenGraph}
+          title="Backlinks Graph Explorer (Phase 3)"
+          style={{ gap: 6 }}
+        >
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488 1.05l-6.718-3.12a2.5 2.5 0 1 1 0-3.604l6.718-3.12A2.485 2.485 0 0 1 11 2.5z" />
+          </svg>
+          <span style={{ fontSize: "var(--font-size-xs)", fontWeight: 500 }}>Graph</span>
+        </button>
 
         <button
           type="button"

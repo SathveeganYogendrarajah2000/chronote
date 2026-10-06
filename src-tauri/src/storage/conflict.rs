@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 use rusqlite::Connection;
 
 use crate::storage::error::StorageError;
-use crate::storage::models::GeneralNote;
-use crate::database::index_general_note;
+use crate::storage::models::{GeneralNote, DsmDocument, CoursesDocument};
+use crate::storage::atomic::atomic_write;
+use crate::database::{index_general_note, index_dsm};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -221,6 +222,54 @@ pub fn resolve_sync_conflict(
     Ok(())
 }
 
+/// Resolves a 3-way conflict by atomically writing the merged document into the
+/// authoritative note location, re-indexing in SQLite, and deleting the conflict file.
+pub fn resolve_3way_conflict(
+    workspace_root: &Path,
+    conn: &mut Connection,
+    conflict_path_str: &str,
+    target_id: &str,
+    document_type: &str,
+    merged_data_json: &str,
+) -> Result<(), StorageError> {
+    let notes_dir = workspace_root.join("notes");
+
+    match document_type {
+        "dsm" => {
+            let doc: DsmDocument = serde_json::from_str(merged_data_json)?;
+            let target_path = notes_dir.join("dsm.json");
+            let bytes = serde_json::to_vec_pretty(&doc)?;
+            atomic_write(&target_path, &bytes)?;
+            index_dsm(conn, &doc)?;
+        }
+        "courses" => {
+            let doc: CoursesDocument = serde_json::from_str(merged_data_json)?;
+            let target_path = notes_dir.join("courses.json");
+            let bytes = serde_json::to_vec_pretty(&doc)?;
+            atomic_write(&target_path, &bytes)?;
+        }
+        _ => {
+            let note: GeneralNote = serde_json::from_str(merged_data_json)?;
+            let file_name = if target_id.ends_with(".json") {
+                target_id.to_string()
+            } else {
+                format!("{}.json", target_id)
+            };
+            let target_path = notes_dir.join(file_name);
+            let bytes = serde_json::to_vec_pretty(&note)?;
+            atomic_write(&target_path, &bytes)?;
+            index_general_note(conn, &note)?;
+        }
+    }
+
+    let conflict_path = PathBuf::from(conflict_path_str);
+    if conflict_path.exists() {
+        let _ = std::fs::remove_file(&conflict_path);
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -305,5 +354,47 @@ mod tests {
         // Verify rescanning shows 0 conflicts
         let rescan = scan_sync_conflicts(ws_root).unwrap();
         assert_eq!(rescan.len(), 0);
+    }
+
+    #[test]
+    fn test_resolve_3way_conflict() {
+        let dir = tempdir().unwrap();
+        let ws_root = dir.path();
+        let notes_dir = ws_root.join("notes");
+        std::fs::create_dir_all(&notes_dir).unwrap();
+
+        let mut conn = crate::database::open_or_create_index_db(ws_root).unwrap();
+
+        let conflict_path = notes_dir.join("not_demo (1).json");
+        std::fs::write(&conflict_path, "{}").unwrap();
+
+        let merged_note = GeneralNote {
+            id: "not_demo".to_string(),
+            schema_version: 1,
+            title: "3-Way Merged Note".to_string(),
+            tags: vec!["merged".to_string()],
+            content: serde_json::json!({"type": "doc", "content": [{"type": "paragraph"}]}),
+            pinned: false,
+            created_at: "2026-10-06T10:00:00Z".to_string(),
+            updated_at: "2026-10-06T12:00:00Z".to_string(),
+        };
+        let merged_json = serde_json::to_string(&merged_note).unwrap();
+
+        resolve_3way_conflict(
+            ws_root,
+            &mut conn,
+            &conflict_path.to_string_lossy(),
+            "not_demo",
+            "general",
+            &merged_json,
+        ).unwrap();
+
+        assert!(!conflict_path.exists());
+        let saved_path = notes_dir.join("not_demo.json");
+        assert!(saved_path.exists());
+        let saved_str = std::fs::read_to_string(&saved_path).unwrap();
+        let saved: GeneralNote = serde_json::from_str(&saved_str).unwrap();
+        assert_eq!(saved.title, "3-Way Merged Note");
+        assert_eq!(saved.tags, vec!["merged"]);
     }
 }

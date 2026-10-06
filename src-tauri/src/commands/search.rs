@@ -41,3 +41,12 @@ pub fn get_backlinks(
     let ctx = lock.as_ref().ok_or_else(|| "No active workspace open".to_string())?;
     get_backlinks_for_note(&ctx.db, &target_note_id).map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn get_backlinks_graph(
+    state: State<'_, AppState>,
+) -> Result<crate::search::BacklinksGraphData, String> {
+    let lock = state.context.lock().map_err(|_| "State lock poisoned".to_string())?;
+    let ctx = lock.as_ref().ok_or_else(|| "No active workspace open".to_string())?;
+    crate::search::get_backlinks_graph(&ctx.db).map_err(|e| e.to_string())
+}
