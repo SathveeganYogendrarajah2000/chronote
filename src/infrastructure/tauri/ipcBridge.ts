@@ -6,6 +6,8 @@ import type { GeneralNote, NoteMetadata } from "@domain/note.types";
 import type { SearchResultItem } from "@domain/search.types";
 import type { ResourceReference, BacklinkReference, ResourceType } from "@domain/resource.types";
 import type { BinnedNoteRecord } from "@domain/bin.types";
+import type { BacklinksGraphData } from "@domain/graph.types";
+import type { CloudSyncConfig } from "@domain/cloudSync.types";
 import { mockIpcBridge } from "./mockIpcBridge";
 
 export interface IndexStats {
@@ -83,12 +85,16 @@ export interface IpcBridge {
   searchWorkspace(query: string): Promise<SearchResultItem[]>;
   getResources(options?: { documentId?: string; resourceType?: ResourceType }): Promise<ResourceReference[]>;
   getBacklinks(targetNoteId: string): Promise<BacklinkReference[]>;
+  getBacklinksGraph(): Promise<BacklinksGraphData>;
   pickExportFilePath(defaultName: string, extension: string, filterName: string): Promise<string | null>;
   saveExportedFile(path: string, content: Uint8Array | string): Promise<void>;
   exportWorkspaceBackup(outputPath?: string): Promise<string>;
   getPerformanceMetrics(): Promise<PerformanceMetrics>;
   getSyncConflicts(): Promise<SyncConflictInfo[]>;
   resolveConflict(conflictFilePath: string, resolution: "keep_local" | "use_conflicted" | "keep_both"): Promise<void>;
+  resolve3WayConflict(conflictFilePath: string, targetId: string, documentType: string, mergedDataJson: string): Promise<void>;
+  saveCloudSyncConfig(config: CloudSyncConfig): Promise<void>;
+  readCloudSyncConfig(): Promise<CloudSyncConfig | null>;
 }
 
 export class TauriIpcBridge implements IpcBridge {
@@ -336,6 +342,46 @@ export class TauriIpcBridge implements IpcBridge {
   ): Promise<void> {
     if (!this.isTauriAvailable()) return mockIpcBridge.resolveConflict(conflictFilePath, resolution);
     return await invoke<void>("resolve_conflict", { conflictFilePath, resolution });
+  }
+
+  async getBacklinksGraph(): Promise<BacklinksGraphData> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.getBacklinksGraph();
+    return await invoke<BacklinksGraphData>("get_backlinks_graph");
+  }
+
+  async resolve3WayConflict(
+    conflictFilePath: string,
+    targetId: string,
+    documentType: string,
+    mergedDataJson: string
+  ): Promise<void> {
+    if (!this.isTauriAvailable()) {
+      return mockIpcBridge.resolve3WayConflict(conflictFilePath, targetId, documentType, mergedDataJson);
+    }
+    return await invoke<void>("resolve_3way_conflict", {
+      conflictFilePath,
+      targetId,
+      documentType,
+      mergedDataJson,
+    });
+  }
+
+  async saveCloudSyncConfig(config: CloudSyncConfig): Promise<void> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.saveCloudSyncConfig(config);
+    return await invoke<void>("save_cloud_sync_config", {
+      configJson: JSON.stringify(config, null, 2),
+    });
+  }
+
+  async readCloudSyncConfig(): Promise<CloudSyncConfig | null> {
+    if (!this.isTauriAvailable()) return mockIpcBridge.readCloudSyncConfig();
+    const str = await invoke<string | null>("read_cloud_sync_config");
+    if (!str) return null;
+    try {
+      return JSON.parse(str) as CloudSyncConfig;
+    } catch {
+      return null;
+    }
   }
 }
 

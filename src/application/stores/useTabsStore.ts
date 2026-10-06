@@ -7,6 +7,8 @@ import {
   DSM_DOCUMENT_ID,
   COURSES_TAB_ID,
   COURSES_DOCUMENT_ID,
+  GRAPH_TAB_ID,
+  GRAPH_DOCUMENT_ID,
 } from "@domain/tabs.types";
 
 export interface OpenTabParams {
@@ -300,6 +302,15 @@ export const useTabsStore = create<TabsState>((set, get) => ({
             documentId: COURSES_DOCUMENT_ID,
             documentType: "courses",
             title: tab.title || "Courses & Learning",
+            isPinned: tab.isPinned ?? false,
+            ...(tab.scrollPosition !== undefined ? { scrollPosition: tab.scrollPosition } : {}),
+          });
+        } else if (tab.documentType === "graph" || tab.documentId === GRAPH_DOCUMENT_ID) {
+          filteredTabs.push({
+            id: tab.id || GRAPH_TAB_ID,
+            documentId: GRAPH_DOCUMENT_ID,
+            documentType: "graph",
+            title: tab.title || "Backlinks Graph",
             isPinned: tab.isPinned ?? false,
             ...(tab.scrollPosition !== undefined ? { scrollPosition: tab.scrollPosition } : {}),
           });

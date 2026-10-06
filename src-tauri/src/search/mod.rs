@@ -48,6 +48,36 @@ pub struct BacklinkReference {
     pub target_note_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphNode {
+    pub id: String,
+    pub title: String,
+    pub doc_type: String,
+    pub tags: Vec<String>,
+    pub updated_at: Option<String>,
+    pub in_degree: usize,
+    pub out_degree: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphEdge {
+    pub source_id: String,
+    pub source_title: String,
+    pub source_entry_id: Option<String>,
+    pub source_entry_date: Option<String>,
+    pub target_id: String,
+    pub target_title: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BacklinksGraphData {
+    pub nodes: Vec<GraphNode>,
+    pub edges: Vec<GraphEdge>,
+}
+
 #[derive(Debug, Default)]
 pub struct ParsedSearchQuery {
     pub text_tokens: Vec<String>,
@@ -458,6 +488,123 @@ pub fn get_backlinks_for_note(
     Ok(results)
 }
 
+/// Queries the entire knowledge graph of document nodes and directional backlinks.
+pub fn get_backlinks_graph(conn: &Connection) -> Result<BacklinksGraphData, StorageError> {
+    // 1. Fetch all documents
+    let mut stmt_docs = conn.prepare("
+        SELECT id, type, COALESCE(title, CASE WHEN type = 'dsm' THEN 'Daily Stand-up Journal' ELSE 'Untitled Note' END), updated_at
+        FROM documents;
+    ")?;
+
+    struct RawDoc {
+        id: String,
+        doc_type: String,
+        title: String,
+        updated_at: Option<String>,
+    }
+
+    let mut doc_map = std::collections::HashMap::new();
+    let doc_rows = stmt_docs.query_map([], |row| {
+        Ok(RawDoc {
+            id: row.get(0)?,
+            doc_type: row.get(1)?,
+            title: row.get(2)?,
+            updated_at: row.get(3)?,
+        })
+    })?;
+
+    for d in doc_rows {
+        let d = d?;
+        doc_map.insert(d.id.clone(), d);
+    }
+
+    // 2. Fetch tags grouped by document_id
+    let mut stmt_tags = conn.prepare("SELECT document_id, tag FROM tags;")?;
+    let mut tags_map: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    let tag_rows = stmt_tags.query_map([], |row| {
+        let doc_id: String = row.get(0)?;
+        let tag: String = row.get(1)?;
+        Ok((doc_id, tag))
+    })?;
+
+    for tr in tag_rows {
+        let (doc_id, tag) = tr?;
+        tags_map.entry(doc_id).or_default().push(tag);
+    }
+
+    // 3. Fetch all backlinks edges
+    let mut stmt_edges = conn.prepare("
+        SELECT 
+            b.source_document_id,
+            COALESCE(sd.title, CASE WHEN sd.type = 'dsm' THEN 'Daily Stand-up Journal' ELSE 'Untitled Note' END) AS source_title,
+            b.source_entry_id,
+            e.entry_date,
+            b.target_note_id,
+            COALESCE(td.title, 'Untitled Note') AS target_title
+        FROM backlinks b
+        LEFT JOIN documents sd ON b.source_document_id = sd.id
+        LEFT JOIN documents td ON b.target_note_id = td.id
+        LEFT JOIN dsm_entries e ON b.source_entry_id = e.id
+        ORDER BY b.rowid ASC;
+    ")?;
+
+    let mut edges = Vec::new();
+    let mut in_degrees: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut out_degrees: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+    let edge_rows = stmt_edges.query_map([], |row| {
+        let source_id: String = row.get(0)?;
+        let mut source_title: String = row.get(1)?;
+        let source_entry_id: Option<String> = row.get(2)?;
+        let source_entry_date: Option<String> = row.get(3)?;
+        let target_id: String = row.get(4)?;
+        let target_title: String = row.get(5)?;
+
+        if let Some(ref d) = source_entry_date {
+            source_title = format!("DSM ({})", d);
+        }
+
+        Ok(GraphEdge {
+            source_id,
+            source_title,
+            source_entry_id,
+            source_entry_date,
+            target_id,
+            target_title,
+        })
+    })?;
+
+    for er in edge_rows {
+        let edge = er?;
+        *out_degrees.entry(edge.source_id.clone()).or_insert(0) += 1;
+        *in_degrees.entry(edge.target_id.clone()).or_insert(0) += 1;
+        edges.push(edge);
+    }
+
+    // 4. Construct graph nodes
+    let mut nodes = Vec::new();
+    for (id, raw) in &doc_map {
+        let node_tags = tags_map.get(id).cloned().unwrap_or_default();
+        let in_deg = *in_degrees.get(id).unwrap_or(&0);
+        let out_deg = *out_degrees.get(id).unwrap_or(&0);
+
+        nodes.push(GraphNode {
+            id: id.clone(),
+            title: raw.title.clone(),
+            doc_type: raw.doc_type.clone(),
+            tags: node_tags,
+            updated_at: raw.updated_at.clone(),
+            in_degree: in_deg,
+            out_degree: out_deg,
+        });
+    }
+
+    // Sort nodes stably by title
+    nodes.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+
+    Ok(BacklinksGraphData { nodes, edges })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -589,5 +736,66 @@ mod tests {
         let results = search_fts(&conn, "type:dsm after:2026-09-12 incident").unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].entry_date.as_deref(), Some("2026-09-15"));
+    }
+
+    #[test]
+    fn test_get_backlinks_graph() {
+        let temp_dir = tempdir().unwrap();
+        let mut conn = open_or_create_index_db(temp_dir.path()).unwrap();
+
+        let note1 = GeneralNote {
+            id: "not_a".to_string(),
+            schema_version: 1,
+            title: "Architecture Doc".to_string(),
+            tags: vec!["arch".to_string()],
+            content: serde_json::json!({
+                "type": "doc",
+                "content": [{
+                    "type": "paragraph",
+                    "content": [{
+                        "type": "text",
+                        "marks": [{
+                            "type": "internalLink",
+                            "attrs": { "targetNoteId": "not_b", "originalTitle": "Database Schema" }
+                        }],
+                        "text": "Database Schema"
+                    }]
+                }]
+            }),
+            pinned: false,
+            created_at: "2026-10-01T00:00:00Z".to_string(),
+            updated_at: "2026-10-01T00:00:00Z".to_string(),
+        };
+
+        let note2 = GeneralNote {
+            id: "not_b".to_string(),
+            schema_version: 1,
+            title: "Database Schema".to_string(),
+            tags: vec!["db".to_string()],
+            content: serde_json::json!({
+                "type": "doc",
+                "content": [{ "type": "paragraph" }]
+            }),
+            pinned: false,
+            created_at: "2026-10-01T00:00:00Z".to_string(),
+            updated_at: "2026-10-01T00:00:00Z".to_string(),
+        };
+
+        index_general_note(&mut conn, &note1).unwrap();
+        index_general_note(&mut conn, &note2).unwrap();
+
+        let graph = get_backlinks_graph(&conn).unwrap();
+        assert_eq!(graph.nodes.len(), 2);
+        assert_eq!(graph.edges.len(), 1);
+        assert_eq!(graph.edges[0].source_id, "not_a");
+        assert_eq!(graph.edges[0].target_id, "not_b");
+
+        let node_a = graph.nodes.iter().find(|n| n.id == "not_a").unwrap();
+        assert_eq!(node_a.out_degree, 1);
+        assert_eq!(node_a.in_degree, 0);
+
+        let node_b = graph.nodes.iter().find(|n| n.id == "not_b").unwrap();
+        assert_eq!(node_b.in_degree, 1);
+        assert_eq!(node_b.out_degree, 0);
     }
 }

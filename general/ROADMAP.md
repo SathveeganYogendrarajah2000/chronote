@@ -85,12 +85,12 @@ Chronote follows a phased, milestone-driven development strategy designed for hi
 
 ---
 
-### Phase 3: Cloud Integrations & Advanced Navigation
+### Phase 3: Cloud Integrations & Advanced Navigation (Status: Complete)
 *Goal: Seamless multi-device sync without requiring a Chronote-owned backend.*
 
-- Direct Google Drive and Microsoft OneDrive API adapters using user-provided OAuth tokens.
-- Interactive 3-way conflict resolution wizard for concurrent offline edits.
-- Interactive backlinks graph and semantic visual connection explorer.
+- [x] Direct Google Drive and Microsoft OneDrive API adapters using user-provided OAuth tokens (with Sandbox mock mode).
+- [x] Interactive 3-way conflict resolution wizard for concurrent offline edits.
+- [x] Interactive backlinks graph and semantic visual connection explorer.
 
 ---
 

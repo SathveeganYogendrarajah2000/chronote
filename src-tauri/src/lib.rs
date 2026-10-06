@@ -5,7 +5,7 @@ pub mod state;
 pub mod storage;
 
 use commands::asset::{get_asset_path, pick_asset_file, save_asset_binary};
-use commands::conflict::{get_sync_conflicts, resolve_conflict};
+use commands::conflict::{get_sync_conflicts, resolve_conflict, resolve_3way_conflict};
 use commands::export::{export_workspace_backup, pick_export_file_path, save_exported_file};
 use commands::note::{
     delete_binned_note_permanently, delete_general_note, empty_bin, list_binned_notes,
@@ -14,11 +14,11 @@ use commands::note::{
     save_general_note,
 };
 use commands::performance::get_performance_metrics;
-use commands::search::{get_backlinks, get_resources, search_workspace};
+use commands::search::{get_backlinks, get_backlinks_graph, get_resources, search_workspace};
 use commands::system::{get_app_info, open_external_url, open_file, ping, reveal_in_explorer};
 use commands::workspace::{
     create_workspace, get_active_workspace, open_workspace, pick_workspace_directory,
-    rebuild_index, save_workspace_settings,
+    read_cloud_sync_config, rebuild_index, save_cloud_sync_config, save_workspace_settings,
 };
 use state::AppState;
 
@@ -68,12 +68,16 @@ pub fn run() {
             search_workspace,
             get_resources,
             get_backlinks,
+            get_backlinks_graph,
             pick_export_file_path,
             save_exported_file,
             export_workspace_backup,
             get_performance_metrics,
             get_sync_conflicts,
             resolve_conflict,
+            resolve_3way_conflict,
+            save_cloud_sync_config,
+            read_cloud_sync_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

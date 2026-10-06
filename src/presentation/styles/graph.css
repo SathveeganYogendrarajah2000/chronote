@@ -1,0 +1,263 @@
+/* ==========================================================================
+   Chronote Backlinks Graph Visual Explorer Styles (Phase 3 v0.2.0)
+   ========================================================================== */
+
+.graph-view-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-bg-canvas, #090d16);
+  background-image: 
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px, 96px 96px;
+  background-position: 0 0, 16px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.graph-canvas:active {
+  cursor: grabbing;
+}
+
+/* Floating Top HUD Toolbar */
+.graph-toolbar {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.graph-toolbar > * {
+  pointer-events: auto;
+}
+
+.graph-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(22, 27, 34, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 4px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.graph-search-input {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary, #f0f6fc);
+  font-size: 12px;
+  padding: 4px 6px;
+  outline: none;
+  width: 140px;
+}
+
+.graph-search-input::placeholder {
+  color: var(--color-text-muted, #6e7681);
+}
+
+.graph-type-btn {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--color-text-secondary, #8b949e);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.graph-type-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary, #f0f6fc);
+}
+
+.graph-type-btn.active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.graph-type-btn.dsm.active {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.graph-type-btn.courses.active {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+/* Floating Controls (Zoom, Reset, Physics) */
+.graph-controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(22, 27, 34, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 4px 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.graph-control-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary, #8b949e);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.graph-control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary, #f0f6fc);
+}
+
+.graph-stats-badge {
+  font-size: 11px;
+  color: var(--color-text-muted, #6e7681);
+  padding: 0 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  margin-right: 2px;
+}
+
+/* Node Detail Flyout Card */
+.graph-node-flyout {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 280px;
+  background: rgba(22, 27, 34, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 20;
+  animation: flyoutSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes flyoutSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.graph-flyout-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.graph-flyout-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary, #f0f6fc);
+  line-height: 1.3;
+}
+
+.graph-flyout-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.graph-flyout-badge.general {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.graph-flyout-badge.dsm {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.graph-flyout-badge.courses {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.graph-flyout-metrics {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--color-text-secondary, #8b949e);
+}
+
+.graph-flyout-metric-val {
+  font-weight: 600;
+  color: var(--color-text-primary, #f0f6fc);
+}
+
+.graph-flyout-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.graph-flyout-tag {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary, #8b949e);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.graph-flyout-action {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--accent-primary, #38bdf8);
+  color: #0d1117;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.graph-flyout-action:hover {
+  opacity: 0.9;
+}

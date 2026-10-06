@@ -13,6 +13,8 @@ import "./styles/conflict.css";
 import "./styles/toc.css";
 import "./styles/courses.css";
 import "./styles/bin.css";
+import "./styles/cloudSync.css";
+import "./styles/graph.css";
 
 import { AppHeader } from "./components/layout/AppHeader";
 import { NavigationSidebar } from "./components/layout/NavigationSidebar";
@@ -28,6 +30,7 @@ import { PerformanceModal } from "./components/performance/PerformanceModal";
 import { ConflictModal } from "./components/conflict/ConflictModal";
 import { TopicModal } from "./components/courses/TopicModal";
 import { ResourceModal } from "./components/courses/ResourceModal";
+import { CloudSyncModal } from "./components/cloud/CloudSyncModal";
 
 import { useUiStore } from "@application/stores/useUiStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
@@ -36,7 +39,7 @@ import { useDsmStore, getTodayIsoDate } from "@application/stores/useDsmStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
 import { useConflictStore } from "@application/stores/useConflictStore";
 import { performanceProfiler } from "@application/services/performanceProfiler";
-import { DSM_TAB_ID } from "@domain/tabs.types";
+import { DSM_TAB_ID, GRAPH_TAB_ID, GRAPH_DOCUMENT_ID } from "@domain/tabs.types";
 
 export const App: React.FC = () => {
   const {
@@ -97,6 +100,21 @@ export const App: React.FC = () => {
         e.preventDefault();
         switchTab(DSM_TAB_ID);
         useDsmStore.getState().jumpToDate(getTodayIsoDate());
+      }
+      // Ctrl+G: Open Backlinks Graph Explorer
+      else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        const hasTab = tabs.find((t) => t.id === GRAPH_TAB_ID);
+        if (hasTab) {
+          switchTab(GRAPH_TAB_ID);
+        } else {
+          useTabsStore.getState().openTab({
+            id: GRAPH_TAB_ID,
+            documentId: GRAPH_DOCUMENT_ID,
+            documentType: "graph",
+            title: "Backlinks Graph",
+          });
+        }
       }
       // Ctrl+\: Toggle Sidebar
       else if (e.ctrlKey && e.key === "\\") {
@@ -200,6 +218,7 @@ export const App: React.FC = () => {
       <ExportModal />
       <PerformanceModal />
       <ConflictModal />
+      <CloudSyncModal />
       <TopicModal />
       <ResourceModal />
 

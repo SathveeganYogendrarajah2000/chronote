@@ -4,6 +4,7 @@ import { useNotesStore } from "@application/stores/useNotesStore";
 import { DsmTimeline } from "../dsm/DsmTimeline";
 import { NoteEditorCanvas } from "../notes/NoteEditorCanvas";
 import { LearningCanvas } from "../courses/LearningCanvas";
+import { BacklinksGraphView } from "../graph/BacklinksGraphView";
 
 export const MainContentArea: React.FC = () => {
   const { tabs, activeTabId } = useTabsStore();
@@ -11,6 +12,7 @@ export const MainContentArea: React.FC = () => {
 
   const isDsm = activeTab?.documentType === "dsm";
   const isCourses = activeTab?.documentType === "courses";
+  const isGraph = activeTab?.documentType === "graph";
 
   useEffect(() => {
     if (activeTab && activeTab.documentType === "general") {
@@ -24,6 +26,8 @@ export const MainContentArea: React.FC = () => {
         <DsmTimeline />
       ) : isCourses ? (
         <LearningCanvas />
+      ) : isGraph ? (
+        <BacklinksGraphView />
       ) : (
         <NoteEditorCanvas />
       )}
