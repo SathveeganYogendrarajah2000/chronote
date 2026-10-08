@@ -15,9 +15,22 @@ export interface SlashCommandOptions {
     onSelect: (item: SlashCommandItem) => void;
   }) => void) | undefined;
   onClose?: (() => void) | undefined;
+  onOpenCsvModal?: (() => void) | undefined;
 }
 
 const COMMAND_ITEMS: SlashCommandItem[] = [
+  {
+    id: "table",
+    title: "Table",
+    description: "Insert a 3x3 table with header row",
+    icon: "⊞",
+  },
+  {
+    id: "table-csv",
+    title: "Table from CSV / Delimited",
+    description: "Create table from CSV, TSV, pipe, or custom delimited text",
+    icon: "📊",
+  },
   {
     id: "h1",
     title: "Heading 1",
@@ -202,6 +215,15 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
           const chain = editor.chain().focus().deleteRange(range);
 
           switch (item.id) {
+            case "table":
+              (chain as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+              break;
+            case "table-csv":
+              chain.run();
+              if (this.options.onOpenCsvModal) {
+                this.options.onOpenCsvModal();
+              }
+              break;
             case "h1":
               chain.setHeading({ level: 1 }).run();
               break;

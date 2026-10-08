@@ -936,4 +936,564 @@
   outline: none;
 }
 
+/* ==========================================================================
+   Table & Grid Extension Styles
+   ========================================================================== */
+
+.chronote-editor-content .ProseMirror .tableWrapper {
+  overflow-x: auto;
+  margin: 1.2em 0;
+  border-radius: var(--radius-sm);
+}
+
+.chronote-editor-content .ProseMirror table,
+.chronote-prosemirror-table {
+  border-collapse: collapse;
+  margin: 0;
+  width: 100%;
+  table-layout: fixed;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.chronote-editor-content .ProseMirror table td,
+.chronote-editor-content .ProseMirror table th {
+  min-width: 1.5em;
+  border: 1px solid var(--border-subtle);
+  padding: 8px 12px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.chronote-editor-content .ProseMirror table th {
+  font-weight: 600;
+  text-align: left;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+.chronote-editor-content .ProseMirror table td {
+  background-color: rgba(255, 255, 255, 0.01);
+  color: var(--text-primary);
+}
+
+.chronote-editor-content .ProseMirror table tr:nth-child(even) td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.chronote-editor-content .ProseMirror table td > p,
+.chronote-editor-content .ProseMirror table th > p {
+  margin: 0;
+}
+
+.chronote-editor-content .ProseMirror table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.15);
+  pointer-events: none;
+}
+
+.chronote-editor-content .ProseMirror table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--accent-primary);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Table Floating Action Bar Menu
+   ========================================================================== */
+
+.table-floating-menu {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(8px);
+  user-select: none;
+  animation: fadeIn 120ms ease;
+}
+
+.table-floating-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.table-floating-separator {
+  width: 1px;
+  height: 16px;
+  background: var(--border-subtle);
+  margin: 0 4px;
+}
+
+.table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.table-action-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.table-action-btn-danger:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.table-action-btn-delete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.table-action-btn-close {
+  padding: 4px 6px;
+  opacity: 0.6;
+}
+
+.table-action-btn-close:hover {
+  opacity: 1;
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.table-action-btn:disabled,
+.table-action-btn.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.table-btn-icon {
+  font-size: 11px;
+}
+
+.table-btn-label {
+  font-size: 11px;
+}
+
+/* ==========================================================================
+   CSV / Delimited Table Modal Styles
+   ========================================================================== */
+
+.csv-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 150ms ease;
+}
+
+.csv-modal-dialog {
+  width: 92%;
+  max-width: 760px;
+  max-height: 88vh;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.csv-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.csv-modal-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.csv-modal-icon {
+  font-size: 24px;
+}
+
+.csv-modal-title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.csv-modal-subtitle {
+  margin: 2px 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.csv-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.csv-modal-close-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.csv-modal-body {
+  padding: var(--space-4) var(--space-5);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.csv-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.csv-delimiter-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.csv-toolbar-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.csv-pill-buttons {
+  display: inline-flex;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  gap: 2px;
+}
+
+.csv-pill-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.csv-pill-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+}
+
+.csv-pill-btn.is-active {
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+.csv-custom-delimiter-input {
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  padding: 3px 8px;
+  width: 90px;
+  outline: none;
+}
+
+.csv-custom-delimiter-input:focus {
+  border-color: var(--border-focus);
+}
+
+.csv-sample-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.csv-sample-link {
+  background: transparent;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.csv-sample-link:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.csv-input-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.csv-raw-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  padding: 10px 12px;
+  resize: vertical;
+  outline: none;
+  min-height: 120px;
+}
+
+.csv-raw-textarea:focus {
+  border-color: var(--border-focus);
+}
+
+.csv-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.csv-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.csv-checkbox-label input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+  width: 14px;
+  height: 14px;
+}
+
+.csv-status-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.csv-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+}
+
+.csv-badge-delimiter {
+  background: var(--bg-surface-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.csv-badge-metrics {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-hover);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.csv-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.csv-preview-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.csv-preview-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.csv-preview-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.csv-preview-table-container {
+  max-height: 180px;
+  overflow: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+}
+
+.csv-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.csv-preview-table th {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: left;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.csv-preview-table td {
+  padding: 5px 10px;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.csv-preview-table tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.csv-empty-cell {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 10px;
+}
+
+.csv-preview-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  background: var(--bg-canvas);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.csv-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.csv-modal-footer-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.csv-modal-footer-hint kbd {
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.csv-modal-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.csv-modal-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.csv-modal-btn-cancel {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.csv-modal-btn-cancel:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.csv-modal-btn-submit {
+  background: var(--accent-primary);
+  border: 1px solid transparent;
+  color: #ffffff;
+}
+
+.csv-modal-btn-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.csv-modal-btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
 

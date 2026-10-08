@@ -9,6 +9,7 @@ import {
   createDefaultDsmDocument,
   sortDsmEntries,
 } from "../dsm.utils";
+import type { ProseMirrorNode } from "../document.types";
 
 describe("dsm.utils", () => {
   describe("isValidIsoDate", () => {
@@ -116,6 +117,36 @@ describe("dsm.utils", () => {
       expect(doc.type).toBe("doc");
       expect(doc.content?.length).toBe(1);
       expect(proseMirrorDocToText(doc)).toBe("");
+    });
+
+    it("formats table blocks into pipe-delimited plain text lines", () => {
+      const tableDoc: ProseMirrorNode = {
+        type: "doc",
+        content: [
+          {
+            type: "table",
+            content: [
+              {
+                type: "tableRow",
+                content: [
+                  { type: "tableHeader", content: [{ type: "paragraph", content: [{ type: "text", text: "Metric" }] }] },
+                  { type: "tableHeader", content: [{ type: "paragraph", content: [{ type: "text", text: "Value" }] }] },
+                ],
+              },
+              {
+                type: "tableRow",
+                content: [
+                  { type: "tableCell", content: [{ type: "paragraph", content: [{ type: "text", text: "Latency" }] }] },
+                  { type: "tableCell", content: [{ type: "paragraph", content: [{ type: "text", text: "15ms" }] }] },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      const plainText = proseMirrorDocToText(tableDoc);
+      expect(plainText).toBe("Metric | Value\nLatency | 15ms");
     });
   });
 

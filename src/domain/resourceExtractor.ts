@@ -106,60 +106,69 @@ export function extractResourcesFromDoc(
       });
     }
 
-    // 3. Inspect child inline nodes for links and internal links
-    if (block.content && Array.isArray(block.content)) {
-      for (let j = 0; j < block.content.length; j++) {
-        const inline = block.content[j];
-        if (!inline || !inline.marks || !Array.isArray(inline.marks)) continue;
+    // 4. Inspect child inline nodes recursively for links and internal links (including inside tables)
+    function inspectChildInlineNodes(currentNode: ProseMirrorNode, baseBlockId: string) {
+      if (!currentNode.content || !Array.isArray(currentNode.content)) return;
+      for (let j = 0; j < currentNode.content.length; j++) {
+        const child = currentNode.content[j];
+        if (!child) continue;
 
-        for (const mark of inline.marks) {
-          // External link
-          if (mark.type === "link" && mark.attrs?.href) {
-            const href = mark.attrs.href as string;
-            const text = inline.text?.trim() || href;
+        if (child.marks && Array.isArray(child.marks)) {
+          for (const mark of child.marks) {
+            // External link
+            if (mark.type === "link" && mark.attrs?.href) {
+              const href = mark.attrs.href as string;
+              const text = child.text?.trim() || href;
 
-            resources.push({
-              id: `res_link_${blockId}_${j}`,
-              resourceType: "link",
-              parentDocumentId: context.parentDocumentId,
-              parentDocumentType: context.parentDocumentType,
-              entryId: context.entryId,
-              entryDate: context.entryDate,
-              blockId,
-              title: text,
-              targetUrl: href,
-            });
+              resources.push({
+                id: `res_link_${baseBlockId}_${resources.length}`,
+                resourceType: "link",
+                parentDocumentId: context.parentDocumentId,
+                parentDocumentType: context.parentDocumentType,
+                entryId: context.entryId,
+                entryDate: context.entryDate,
+                blockId: baseBlockId,
+                title: text,
+                targetUrl: href,
+              });
+            }
+
+            // Internal note link
+            if (mark.type === "internalLink" && mark.attrs?.targetNoteId) {
+              const targetNoteId = mark.attrs.targetNoteId as string;
+              const title = (mark.attrs.originalTitle as string) || child.text?.trim() || "Note";
+
+              resources.push({
+                id: `res_inlink_${baseBlockId}_${resources.length}`,
+                resourceType: "backlink",
+                parentDocumentId: context.parentDocumentId,
+                parentDocumentType: context.parentDocumentType,
+                entryId: context.entryId,
+                entryDate: context.entryDate,
+                blockId: baseBlockId,
+                title,
+                targetNoteId,
+              });
+
+              backlinks.push({
+                sourceDocumentId: context.parentDocumentId,
+                sourceDocumentType: context.parentDocumentType,
+                sourceDocumentTitle: context.parentDocumentTitle,
+                sourceEntryId: context.entryId,
+                sourceEntryDate: context.entryDate,
+                targetNoteId,
+              });
+            }
           }
+        }
 
-          // Internal note link
-          if (mark.type === "internalLink" && mark.attrs?.targetNoteId) {
-            const targetNoteId = mark.attrs.targetNoteId as string;
-            const title = (mark.attrs.originalTitle as string) || inline.text?.trim() || "Note";
-
-            resources.push({
-              id: `res_inlink_${blockId}_${j}`,
-              resourceType: "backlink",
-              parentDocumentId: context.parentDocumentId,
-              parentDocumentType: context.parentDocumentType,
-              entryId: context.entryId,
-              entryDate: context.entryDate,
-              blockId,
-              title,
-              targetNoteId,
-            });
-
-            backlinks.push({
-              sourceDocumentId: context.parentDocumentId,
-              sourceDocumentType: context.parentDocumentType,
-              sourceDocumentTitle: context.parentDocumentTitle,
-              sourceEntryId: context.entryId,
-              sourceEntryDate: context.entryDate,
-              targetNoteId,
-            });
-          }
+        if (child.content && Array.isArray(child.content)) {
+          inspectChildInlineNodes(child, baseBlockId);
         }
       }
     }
+
+    inspectChildInlineNodes(block, blockId);
   }
 
   return { resources, backlinks };

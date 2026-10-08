@@ -28,6 +28,9 @@ import {
 } from "./components/SlashCommandMenu";
 import { BubbleMenuBar } from "./components/BubbleMenuBar";
 import { BlockId } from "./extensions/BlockIdExtension";
+import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
+import { CsvTableModal } from "./components/CsvTableModal";
+import { TableFloatingMenu } from "./components/TableFloatingMenu";
 import { processFileAsset } from "@infrastructure/tauri/assetHelper";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import { NodeSelection } from "@tiptap/pm/state";
@@ -75,6 +78,9 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
     coords: { top: number; left: number };
     onSelect: (item: SlashCommandItem) => void;
   } | null>(null);
+
+  // CSV Table creation modal state
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
 
   // Drag-and-drop state for dropping notes
   const [isDragOver, setIsDragOver] = useState(false);
@@ -134,6 +140,15 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
       Placeholder.configure({
         placeholder,
       }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: "chronote-prosemirror-table",
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
       CustomCodeBlock,
       CustomImage,
       AttachmentExtension,
@@ -148,6 +163,7 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
       SlashCommand.configure({
         onOpen: (state) => setSlashMenuState(state),
         onClose: () => setSlashMenuState(null),
+        onOpenCsvModal: () => setIsCsvModalOpen(true),
       }),
       BlockId,
     ],
@@ -758,6 +774,14 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
     }
   };
 
+  const handleInsertCsvTable = useCallback(
+    (tableNode: ProseMirrorNode) => {
+      if (!editor) return;
+      editor.chain().focus().insertContent(tableNode).run();
+    },
+    [editor]
+  );
+
   return (
     <div
       className={`chronote-editor-container ${className} ${isDragOver ? "is-drag-over" : ""}`}
@@ -766,7 +790,8 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleContainerDrop}
     >
-      <BubbleMenuBar editor={editor} />
+      <BubbleMenuBar editor={editor} onOpenCsvModal={() => setIsCsvModalOpen(true)} />
+      <TableFloatingMenu editor={editor} />
       <EditorContent editor={editor} className="chronote-editor-content" />
 
       {linkPopoverState && (
@@ -792,6 +817,12 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
           }}
         />
       )}
+
+      <CsvTableModal
+        isOpen={isCsvModalOpen}
+        onClose={() => setIsCsvModalOpen(false)}
+        onInsertTable={handleInsertCsvTable}
+      />
     </div>
   );
 };
