@@ -195,6 +195,28 @@ export function proseMirrorDocToText(node: ProseMirrorNode): string {
   const lines: string[] = [];
 
   function processBlock(blockNode: ProseMirrorNode) {
+    // If it's a table container
+    if (blockNode.type === "table") {
+      if (blockNode.content && Array.isArray(blockNode.content)) {
+        for (const row of blockNode.content) {
+          processBlock(row);
+        }
+      }
+      return;
+    }
+
+    // If it's a table row, format cells separated by pipe
+    if (blockNode.type === "tableRow") {
+      if (blockNode.content && Array.isArray(blockNode.content)) {
+        const rowCells: string[] = [];
+        for (const cell of blockNode.content) {
+          rowCells.push(extractInlineText(cell).trim());
+        }
+        lines.push(rowCells.join(" | "));
+      }
+      return;
+    }
+
     // If it's a list or container node with children blocks
     if (
       blockNode.type === "bulletList" ||

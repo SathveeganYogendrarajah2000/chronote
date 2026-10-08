@@ -355,7 +355,7 @@ export const NavigationSidebar: React.FC = () => {
       <div className="sidebar-section">
         <div className="sidebar-section-header">
           <span>Knowledge Graph</span>
-          <span style={{ fontSize: "10px", color: "var(--accent-primary)", fontWeight: 600 }}>v0.2.0</span>
+          <span style={{ fontSize: "10px", color: "var(--accent-primary)", fontWeight: 600 }}>v0.2.1</span>
         </div>
         <button
           type="button"

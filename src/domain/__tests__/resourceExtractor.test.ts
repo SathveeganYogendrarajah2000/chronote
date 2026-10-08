@@ -82,4 +82,90 @@ describe("resourceExtractor", () => {
     expect(resources).toEqual([]);
     expect(backlinks).toEqual([]);
   });
+
+  it("extracts links and backlinks nested inside table cells", () => {
+    const docWithTable: ProseMirrorNode = {
+      type: "doc",
+      content: [
+        {
+          type: "table",
+          attrs: { id: "blk_tbl1" },
+          content: [
+            {
+              type: "tableRow",
+              content: [
+                {
+                  type: "tableHeader",
+                  content: [{ type: "paragraph", content: [{ type: "text", text: "Resource" }] }],
+                },
+                {
+                  type: "tableHeader",
+                  content: [{ type: "paragraph", content: [{ type: "text", text: "Target" }] }],
+                },
+              ],
+            },
+            {
+              type: "tableRow",
+              content: [
+                {
+                  type: "tableCell",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [
+                        {
+                          type: "text",
+                          text: "API Docs",
+                          marks: [{ type: "link", attrs: { href: "https://api.github.com" } }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  type: "tableCell",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [
+                        {
+                          type: "text",
+                          text: "Related Note",
+                          marks: [
+                            {
+                              type: "internalLink",
+                              attrs: { targetNoteId: "not_rel42", originalTitle: "Related Note" },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const { resources, backlinks } = extractResourcesFromDoc(docWithTable, {
+      parentDocumentId: "not_table_doc",
+      parentDocumentType: "general",
+      parentDocumentTitle: "Table Document",
+    });
+
+    const linkRes = resources.find((r) => r.resourceType === "link");
+    expect(linkRes).toBeDefined();
+    expect(linkRes?.targetUrl).toBe("https://api.github.com");
+    expect(linkRes?.title).toBe("API Docs");
+
+    const backlinkRes = resources.find((r) => r.resourceType === "backlink");
+    expect(backlinkRes).toBeDefined();
+    expect(backlinkRes?.targetNoteId).toBe("not_rel42");
+
+    expect(backlinks.length).toBe(1);
+    expect(backlinks[0]?.targetNoteId).toBe("not_rel42");
+    expect(backlinks[0]?.sourceDocumentId).toBe("not_table_doc");
+  });
 });

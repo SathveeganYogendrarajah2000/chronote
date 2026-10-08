@@ -15,8 +15,8 @@
 ---
 
 ## 2. Current Phase & Status
-- **Current Phase:** **Release 0.2.0 (Phase 3: Cloud Integrations & Advanced Navigation)** — Completed. Ready for release tagging.
-- **Status:** Release **0.2.0 COMPLETED**. Delivers direct Google Drive and Microsoft OneDrive OAuth sync adapters (with Sandbox mock mode), automated differential cloud sync engine, an interactive 3-way conflict resolution engine & wizard for concurrent offline/cloud edits (handling titles, tags, content blocks, and DSM date journals), and an interactive visual backlinks knowledge graph explorer powered by a high-performance 60fps Canvas 2D force-directed physics engine. **222/222 Vitest tests** across 33 test suites and **29/29 native Rust tests + 1 stress test** passing with zero errors.
+- **Current Phase:** **Release 0.2.1 (Rich Tables & Delimited Text / CSV Engine)** — Completed. Ready for local testing and release packaging.
+- **Status:** Release **0.2.1 COMPLETED**. Introduces rich table editing across all note surfaces (DSM, General Notes, Courses), non-obscuring floating table controls bar positioned beneath tables with viewport docking, top header row invariant (preventing rows above header), universal CSV / delimited text parser with RFC 4180 support, multi-delimiter detection (comma, tab, pipe, semicolon, custom), and interactive table import modal with live preview. **241/241 Vitest tests** across 34 test suites and **29/29 native Rust tests + 1 stress test** passing with zero errors.
 - **Next Milestone:** Phase 4: Linux Desktop Compatibility (WebKitGTK compatibility audit, AppImage, `.deb`, and Flatpak packaging).
 
 ---
@@ -98,8 +98,8 @@ Refer to [general/DECISIONS/](file:///e:/workspace/chronote/general/DECISIONS/) 
 ---
 
 ## 8. Current Work & Next Task
-- **Current Work:** Version `v0.2.0` (Phase 3). Direct Google Drive and OneDrive OAuth sync adapters, differential sync engine, 3-way AST conflict resolution engine & wizard, and Canvas 2D backlinks graph explorer with force-directed physics. 222 Vitest tests + 29 Rust tests + 1 stress test passing with zero errors.
-- **Next Recommended Task:** Create git release tag `v0.2.0` and trigger GitHub Actions automated release pipeline. Proceed to Phase 4 (Linux Desktop Compatibility: WebKitGTK audit, AppImage, `.deb`, and Flatpak packaging).
+- **Current Work:** Version `v0.2.1` (Rich Tables & Delimited Text / CSV Engine). Native rich tables across DSM, General Notes, and Courses, interactive table floating menu, universal CSV/delimited text parser (supporting comma, pipe, tab, semicolon, custom), and interactive modal with live table preview. 241 Vitest tests + 29 Rust tests + 1 stress test passing with zero errors.
+- **Next Recommended Task:** Test local `.msi` build on Windows, tag `v0.2.1`, and proceed to Phase 4 (Linux Desktop Compatibility: WebKitGTK audit, AppImage, `.deb`, and Flatpak packaging).
 
 ---
 

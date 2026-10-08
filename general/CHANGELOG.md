@@ -14,6 +14,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux packaging: AppImage, `.deb`, and Flatpak.
 - Linux system tray integration and desktop entry shortcuts.
 
+## [0.2.1] - 2026-10-08
+
+### Added
+- **Rich Table Support Across All Note Types:**
+  - Integrated `@tiptap/extension-table`, `@tiptap/extension-table-row`, `@tiptap/extension-table-cell`, and `@tiptap/extension-table-header` directly into `ChronoteEditor`.
+  - Available across all note surfaces: Daily Stand-up entries (DSM), General Notes, and Learning / Course Topics.
+  - Interactive table column resizing handles and cell selection highlights.
+  - Floating Table Action Bar (`TableFloatingMenu`):
+    - Positioned beneath the active table (docked at viewport bottom when scrolled), guaranteeing the header row is never obscured or blocked during editing.
+    - Top header invariant: "Row Above" action is automatically disabled when cursor is in the header row, ensuring the header row always remains at the top.
+    - Add / remove rows below current position and rows above data rows.
+    - Add / remove columns to the left and right.
+    - Toggle header row on/off.
+    - 1-click **Copy Table as CSV** to system clipboard with instant visual feedback.
+    - Dismissable toolbar with close action.
+    - Delete table action.
+  - Slash command `/table` for instant insertion of 3x3 table with header row.
+  - Bubble menu bar table quick-insert action.
+
+- **Universal Delimited Text & CSV Table Import Engine (`csvTableParser.ts`):**
+  - Robust parser supporting arbitrary delimiters: Comma (`,`), Tab (`\t`), Pipe (`|`), Semicolon (`;`), Colon (`:`), or user-defined custom delimiter strings (e.g. `::`, `~`).
+  - RFC 4180 quote compliance: handles quoted strings, escaped quotes (`""`), and multiline values within cells.
+  - Markdown pipe table detection: automatically strips markdown alignment rows (`|---|---|`) and exterior pipes.
+  - Intelligent delimiter auto-detection analyzing delimiter candidate consistency across lines.
+  - Automatic rectangular grid normalization (pads ragged rows with empty cells).
+  - Reverse converter `tableToDelimitedText` transforming ProseMirror tables into clean CSV or custom delimited strings.
+  - Interactive Table Import Modal (`CsvTableModal`):
+    - Live interactive preview table showing detected delimiter and matrix dimensions (rows × cols).
+    - Quick sample loaders: Example CSV, Markdown Pipe Table, and TSV.
+    - Delimiter selection pills and custom delimiter input.
+    - "First row is header" toggle.
+    - Keyboard shortcut support: <kbd>Ctrl+Enter</kbd> to insert immediately and <kbd>Esc</kbd> to cancel.
+    - Accessible via slash command `/table-csv` or `/csv` and bubble menu action.
+
+- **Enhanced Plain Text Formatting & Deep Resource Extraction:**
+  - `proseMirrorDocToText`: Formats table rows into clean, pipe-separated text (`Col 1 | Col 2`) to optimize full-text search indexing, document previews, and character/word counts.
+  - `resourceExtractor`: Recursively inspects child nodes inside table cells to discover external links and internal note backlinks.
+
+### Changed
+- Bumped application version to `0.2.1` across `package.json`, `Cargo.toml`, and `tauri.conf.json`.
+- Extended test coverage to **241 Vitest tests** across 34 test suites and **29 native Rust tests + 1 stress test** passing with zero errors.
+
 ## [0.2.0] - 2026-10-06
 
 ### Added
