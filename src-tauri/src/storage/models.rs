@@ -1,5 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+pub fn default_section() -> String {
+    "General".to_string()
+}
+
+pub fn default_note_sort_by() -> String {
+    "title".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceSettings {
@@ -8,6 +16,12 @@ pub struct WorkspaceSettings {
     pub theme: String,
     pub dsm_sort_order: String,
     pub autosave_interval_ms: u32,
+    #[serde(default = "default_note_sort_by")]
+    pub note_sort_by: String,
+    #[serde(default)]
+    pub pinned_sections: Vec<String>,
+    #[serde(default)]
+    pub custom_sections: Vec<String>,
 }
 
 impl Default for WorkspaceSettings {
@@ -18,6 +32,9 @@ impl Default for WorkspaceSettings {
             theme: "dark".to_string(),
             dsm_sort_order: "desc".to_string(),
             autosave_interval_ms: 800,
+            note_sort_by: "title".to_string(),
+            pinned_sections: Vec::new(),
+            custom_sections: Vec::new(),
         }
     }
 }
@@ -64,6 +81,8 @@ pub struct GeneralNote {
     pub schema_version: u32,
     pub title: String,
     pub tags: Vec<String>,
+    #[serde(default = "default_section")]
+    pub section: String,
     pub content: serde_json::Value,
     pub pinned: bool,
     pub created_at: String,
@@ -76,6 +95,8 @@ pub struct NoteMetadata {
     pub id: String,
     pub title: String,
     pub tags: Vec<String>,
+    #[serde(default = "default_section")]
+    pub section: String,
     pub pinned: bool,
     pub updated_at: String,
 }
@@ -163,4 +184,3 @@ pub struct CoursesDocument {
     pub topics: Vec<LearningTopic>,
     pub resources: Vec<LearningResource>,
 }
-

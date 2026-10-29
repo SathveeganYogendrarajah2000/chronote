@@ -75,10 +75,29 @@ export const App: React.FC = () => {
   // Register global desktop keyboard accelerators (EDITOR_SPEC.md Section 6)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+F: Search
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "f") {
+      // Ctrl+Shift+F: Global Search (Find Mode)
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
-        setSearchModalOpen(true);
+        setSearchModalOpen(true, "find");
+      }
+      // Ctrl+F: Local Search (Active Editor)
+      else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        window.dispatchEvent(
+          new CustomEvent("chronote:open-local-search", { detail: { isReplace: false } })
+        );
+      }
+      // Ctrl+Shift+R: Global Search (Find & Replace Mode)
+      else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        setSearchModalOpen(true, "replace");
+      }
+      // Ctrl+R: Local Search (Find & Replace Mode)
+      else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "r") {
+        e.preventDefault(); // Prevents WebView from reloading!
+        window.dispatchEvent(
+          new CustomEvent("chronote:open-local-search", { detail: { isReplace: true } })
+        );
       }
       // Ctrl+E: Export Dialog
       else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "e") {
@@ -122,95 +141,98 @@ export const App: React.FC = () => {
         toggleSidebar();
       }
       // Ctrl+W: Close active tab
-      else if (e.ctrlKey && e.key.toLowerCase() === "w") {
+      else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === "w") {
         e.preventDefault();
-        closeTab(activeTabId);
+        if (activeTabId) {
+          closeTab(activeTabId);
+        }
       }
       // Ctrl+Shift+T: Reopen closed tab
       else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "t") {
         e.preventDefault();
         reopenClosedTab();
       }
-      // Ctrl+Tab: Next tab
-      else if (e.ctrlKey && !e.shiftKey && e.key === "Tab") {
+      // Ctrl+Tab / Ctrl+Shift+Tab: Cycle tabs
+      else if (e.ctrlKey && e.key === "Tab") {
         e.preventDefault();
-        const currentIndex = tabs.findIndex((t) => t.id === activeTabId);
-        if (currentIndex !== -1 && tabs.length > 1) {
-          const nextIndex = (currentIndex + 1) % tabs.length;
-          const nextTab = tabs[nextIndex];
-          if (nextTab) switchTab(nextTab.id);
+        if (tabs.length > 1) {
+          const currentIndex = tabs.findIndex((t) => t.id === activeTabId);
+          if (currentIndex !== -1) {
+            const nextIndex = e.shiftKey
+              ? (currentIndex - 1 + tabs.length) % tabs.length
+              : (currentIndex + 1) % tabs.length;
+            const targetTab = tabs[nextIndex];
+            if (targetTab) {
+              switchTab(targetTab.id);
+            }
+          }
         }
       }
-      // Ctrl+Shift+Tab: Previous tab
-      else if (e.ctrlKey && e.shiftKey && e.key === "Tab") {
+      // Ctrl+1 to Ctrl+9: Switch to specific tab index
+      else if (e.ctrlKey && !e.shiftKey && !e.altKey && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
-        const currentIndex = tabs.findIndex((t) => t.id === activeTabId);
-        if (currentIndex !== -1 && tabs.length > 1) {
-          const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-          const prevTab = tabs[prevIndex];
-          if (prevTab) switchTab(prevTab.id);
+        const tabIndex = parseInt(e.key, 10) - 1;
+        if (tabIndex < tabs.length && tabs[tabIndex]) {
+          switchTab(tabs[tabIndex].id);
         }
       }
-      // Ctrl+= or Ctrl++: Zoom In
-      else if (e.ctrlKey && !e.shiftKey && (e.key === "=" || e.key === "+")) {
+      // Ctrl+= / Ctrl++: Zoom in
+      else if (e.ctrlKey && (e.key === "=" || e.key === "+")) {
         e.preventDefault();
         zoomIn();
       }
-      // Ctrl+-: Zoom Out
-      else if (e.ctrlKey && !e.shiftKey && e.key === "-") {
+      // Ctrl+-: Zoom out
+      else if (e.ctrlKey && e.key === "-") {
         e.preventDefault();
         zoomOut();
       }
-      // Ctrl+0: Reset Zoom
-      else if (e.ctrlKey && !e.shiftKey && e.key === "0") {
+      // Ctrl+0: Reset zoom to 100%
+      else if (e.ctrlKey && e.key === "0") {
         e.preventDefault();
         resetZoom();
       }
     };
 
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
-        if (e.deltaY < 0) {
-          zoomIn();
-        } else if (e.deltaY > 0) {
-          zoomOut();
-        }
-      }
-    };
-
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("wheel", handleWheel);
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
-    activeTabId,
-    tabs,
-    switchTab,
-    closeTab,
-    reopenClosedTab,
-    toggleSidebar,
     setSearchModalOpen,
     setExportModalOpen,
     setPerformanceModalOpen,
+    toggleSidebar,
+    closeTab,
+    reopenClosedTab,
+    switchTab,
     zoomIn,
     zoomOut,
     resetZoom,
+    tabs,
+    activeTabId,
   ]);
 
   return (
     <div className="app-container">
+      {/* Zoom HUD Notification */}
+      {zoomNotification && (
+        <div className="zoom-hud-notification">
+          <span>{zoomNotification}</span>
+        </div>
+      )}
+
+      {/* Top Application Header Bar */}
       <AppHeader />
+
+      {/* Tab Navigation Strip */}
+      <TabBar />
+
+      {/* Workspace Main Workspace Split-Pane Body */}
       <div className="app-body">
         <NavigationSidebar />
-        <div className="main-workspace">
-          <TabBar />
-          <MainContentArea />
-        </div>
+        <MainContentArea />
         <ResourcePane />
       </div>
+
+      {/* Persistent / Layered Application Modals */}
       <WorkspaceModal />
       <NoteDeleteModal />
       <BinModal />
@@ -218,16 +240,9 @@ export const App: React.FC = () => {
       <ExportModal />
       <PerformanceModal />
       <ConflictModal />
-      <CloudSyncModal />
       <TopicModal />
       <ResourceModal />
-
-      {/* On-screen Zoom HUD Indicator */}
-      {zoomNotification && (
-        <div className="zoom-hud-indicator">
-          <span>{zoomNotification}</span>
-        </div>
-      )}
+      <CloudSyncModal />
     </div>
   );
 };

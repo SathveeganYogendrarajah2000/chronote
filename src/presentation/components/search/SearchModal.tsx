@@ -1,15 +1,18 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useUiStore } from "@application/stores/useUiStore";
 import { useSearchStore } from "@application/stores/useSearchStore";
 import { useTabsStore } from "@application/stores/useTabsStore";
 import { useNotesStore } from "@application/stores/useNotesStore";
 import { useDsmStore } from "@application/stores/useDsmStore";
+import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { DSM_TAB_ID } from "@domain/tabs.types";
 import { SEARCH_FILTER_SUGGESTIONS, type SearchResultItem } from "@domain/search.types";
 import { isQueryEmpty } from "@domain/search.parser";
+import { replaceTextInProseMirrorDoc } from "@domain/replace.utils";
+import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 
 export const SearchModal: React.FC = () => {
-  const { searchModalOpen, setSearchModalOpen } = useUiStore();
+  const { searchModalOpen, setSearchModalOpen, searchModalMode, setSearchModalMode } = useUiStore();
   const {
     rawQuery,
     ast,
@@ -18,6 +21,7 @@ export const SearchModal: React.FC = () => {
     selectedIndex,
     recentQueries,
     setQuery,
+    executeSearch,
     selectNextResult,
     selectPrevResult,
     appendFilter,
@@ -28,18 +32,30 @@ export const SearchModal: React.FC = () => {
   const { loadNote } = useNotesStore();
   const { jumpToDate } = useDsmStore();
 
+  const [replaceQuery, setReplaceQuery] = useState("");
+  const [caseSensitive, setCaseSensitive] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isReplacing, setIsReplacing] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
 
   // Focus input when modal opens
   useEffect(() => {
     if (searchModalOpen) {
+      setStatusMessage(null);
       setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
+        if (searchModalMode === "replace" && rawQuery) {
+          replaceInputRef.current?.focus();
+          replaceInputRef.current?.select();
+        } else {
+          inputRef.current?.focus();
+          inputRef.current?.select();
+        }
       }, 50);
     }
-  }, [searchModalOpen]);
+  }, [searchModalOpen, searchModalMode]);
 
   // Scroll selected result into view
   useEffect(() => {
@@ -52,6 +68,10 @@ export const SearchModal: React.FC = () => {
       }
     }
   }, [selectedIndex]);
+
+  const uniqueDocIds = useMemo(() => {
+    return Array.from(new Set(results.map((r) => r.documentId)));
+  }, [results]);
 
   if (!searchModalOpen) return null;
 
@@ -94,23 +114,190 @@ export const SearchModal: React.FC = () => {
     }
   };
 
+  // Replace text in a single specific document
+  const handleReplaceInDocument = async (docId: string, docType: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const query = rawQuery.trim();
+    if (!query) return;
+
+    setIsReplacing(true);
+    let totalMatches = 0;
+
+    try {
+      if (docType === "dsm") {
+        const dsm = await ipcBridge.readDsmDocument();
+        let dsmModified = false;
+        const updatedEntries = dsm.entries.map((entry) => {
+          const { updatedDoc, matchCount } = replaceTextInProseMirrorDoc(
+            entry.content,
+            query,
+            replaceQuery,
+            caseSensitive
+          );
+          if (matchCount > 0) {
+            dsmModified = true;
+            totalMatches += matchCount;
+            return {
+              ...entry,
+              content: updatedDoc,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return entry;
+        });
+
+        if (dsmModified) {
+          await ipcBridge.saveDsmDocument({
+            ...dsm,
+            entries: updatedEntries,
+            updatedAt: new Date().toISOString(),
+          });
+          await useDsmStore.getState().loadDsm();
+        }
+      } else {
+        const note = await ipcBridge.readGeneralNote(docId);
+        const { updatedDoc, matchCount } = replaceTextInProseMirrorDoc(
+          note.content,
+          query,
+          replaceQuery,
+          caseSensitive
+        );
+
+        if (matchCount > 0) {
+          totalMatches += matchCount;
+          const updatedNote = {
+            ...note,
+            content: updatedDoc,
+            updatedAt: new Date().toISOString(),
+          };
+          await ipcBridge.saveGeneralNote(updatedNote);
+
+          // Update active note in store if currently open
+          if (useNotesStore.getState().activeNote?.id === docId) {
+            useNotesStore.setState({ activeNote: updatedNote });
+          }
+        }
+      }
+
+      await useWorkspaceStore.getState().refreshNotes();
+      await executeSearch();
+      setStatusMessage(`Replaced ${totalMatches} occurrences in ${docType === "dsm" ? "DSM Journal" : "note"}.`);
+    } catch (err) {
+      console.error("Failed to replace in document:", err);
+      setStatusMessage("Failed to replace: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsReplacing(false);
+    }
+  };
+
+  // Replace text across ALL matching documents in the workspace
+  const handleReplaceAll = async () => {
+    const query = rawQuery.trim();
+    if (!query || uniqueDocIds.length === 0) return;
+
+    setIsReplacing(true);
+    let totalReplaced = 0;
+    let docsModified = 0;
+
+    try {
+      for (const docId of uniqueDocIds) {
+        if (docId === "dsm_master" || docId.startsWith("dsm:")) {
+          const dsm = await ipcBridge.readDsmDocument();
+          let dsmModified = false;
+          const updatedEntries = dsm.entries.map((entry) => {
+            const { updatedDoc, matchCount } = replaceTextInProseMirrorDoc(
+              entry.content,
+              query,
+              replaceQuery,
+              caseSensitive
+            );
+            if (matchCount > 0) {
+              dsmModified = true;
+              totalReplaced += matchCount;
+              return {
+                ...entry,
+                content: updatedDoc,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return entry;
+          });
+
+          if (dsmModified) {
+            docsModified++;
+            await ipcBridge.saveDsmDocument({
+              ...dsm,
+              entries: updatedEntries,
+              updatedAt: new Date().toISOString(),
+            });
+            await useDsmStore.getState().loadDsm();
+          }
+        } else {
+          try {
+            const note = await ipcBridge.readGeneralNote(docId);
+            const { updatedDoc, matchCount } = replaceTextInProseMirrorDoc(
+              note.content,
+              query,
+              replaceQuery,
+              caseSensitive
+            );
+
+            if (matchCount > 0) {
+              totalReplaced += matchCount;
+              docsModified++;
+              const updatedNote = {
+                ...note,
+                content: updatedDoc,
+                updatedAt: new Date().toISOString(),
+              };
+              await ipcBridge.saveGeneralNote(updatedNote);
+
+              if (useNotesStore.getState().activeNote?.id === docId) {
+                useNotesStore.setState({ activeNote: updatedNote });
+              }
+            }
+          } catch (e) {
+            console.error(`Failed to replace in note ${docId}:`, e);
+          }
+        }
+      }
+
+      await useWorkspaceStore.getState().refreshNotes();
+      await executeSearch();
+      setStatusMessage(`✓ Successfully replaced ${totalReplaced} occurrences across ${docsModified} documents.`);
+    } catch (err) {
+      console.error("Failed to replace all:", err);
+      setStatusMessage("Error during global replacement: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsReplacing(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       e.preventDefault();
       setSearchModalOpen(false);
-    } else if (e.key === "ArrowDown") {
+    } else if (e.key === "ArrowDown" && (e.target === inputRef.current || e.target === replaceInputRef.current)) {
       e.preventDefault();
       selectNextResult();
-    } else if (e.key === "ArrowUp") {
+    } else if (e.key === "ArrowUp" && (e.target === inputRef.current || e.target === replaceInputRef.current)) {
       e.preventDefault();
       selectPrevResult();
-    } else if (e.key === "Enter") {
+    } else if (e.key === "Enter" && e.target === inputRef.current) {
       e.preventDefault();
-      if (selectedIndex >= 0 && results[selectedIndex]) {
-        handleNavigateToResult(results[selectedIndex]);
-      } else if (results.length > 0 && results[0]) {
-        handleNavigateToResult(results[0]);
+      if (searchModalMode === "replace") {
+        replaceInputRef.current?.focus();
+        replaceInputRef.current?.select();
+      } else {
+        if (selectedIndex >= 0 && results[selectedIndex]) {
+          handleNavigateToResult(results[selectedIndex]);
+        } else if (results.length > 0 && results[0]) {
+          handleNavigateToResult(results[0]);
+        }
       }
+    } else if (e.key === "Enter" && e.target === replaceInputRef.current) {
+      e.preventDefault();
+      void handleReplaceAll();
     }
   };
 
@@ -127,6 +314,30 @@ export const SearchModal: React.FC = () => {
       onKeyDown={handleKeyDown}
     >
       <div className="search-modal-dialog" role="dialog" aria-modal="true">
+        {/* Mode Switcher Tabs */}
+        <div className="search-mode-switcher">
+          <button
+            type="button"
+            className={`search-mode-tab ${searchModalMode === "find" ? "active" : ""}`}
+            onClick={() => {
+              setSearchModalMode("find");
+              setTimeout(() => inputRef.current?.focus(), 50);
+            }}
+          >
+            Find (Ctrl+Shift+F)
+          </button>
+          <button
+            type="button"
+            className={`search-mode-tab ${searchModalMode === "replace" ? "active" : ""}`}
+            onClick={() => {
+              setSearchModalMode("replace");
+              setTimeout(() => replaceInputRef.current?.focus(), 50);
+            }}
+          >
+            Find &amp; Replace (Ctrl+Shift+R)
+          </button>
+        </div>
+
         {/* Search Header Bar */}
         <div className="search-input-header">
           <div className="search-input-icon">
@@ -158,6 +369,61 @@ export const SearchModal: React.FC = () => {
 
           <kbd className="search-esc-hint">ESC</kbd>
         </div>
+
+        {/* Replace Header Bar (if replace mode active) */}
+        {searchModalMode === "replace" && (
+          <div className="search-replace-header">
+            <div className="search-input-icon">
+              <span style={{ fontSize: "14px" }}>⇄</span>
+            </div>
+
+            <input
+              ref={replaceInputRef}
+              type="text"
+              className="search-replace-input"
+              value={replaceQuery}
+              onChange={(e) => setReplaceQuery(e.target.value)}
+              placeholder="Replace with..."
+              spellCheck={false}
+            />
+
+            <button
+              type="button"
+              className={`local-search-btn-icon ${caseSensitive ? "active" : ""}`}
+              onClick={() => setCaseSensitive(!caseSensitive)}
+              title="Match Case (Aa)"
+              style={{ height: 30, padding: "0 8px" }}
+            >
+              Aa
+            </button>
+
+            <button
+              type="button"
+              className="search-replace-all-btn"
+              disabled={isReplacing || queryEmpty || results.length === 0}
+              onClick={handleReplaceAll}
+              title="Replace all matching occurrences across the workspace"
+            >
+              {isReplacing
+                ? "Replacing..."
+                : `Replace All (${results.length} in ${uniqueDocIds.length} doc${uniqueDocIds.length === 1 ? "" : "s"})`}
+            </button>
+          </div>
+        )}
+
+        {/* Status Notification */}
+        {statusMessage && (
+          <div className="search-replace-status">
+            <span>{statusMessage}</span>
+            <button
+              type="button"
+              onClick={() => setStatusMessage(null)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit" }}
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Filter Suggestion Chips */}
         <div className="search-filters-bar">
@@ -264,6 +530,17 @@ export const SearchModal: React.FC = () => {
                         #{tag}
                       </span>
                     ))}
+
+                    {searchModalMode === "replace" && (
+                      <button
+                        type="button"
+                        className="search-replace-item-btn"
+                        onClick={(e) => handleReplaceInDocument(item.documentId, item.documentType, e)}
+                        title="Replace query in this note"
+                      >
+                        Replace in Note
+                      </button>
+                    )}
                   </div>
 
                   <div
@@ -282,7 +559,7 @@ export const SearchModal: React.FC = () => {
               <kbd>↑</kbd> <kbd>↓</kbd> Navigate
             </span>
             <span className="search-shortcut-item">
-              <kbd>↵</kbd> Open
+              <kbd>↵</kbd> {searchModalMode === "replace" ? "Replace / Open" : "Open"}
             </span>
             <span className="search-shortcut-item">
               <kbd>ESC</kbd> Close

@@ -1,11 +1,20 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useNotesStore } from "@application/stores/useNotesStore";
+import { useWorkspaceStore } from "@application/stores/useWorkspaceStore";
 import { extractHeadings } from "@domain/toc.utils";
 import { FloatingTocPopover } from "../toc/FloatingTocPopover";
 
 export const NoteEditorHeader: React.FC = () => {
-  const { activeNote, isSaving, isDirty, updateTitle, togglePin, setDeleteCandidateId } =
-    useNotesStore();
+  const {
+    activeNote,
+    isSaving,
+    isDirty,
+    updateTitle,
+    updateSection,
+    togglePin,
+    setDeleteCandidateId,
+  } = useNotesStore();
+  const { workspace, recentNotes } = useWorkspaceStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isTocOpen, setIsTocOpen] = useState(false);
 
@@ -20,6 +29,20 @@ export const NoteEditorHeader: React.FC = () => {
     if (!activeNote) return 0;
     return extractHeadings(activeNote.content).length;
   }, [activeNote?.content]);
+
+  const availableSections = useMemo(() => {
+    const set = new Set<string>(["General"]);
+    if (workspace?.settings?.customSections) {
+      workspace.settings.customSections.forEach((s) => set.add(s));
+    }
+    if (workspace?.settings?.pinnedSections) {
+      workspace.settings.pinnedSections.forEach((s) => set.add(s));
+    }
+    for (const n of recentNotes) {
+      if (n.section?.trim()) set.add(n.section.trim());
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [workspace?.settings?.customSections, workspace?.settings?.pinnedSections, recentNotes]);
 
   if (!activeNote) return null;
 
@@ -44,6 +67,45 @@ export const NoteEditorHeader: React.FC = () => {
         />
         <div className="note-header-meta">
           <span>Updated {formattedDate}</span>
+          <span>•</span>
+          <span
+            className="note-header-section-badge"
+            title="Folder / Section"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: "11px",
+              color: "var(--text-muted)",
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.8 }}>
+              <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z" />
+            </svg>
+            <select
+              value={activeNote.section || "General"}
+              onChange={(e) => updateSection(e.target.value)}
+              className="note-section-select"
+              aria-label="Note section"
+              title="Folder / Section"
+              style={{
+                background: "var(--bg-secondary, rgba(255, 255, 255, 0.05))",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-subtle, rgba(255, 255, 255, 0.1))",
+                borderRadius: "4px",
+                padding: "1px 4px",
+                fontSize: "11px",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              {availableSections.map((sec) => (
+                <option key={sec} value={sec}>
+                  {sec}
+                </option>
+              ))}
+            </select>
+          </span>
           <span>•</span>
           <span
             className={`note-save-badge ${isSaving || isDirty ? "saving" : ""}`}

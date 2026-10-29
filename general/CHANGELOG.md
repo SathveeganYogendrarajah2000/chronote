@@ -14,6 +14,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linux packaging: AppImage, `.deb`, and Flatpak.
 - Linux system tray integration and desktop entry shortcuts.
 
+## [0.2.2] - 2026-10-29
+
+### Added
+- **General Notes Folder / Section Grouping:**
+  - Group and categorize notes by folders/sections, with "General" as default section.
+  - Create custom folders directly via the side navigation using the "📁+" action.
+  - Pin folders to top: pinned folders follow the user's pinned order; unpinned folders are sorted alphabetically.
+  - Delete custom folders with automatic, safe reassignment of member notes back to "General".
+  - Notes within each folder ordered alphabetically by default (with pinned notes grouped at the top).
+  - Dynamic sort toggle: instantly toggle note ordering inside folders between Name (A-Z) and Last Modified (updatedAt).
+  - Drag-and-drop support: drag notes onto folder headers in the sidebar to move notes between sections.
+  - Note header folder selector: view and change the active note's folder/section in "NoteEditorHeader" with automatic persistence.
+
+- **Comprehensive Search & Replace Capability:**
+  - **Local Note Search (<kbd>Ctrl+F</kbd>):**
+    - ProseMirror "SearchAndReplaceExtension" with live "DecorationSet" highlighting all matching terms and active match.
+    - Docked floating toolbar "LocalSearchReplaceBar" featuring live match counter ("X of Y"), Previous/Next cycling, and Match Case toggle.
+  - **Local Find & Replace (<kbd>Ctrl+R</kbd>):**
+    - Instant find-and-replace drawer in the local search bar with single Replace and Replace All actions.
+  - **Global Workspace Search (<kbd>Ctrl+Shift+F</kbd>):**
+    - Workspace-wide search modal across all General Notes and DSM entries with highlighted query terms in titles and text previews.
+  - **Global Find & Replace (<kbd>Ctrl+Shift+R</kbd>):**
+    - Full-workspace search & replace tab in "SearchModal".
+    - Replace All across all matching notes with one click, or replace within individual notes with preview feedback.
+    - Atomic ProseMirror document transformation preserving document structure, formatting marks, and block attributes.
+
+- **Interactive Date Insert Blocks:**
+  - Insertable date badges via slash commands: "/date", "/date-today", "/date-tmrw", "/date-yesterday".
+  - Input rules for natural drafting: "@today", "@tomorrow", "@yesterday", "@date".
+  - Clean inline chip UI ("DateBadgeView") showing calendar icon, formatted date string, and relative day pill.
+  - Interactive native date picker on badge click for instant in-place date updates.
+  - Exporters updated for Markdown, HTML, DOCX, and DSM timeline views.
+
+### Changed
+- Bumped application version to "0.2.2" across "package.json", "Cargo.toml", and "tauri.conf.json".
+- Backward-compatible serde deserialization: notes lacking "section" automatically deserialize to "General".
+- Workspace settings extended with "noteSortBy", "pinnedSections", and "customSections".
+- 249/249 Vitest tests across 35 test suites and 29/29 Rust native tests + 1 stress test passing with zero errors.
+
 ## [0.2.1] - 2026-10-08
 
 ### Added

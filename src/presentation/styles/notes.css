@@ -657,3 +657,42 @@
 .btn-danger:hover {
   background-color: #b91c1c;
 }
+
+/* Sidebar Folder & Section Grouping */
+.sidebar-section-folder {
+  margin-bottom: 3px;
+}
+
+.sidebar-section-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-secondary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebar-section-folder-row:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-section-folder-row.drag-over {
+  background-color: var(--bg-surface-active);
+  outline: 1.5px dashed var(--accent-primary);
+}
+
+.sidebar-folder-actions {
+  margin-left: auto;
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.sidebar-section-folder-row:hover .sidebar-folder-actions {
+  display: flex;
+}

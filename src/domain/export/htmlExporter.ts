@@ -77,6 +77,10 @@ function serializeInlineNodes(nodes?: ProseMirrorNode[]): string {
       if (node.type === "hardBreak") {
         return "<br />";
       }
+      if (node.type === "dateBadge") {
+        const d = escapeHtml((node.attrs?.date as string) || "");
+        return `<span class="date-badge" style="display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.15); color: #2563eb; font-weight: 500; font-size: 0.9em;">📅 ${d}</span>`;
+      }
       return "";
     })
     .join("");

@@ -747,6 +747,7 @@ mod tests {
             schema_version: 1,
             title: "Authentication Token Guide".to_string(),
             tags: vec!["jwt".to_string(), "backend".to_string()],
+            section: "General".to_string(),
             content: serde_json::json!({
                 "type": "doc",
                 "content": [

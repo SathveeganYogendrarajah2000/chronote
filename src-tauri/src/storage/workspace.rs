@@ -299,6 +299,11 @@ pub fn list_notes(root: &Path) -> Result<Vec<NoteMetadata>, StorageError> {
                                 id: note.id,
                                 title: note.title,
                                 tags: note.tags,
+                                section: if note.section.trim().is_empty() {
+                                    "General".to_string()
+                                } else {
+                                    note.section
+                                },
                                 pinned: note.pinned,
                                 updated_at: note.updated_at,
                             });
@@ -360,6 +365,7 @@ pub fn move_note_to_bin(root: &Path, id: &str) -> Result<BinnedNoteRecord, Stora
             schema_version: 1,
             title: format!("Daily Stand-up — {}", entry.date),
             tags: entry.tags.clone(),
+            section: "General".to_string(),
             content: entry.content.clone(),
             pinned: false,
             created_at: entry.created_at.clone(),
@@ -634,6 +640,7 @@ mod tests {
             schema_version: 1,
             title: "Spring Security Guide".to_string(),
             tags: vec!["springboot".to_string(), "security".to_string()],
+            section: "General".to_string(),
             content: serde_json::json!({ "type": "doc", "content": [] }),
             pinned: false,
             created_at: Utc::now().to_rfc3339(),
@@ -645,6 +652,7 @@ mod tests {
             schema_version: 1,
             title: "Pinned Note".to_string(),
             tags: vec!["architecture".to_string()],
+            section: "General".to_string(),
             content: serde_json::json!({ "type": "doc", "content": [] }),
             pinned: true,
             created_at: Utc::now().to_rfc3339(),
@@ -711,6 +719,7 @@ mod tests {
             schema_version: 1,
             title: "Temporary Architecture Plan".to_string(),
             tags: vec!["arch".to_string()],
+            section: "General".to_string(),
             content: serde_json::json!({ "type": "doc", "content": [] }),
             pinned: false,
             created_at: Utc::now().to_rfc3339(),
@@ -824,6 +833,7 @@ mod tests {
             schema_version: 1,
             title: "Note 1".to_string(),
             tags: vec![],
+            section: "General".to_string(),
             content: serde_json::json!({ "type": "doc", "content": [] }),
             pinned: false,
             created_at: Utc::now().to_rfc3339(),
@@ -834,6 +844,7 @@ mod tests {
             schema_version: 1,
             title: "Note 2".to_string(),
             tags: vec![],
+            section: "General".to_string(),
             content: serde_json::json!({ "type": "doc", "content": [] }),
             pinned: false,
             created_at: Utc::now().to_rfc3339(),
@@ -881,6 +892,7 @@ mod tests {
                 schema_version: 1,
                 title: "Ancient Note".to_string(),
                 tags: vec![],
+                section: "General".to_string(),
                 content: serde_json::json!({ "type": "doc", "content": [] }),
                 pinned: false,
                 created_at: past_time.to_rfc3339(),

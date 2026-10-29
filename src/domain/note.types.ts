@@ -9,6 +9,7 @@ export interface GeneralNote {
   readonly schemaVersion: number; // Currently 1
   title: string;                  // Editable without breaking incoming links
   tags: string[];                 // Normalized lowercase tags
+  section?: string;               // Folder/section name (defaults to "General")
   content: ProseMirrorNode;       // Canonical structured rich text document
   pinned: boolean;                // Pin to top of notes list
   createdAt: string;              // ISO 8601 UTC
@@ -23,6 +24,7 @@ export interface NoteMetadata {
   readonly id: string;
   title: string;
   tags: string[];
+  section?: string;               // Folder/section name (defaults to "General")
   pinned: boolean;
   updatedAt: string;
 }

@@ -1497,3 +1497,217 @@
 
 
 
+
+/* Local Search & Replace Bar */
+.local-search-bar-container {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-subtle, #334155);
+  border-radius: var(--radius-md, 6px);
+  padding: 6px 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  min-width: 340px;
+  max-width: 440px;
+  animation: localSearchFadeIn 0.15s ease-out;
+}
+
+@keyframes localSearchFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.local-search-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.local-search-toggle-replace-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 9px;
+  border-radius: 3px;
+  transition: transform 0.15s;
+}
+
+.local-search-toggle-replace-btn.open {
+  transform: rotate(0deg);
+}
+
+.local-search-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.local-search-input,
+.local-replace-input {
+  width: 100%;
+  padding: 4px 50px 4px 8px;
+  background: var(--bg-primary, #0f172a);
+  border: 1px solid var(--border-subtle, #334155);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+}
+
+.local-replace-input {
+  padding-right: 8px;
+}
+
+.local-search-input:focus,
+.local-replace-input:focus {
+  border-color: var(--accent-primary, #3b82f6);
+}
+
+.local-search-counter {
+  position: absolute;
+  right: 6px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  pointer-events: none;
+  font-family: var(--font-mono);
+}
+
+.local-search-btn-icon {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+}
+
+.local-search-btn-icon:hover:not(:disabled) {
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary);
+}
+
+.local-search-btn-icon.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--accent-primary, #3b82f6);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.local-search-btn-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.local-search-btn-icon.close-btn {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.local-replace-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 17px;
+}
+
+.local-replace-indent {
+  width: 0;
+}
+
+.local-replace-action-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-subtle, #334155);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.local-replace-action-btn:hover:not(:disabled) {
+  background: var(--accent-primary, #3b82f6);
+  color: #fff;
+  border-color: var(--accent-primary, #3b82f6);
+}
+
+.local-replace-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Local Search Highlighting */
+.local-search-match {
+  background-color: rgba(245, 158, 11, 0.35) !important;
+  color: inherit !important;
+  border-radius: 2px;
+}
+
+.local-search-match.active-match {
+  background-color: #f59e0b !important;
+  color: #000000 !important;
+  font-weight: 600;
+  outline: 2px solid #f59e0b !important;
+  border-radius: 2px;
+}
+
+/* Date Badge Block / Chip */
+.chronote-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  margin: 0 2px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--accent-primary, #3b82f6);
+  font-size: 0.88em;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  vertical-align: baseline;
+  user-select: none;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.chronote-date-badge:hover {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.chronote-date-badge.is-selected {
+  outline: 2px solid var(--accent-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.28);
+}
+
+.chronote-date-badge-icon {
+  font-size: 11px;
+}
+
+.chronote-date-badge-text {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.chronote-date-badge-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}

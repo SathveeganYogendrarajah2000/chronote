@@ -178,6 +178,9 @@ function extractInlineText(node: ProseMirrorNode): string {
   if (node.text) {
     return node.text;
   }
+  if (node.type === "dateBadge" && node.attrs?.date) {
+    return `📅 ${node.attrs.date}`;
+  }
   if (node.content && Array.isArray(node.content)) {
     return node.content.map(extractInlineText).join("");
   }

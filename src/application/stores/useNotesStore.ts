@@ -30,15 +30,18 @@ export interface NotesState {
   createNote: (params?: {
     title?: string;
     tags?: string[];
+    section?: string;
     initialText?: string;
   }) => Promise<GeneralNote>;
   saveCurrentNote: () => Promise<void>;
   updateTitle: (title: string) => void;
+  updateSection: (section: string) => void;
   updateContent: (content: ProseMirrorNode) => void;
   updateContentText: (text: string) => void;
   addTag: (rawTag: string) => void;
   removeTag: (tag: string) => void;
   togglePin: (id: string) => Promise<void>;
+  moveNoteToSection: (id: string, section: string) => Promise<void>;
   setDeleteCandidateId: (id: string | null) => void;
   deleteNote: (id: string) => Promise<void>;
   deleteNotePermanently: (id: string) => Promise<void>;
@@ -169,6 +172,26 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     }, 800);
   },
 
+  updateSection: (section: string) => {
+    const { activeNote } = get();
+    if (!activeNote) return;
+
+    const trimmed = section.trim() || "General";
+    const updatedNote: GeneralNote = {
+      ...activeNote,
+      section: trimmed,
+    };
+
+    set({ activeNote: updatedNote, isDirty: true });
+
+    if (noteSaveDebounceTimer) {
+      clearTimeout(noteSaveDebounceTimer);
+    }
+    noteSaveDebounceTimer = setTimeout(() => {
+      void get().saveCurrentNote();
+    }, 400);
+  },
+
   updateContent: (content: ProseMirrorNode) => {
     const { activeNote } = get();
     if (!activeNote) return;
@@ -295,6 +318,43 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       await useWorkspaceStore.getState().refreshNotes();
     } catch (err) {
       console.error(`Failed to toggle pin on note ${id}:`, err);
+    }
+  },
+
+  moveNoteToSection: async (id: string, section: string) => {
+    const { activeNote } = get();
+    let targetNote: GeneralNote | null = null;
+
+    if (activeNote && activeNote.id === id) {
+      targetNote = activeNote;
+    } else {
+      try {
+        targetNote = await ipcBridge.readGeneralNote(id);
+      } catch (err) {
+        console.error(`Failed to read note ${id} for section move:`, err);
+        return;
+      }
+    }
+
+    if (!targetNote) return;
+
+    const trimmed = section.trim() || "General";
+    const updated: GeneralNote = {
+      ...targetNote,
+      section: trimmed,
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await ipcBridge.saveGeneralNote(updated);
+
+      if (activeNote && activeNote.id === id) {
+        set({ activeNote: updated });
+      }
+
+      await useWorkspaceStore.getState().refreshNotes();
+    } catch (err) {
+      console.error(`Failed to move note ${id} to section ${section}:`, err);
     }
   },
 

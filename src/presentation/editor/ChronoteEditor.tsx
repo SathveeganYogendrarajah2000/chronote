@@ -28,6 +28,9 @@ import {
 } from "./components/SlashCommandMenu";
 import { BubbleMenuBar } from "./components/BubbleMenuBar";
 import { BlockId } from "./extensions/BlockIdExtension";
+import { DateBadge } from "./extensions/DateBadgeExtension";
+import { SearchAndReplace, type SearchAndReplaceState } from "./extensions/SearchAndReplaceExtension";
+import { LocalSearchReplaceBar } from "./components/LocalSearchReplaceBar";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
 import { CsvTableModal } from "./components/CsvTableModal";
 import { TableFloatingMenu } from "./components/TableFloatingMenu";
@@ -81,6 +84,9 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
 
   // CSV Table creation modal state
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+
+  // Local Search & Replace state
+  const [searchState, setSearchState] = useState<SearchAndReplaceState | null>(null);
 
   // Drag-and-drop state for dropping notes
   const [isDragOver, setIsDragOver] = useState(false);
@@ -164,6 +170,10 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
         onOpen: (state) => setSlashMenuState(state),
         onClose: () => setSlashMenuState(null),
         onOpenCsvModal: () => setIsCsvModalOpen(true),
+      }),
+      DateBadge,
+      SearchAndReplace.configure({
+        onStateChange: (st) => setSearchState(st),
       }),
       BlockId,
     ],
@@ -782,6 +792,17 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
     [editor]
   );
 
+  useEffect(() => {
+    const handleTriggerSearch = (e: Event) => {
+      const customEvent = e as CustomEvent<{ isReplace?: boolean }>;
+      if (editor && editable) {
+        editor.commands.openSearch(customEvent.detail?.isReplace);
+      }
+    };
+    window.addEventListener("chronote:open-local-search", handleTriggerSearch);
+    return () => window.removeEventListener("chronote:open-local-search", handleTriggerSearch);
+  }, [editor, editable]);
+
   return (
     <div
       className={`chronote-editor-container ${className} ${isDragOver ? "is-drag-over" : ""}`}
@@ -790,6 +811,11 @@ export const ChronoteEditor: React.FC<ChronoteEditorProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleContainerDrop}
     >
+      <LocalSearchReplaceBar
+        editor={editor}
+        state={searchState}
+        onClose={() => editor?.commands.closeSearch()}
+      />
       <BubbleMenuBar editor={editor} onOpenCsvModal={() => setIsCsvModalOpen(true)} />
       <TableFloatingMenu editor={editor} />
       <EditorContent editor={editor} className="chronote-editor-content" />

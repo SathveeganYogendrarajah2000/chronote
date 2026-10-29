@@ -7,7 +7,7 @@ import { useNotesStore } from "@application/stores/useNotesStore";
 import { useCoursesStore } from "@application/stores/useCoursesStore";
 import { useBinStore } from "@application/stores/useBinStore";
 import { formatDateLabel, sortDsmEntries } from "@domain/dsm.utils";
-import { filterNotes, filterNotesByTags } from "@domain/note.utils";
+import { filterNotes, filterNotesByTags, groupNotesBySection } from "@domain/note.utils";
 import { buildTopicTree } from "@domain/courses.utils";
 import { getDaysRemaining, formatDaysRemaining } from "@domain/bin.utils";
 import type { TopicTreeNode } from "@domain/courses.types";
@@ -115,7 +115,15 @@ export const NavigationSidebar: React.FC = () => {
   } = useUiStore();
   const [isResizing, setIsResizing] = useState(false);
   const { activeTabId, switchTab, openTab } = useTabsStore();
-  const { workspace, recentNotes, setWorkspaceModalOpen } = useWorkspaceStore();
+  const {
+    workspace,
+    recentNotes,
+    setWorkspaceModalOpen,
+    createSection,
+    deleteSection,
+    togglePinSection,
+    setNoteSortBy,
+  } = useWorkspaceStore();
   const {
     dsmDoc,
     jumpToDate,
@@ -137,6 +145,7 @@ export const NavigationSidebar: React.FC = () => {
     loadNote,
     togglePin,
     setDeleteCandidateId,
+    moveNoteToSection,
   } = useNotesStore();
   const {
     coursesDoc,
@@ -152,6 +161,11 @@ export const NavigationSidebar: React.FC = () => {
     restoreNote,
     deletePermanently,
   } = useBinStore();
+
+  const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
+  const [isCreatingSection, setIsCreatingSection] = useState(false);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [dragOverSection, setDragOverSection] = useState<string | null>(null);
 
   const isDsmActive = activeTabId === DSM_TAB_ID;
   const isCoursesActive = activeTabId === COURSES_TAB_ID;
@@ -207,6 +221,64 @@ export const NavigationSidebar: React.FC = () => {
     }
   };
 
+  const handleCreateNoteInSection = async (sectionName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await createNote({ section: sectionName });
+    } catch (err) {
+      console.error("Failed to create note in section:", err);
+    }
+  };
+
+  const toggleSectionCollapsed = (sectionName: string) => {
+    setCollapsedSections((prev) =>
+      prev.includes(sectionName)
+        ? prev.filter((s) => s !== sectionName)
+        : [...prev, sectionName]
+    );
+  };
+
+  const handleCreateSectionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newSectionName.trim();
+    if (!trimmed) {
+      setIsCreatingSection(false);
+      return;
+    }
+    await createSection(trimmed);
+    setNewSectionName("");
+    setIsCreatingSection(false);
+  };
+
+  const handleFolderDragOver = (sectionName: string, e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverSection !== sectionName) {
+      setDragOverSection(sectionName);
+    }
+  };
+
+  const handleFolderDragLeave = (sectionName: string, _e: React.DragEvent) => {
+    if (dragOverSection === sectionName) {
+      setDragOverSection(null);
+    }
+  };
+
+  const handleFolderDrop = async (sectionName: string, e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverSection(null);
+    const data = e.dataTransfer.getData("application/x-chronote-note");
+    if (!data) return;
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed.id && !parsed.id.startsWith("dsm:")) {
+        await moveNoteToSection(parsed.id, sectionName);
+      }
+    } catch (err) {
+      console.error("Failed to move dropped note:", err);
+    }
+  };
+
   const handleTagClick = (tag: string) => {
     if (isDsmActive) {
       toggleDsmTag(tag);
@@ -215,19 +287,28 @@ export const NavigationSidebar: React.FC = () => {
     }
   };
 
-  // Filter and group general notes into pinned and non-pinned
+  // Filter notes by query and tags
   const filteredNotes = useMemo(() => {
     const base = filterNotes(recentNotes, filterQuery);
     return filterNotesByTags(base, selectedTags, tagMatchMode);
   }, [recentNotes, filterQuery, selectedTags, tagMatchMode]);
 
-  const pinnedNotes = useMemo(() => {
-    return filteredNotes.filter((n) => n.pinned);
-  }, [filteredNotes]);
+  // Group notes into sections
+  const noteSortBy = workspace?.settings?.noteSortBy ?? "title";
+  const pinnedSections = workspace?.settings?.pinnedSections ?? [];
+  const customSections = workspace?.settings?.customSections ?? [];
 
-  const unpinnedNotes = useMemo(() => {
-    return filteredNotes.filter((n) => !n.pinned);
-  }, [filteredNotes]);
+  const noteSectionGroups = useMemo(() => {
+    return groupNotesBySection(filteredNotes, pinnedSections, customSections, noteSortBy);
+  }, [filteredNotes, pinnedSections, customSections, noteSortBy]);
+
+  const displaySectionGroups = useMemo(() => {
+    const hasFilter = filterQuery.trim().length > 0 || selectedTags.length > 0;
+    if (hasFilter) {
+      return noteSectionGroups.filter((g) => g.notes.length > 0);
+    }
+    return noteSectionGroups;
+  }, [noteSectionGroups, filterQuery, selectedTags]);
 
   const dynamicTags = useMemo(() => {
     const map = new Map<string, number>();
@@ -355,7 +436,7 @@ export const NavigationSidebar: React.FC = () => {
       <div className="sidebar-section">
         <div className="sidebar-section-header">
           <span>Knowledge Graph</span>
-          <span style={{ fontSize: "10px", color: "var(--accent-primary)", fontWeight: 600 }}>v0.2.1</span>
+          <span style={{ fontSize: "10px", color: "var(--accent-primary)", fontWeight: 600 }}>v0.2.2</span>
         </div>
         <button
           type="button"
@@ -569,16 +650,37 @@ export const NavigationSidebar: React.FC = () => {
         )}
       </div>
 
-      {/* General Notes Section */}
+      {/* General Notes Section (Grouped by Folder / Section) */}
       <div className="sidebar-section">
         <div className="sidebar-section-header">
-          <span>General Notes</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: "11px" }}>{recentNotes.length}</span>
+          <span>Notes & Folders</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+            <span style={{ fontSize: "11px", marginRight: 2 }}>{recentNotes.length}</span>
             <button
               type="button"
               className="note-action-btn"
-              style={{ width: 18, height: 18, fontSize: 13, padding: 0 }}
+              style={{ width: 22, height: 20, fontSize: 10, padding: 0 }}
+              title={`Sort notes: ${noteSortBy === "title" ? "Title (A-Z)" : "Last Modified"}\nClick to toggle`}
+              onClick={() => void setNoteSortBy(noteSortBy === "title" ? "updatedAt" : "title")}
+            >
+              {noteSortBy === "title" ? "A-Z" : "🕒"}
+            </button>
+            <button
+              type="button"
+              className="note-action-btn"
+              style={{ width: 22, height: 20, fontSize: 11, padding: 0 }}
+              title="Create New Folder / Section"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsCreatingSection(true);
+              }}
+            >
+              📁+
+            </button>
+            <button
+              type="button"
+              className="note-action-btn"
+              style={{ width: 20, height: 20, fontSize: 13, padding: 0 }}
               title="Create New Note (Ctrl+N)"
               onClick={handleCreateNote}
             >
@@ -586,6 +688,76 @@ export const NavigationSidebar: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Inline Section / Folder Creator */}
+        {isCreatingSection && (
+          <form
+            onSubmit={handleCreateSectionSubmit}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 8px",
+              margin: "2px 0 6px",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--accent-primary)",
+              borderRadius: "4px",
+            }}
+          >
+            <input
+              type="text"
+              autoFocus
+              placeholder="Folder name..."
+              value={newSectionName}
+              onChange={(e) => setNewSectionName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setIsCreatingSection(false);
+                  setNewSectionName("");
+                }
+              }}
+              style={{
+                flex: 1,
+                fontSize: "11px",
+                background: "transparent",
+                border: "none",
+                color: "var(--text-primary)",
+                outline: "none",
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                background: "var(--accent-primary)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "3px",
+                padding: "2px 6px",
+                fontSize: "10px",
+                cursor: "pointer",
+              }}
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreatingSection(false);
+                setNewSectionName("");
+              }}
+              style={{
+                background: "transparent",
+                color: "var(--text-muted)",
+                border: "none",
+                fontSize: "12px",
+                cursor: "pointer",
+                padding: "0 2px",
+              }}
+            >
+              ✕
+            </button>
+          </form>
+        )}
 
         {/* Search / Filter Notes Input */}
         {recentNotes.length > 0 && (
@@ -685,130 +857,143 @@ export const NavigationSidebar: React.FC = () => {
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {recentNotes.length === 0 ? (
+          {recentNotes.length === 0 && displaySectionGroups.length === 0 ? (
             <div style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--font-size-xs)", color: "var(--text-muted)" }}>
               {workspace ? "No notes created yet." : "Open a workspace to view notes."}
             </div>
-          ) : filteredNotes.length === 0 ? (
+          ) : displaySectionGroups.length === 0 ? (
             <div style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--font-size-xs)", color: "var(--text-muted)" }}>
               No matching notes found.
             </div>
           ) : (
-            <>
-              {/* Pinned Notes Group */}
-              {pinnedNotes.length > 0 && (
-                <>
-                  <div className="sidebar-sub-label">PINNED</div>
-                  {pinnedNotes.map((note) => {
-                    const isTabActive = activeTabId === `tab_${note.id}`;
-                    return (
-                      <button
-                        key={note.id}
-                        type="button"
-                        className={`sidebar-note-item ${isTabActive ? "active" : ""}`}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData(
-                            "application/x-chronote-note",
-                            JSON.stringify({ id: note.id, title: note.title })
-                          );
-                          e.dataTransfer.setData("text/plain", `[[${note.title}]]`);
-                          e.dataTransfer.effectAllowed = "copy";
-                        }}
-                        onClick={() => handleOpenGeneralNote(note.id, note.title, note.pinned)}
-                        title={`${note.title} (Drag into editor to link)`}
-                      >
-                        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0 }}>
-                          <path d="M4 0h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H4z" />
-                        </svg>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {note.title}
-                        </span>
-                        <div className="sidebar-note-actions">
-                          <span
-                            className="sidebar-note-action-btn"
-                            title="Unpin note"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void togglePin(note.id);
-                            }}
-                          >
-                            📌
-                          </span>
-                          <span
-                            className="sidebar-note-action-btn danger"
-                            title="Delete note"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteCandidateId(note.id);
-                            }}
-                          >
-                            🗑️
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </>
-              )}
+            displaySectionGroups.map((group) => {
+              const isExpanded = !collapsedSections.includes(group.name);
+              const isDragOver = dragOverSection === group.name;
 
-              {/* Unpinned Notes Group */}
-              {unpinnedNotes.length > 0 && (
-                <>
-                  {pinnedNotes.length > 0 && <div className="sidebar-sub-label" style={{ marginTop: 4 }}>NOTES</div>}
-                  {unpinnedNotes.map((note) => {
-                    const isTabActive = activeTabId === `tab_${note.id}`;
-                    return (
-                      <button
-                        key={note.id}
-                        type="button"
-                        className={`sidebar-note-item ${isTabActive ? "active" : ""}`}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData(
-                            "application/x-chronote-note",
-                            JSON.stringify({ id: note.id, title: note.title })
-                          );
-                          e.dataTransfer.setData("text/plain", `[[${note.title}]]`);
-                          e.dataTransfer.effectAllowed = "copy";
-                        }}
-                        onClick={() => handleOpenGeneralNote(note.id, note.title, note.pinned)}
-                        title={`${note.title} (Drag into editor to link)`}
+              return (
+                <div key={group.name} className="sidebar-section-folder">
+                  <div
+                    className={`sidebar-section-folder-row ${isDragOver ? "drag-over" : ""}`}
+                    onClick={() => toggleSectionCollapsed(group.name)}
+                    onDragOver={(e) => handleFolderDragOver(group.name, e)}
+                    onDragLeave={(e) => handleFolderDragLeave(group.name, e)}
+                    onDrop={(e) => void handleFolderDrop(group.name, e)}
+                    title={`Folder: ${group.name} (${group.notes.length} notes)\nClick to toggle. Drag notes here to move.`}
+                  >
+                    <span
+                      className={`sidebar-topic-chevron ${isExpanded ? "expanded" : ""}`}
+                      style={{ fontSize: "10px", width: "12px", textAlign: "center", userSelect: "none" }}
+                    >
+                      ▶
+                    </span>
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.85, flexShrink: 0 }}>
+                      <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z" />
+                    </svg>
+                    <span style={{ fontWeight: 600, fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                      {group.name}
+                    </span>
+                    {group.isPinned && (
+                      <span style={{ fontSize: "10px", color: "var(--accent-primary)" }} title="Pinned folder">
+                        📌
+                      </span>
+                    )}
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", marginLeft: 2, marginRight: 2 }}>
+                      {group.notes.length}
+                    </span>
+
+                    <div className="sidebar-folder-actions" onClick={(e) => e.stopPropagation()}>
+                      <span
+                        className="sidebar-note-action-btn"
+                        style={{ width: 18, height: 18, fontSize: 11 }}
+                        title={group.isPinned ? "Unpin folder" : "Pin folder to top"}
+                        onClick={() => void togglePinSection(group.name)}
                       >
-                        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0 }}>
-                          <path d="M4 0h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H4z" />
-                        </svg>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {note.title}
+                        {group.isPinned ? "📌" : "📍"}
+                      </span>
+                      <span
+                        className="sidebar-note-action-btn"
+                        style={{ width: 18, height: 18, fontSize: 12 }}
+                        title={`Add note in "${group.name}"`}
+                        onClick={(e) => void handleCreateNoteInSection(group.name, e)}
+                      >
+                        +
+                      </span>
+                      {group.name !== "General" && (
+                        <span
+                          className="sidebar-note-action-btn danger"
+                          style={{ width: 18, height: 18, fontSize: 11 }}
+                          title={`Delete folder "${group.name}" (contained notes will move to General)`}
+                          onClick={() => void deleteSection(group.name)}
+                        >
+                          🗑️
                         </span>
-                        <div className="sidebar-note-actions">
-                          <span
-                            className="sidebar-note-action-btn"
-                            title="Pin note to top"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void togglePin(note.id);
-                            }}
-                          >
-                            📌
-                          </span>
-                          <span
-                            className="sidebar-note-action-btn danger"
-                            title="Delete note"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteCandidateId(note.id);
-                            }}
-                          >
-                            🗑️
-                          </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="sidebar-section-notes-list" style={{ display: "flex", flexDirection: "column", gap: 1, paddingLeft: "12px" }}>
+                      {group.notes.length === 0 ? (
+                        <div style={{ padding: "3px 12px", fontSize: "11px", color: "var(--text-muted)", fontStyle: "italic" }}>
+                          (Empty folder)
                         </div>
-                      </button>
-                    );
-                  })}
-                </>
-              )}
-            </>
+                      ) : (
+                        group.notes.map((note) => {
+                          const isTabActive = activeTabId === `tab_${note.id}`;
+                          return (
+                            <button
+                              key={note.id}
+                              type="button"
+                              className={`sidebar-note-item ${isTabActive ? "active" : ""}`}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData(
+                                  "application/x-chronote-note",
+                                  JSON.stringify({ id: note.id, title: note.title })
+                                );
+                                e.dataTransfer.setData("text/plain", `[[${note.title}]]`);
+                                e.dataTransfer.effectAllowed = "copyMove";
+                              }}
+                              onClick={() => handleOpenGeneralNote(note.id, note.title, note.pinned)}
+                              title={`${note.title} (Drag into editor or another folder)`}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0, opacity: 0.8 }}>
+                                <path d="M4 0h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H4z" />
+                              </svg>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {note.title}
+                              </span>
+                              <div className="sidebar-note-actions">
+                                <span
+                                  className="sidebar-note-action-btn"
+                                  title={note.pinned ? "Unpin note" : "Pin note to top"}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void togglePin(note.id);
+                                  }}
+                                >
+                                  📌
+                                </span>
+                                <span
+                                  className="sidebar-note-action-btn danger"
+                                  title="Delete note"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteCandidateId(note.id);
+                                  }}
+                                >
+                                  🗑️
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       </div>

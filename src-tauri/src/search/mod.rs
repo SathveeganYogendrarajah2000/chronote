@@ -622,6 +622,7 @@ mod tests {
             schema_version: 1,
             title: "Spring Security JWT Guide".to_string(),
             tags: vec!["springboot".to_string(), "backend".to_string()],
+            section: "General".to_string(),
             content: serde_json::json!({
                 "type": "doc",
                 "content": [
@@ -661,6 +662,7 @@ mod tests {
             schema_version: 1,
             title: "Database Indexing".to_string(),
             tags: vec!["sql".to_string()],
+            section: "General".to_string(),
             content: serde_json::json!({
                 "type": "doc",
                 "content": [
@@ -748,6 +750,7 @@ mod tests {
             schema_version: 1,
             title: "Architecture Doc".to_string(),
             tags: vec!["arch".to_string()],
+            section: "General".to_string(),
             content: serde_json::json!({
                 "type": "doc",
                 "content": [{
@@ -772,6 +775,7 @@ mod tests {
             schema_version: 1,
             title: "Database Schema".to_string(),
             tags: vec!["db".to_string()],
+            section: "General".to_string(),
             content: serde_json::json!({
                 "type": "doc",
                 "content": [{ "type": "paragraph" }]

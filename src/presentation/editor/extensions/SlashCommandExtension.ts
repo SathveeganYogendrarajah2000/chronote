@@ -4,6 +4,11 @@ import Suggestion from "@tiptap/suggestion";
 import { toAssetUrl } from "@infrastructure/tauri/assetHelper";
 import { ipcBridge } from "@infrastructure/tauri/ipcBridge";
 import type { SlashCommandItem } from "../components/SlashCommandMenu";
+import {
+  getTodayDateString,
+  getTomorrowDateString,
+  getYesterdayDateString,
+} from "./DateBadgeExtension";
 
 export const SlashCommandPluginKey = new PluginKey("slashCommand");
 
@@ -19,6 +24,30 @@ export interface SlashCommandOptions {
 }
 
 const COMMAND_ITEMS: SlashCommandItem[] = [
+  {
+    id: "date-today",
+    title: "Date (Today)",
+    description: "Insert today's date badge (/date-today, /date)",
+    icon: "📅",
+  },
+  {
+    id: "date-tmrw",
+    title: "Date (Tomorrow)",
+    description: "Insert tomorrow's date badge (/date-tmrw)",
+    icon: "📅",
+  },
+  {
+    id: "date-yesterday",
+    title: "Date (Yesterday)",
+    description: "Insert yesterday's date badge (/date-yesterday)",
+    icon: "📅",
+  },
+  {
+    id: "date",
+    title: "Date Badge",
+    description: "Insert an interactive date block with picker (/date)",
+    icon: "📅",
+  },
   {
     id: "table",
     title: "Table",
@@ -120,12 +149,18 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
         items: ({ query }) => {
           const q = query.toLowerCase().trim();
           if (!q) return COMMAND_ITEMS;
-          return COMMAND_ITEMS.filter(
-            (item) =>
-              item.id.toLowerCase().includes(q) ||
-              item.title.toLowerCase().includes(q) ||
-              item.description.toLowerCase().includes(q)
-          );
+          return COMMAND_ITEMS.filter((item) => {
+            const matchesId = item.id.toLowerCase().includes(q);
+            const matchesTitle = item.title.toLowerCase().includes(q);
+            const matchesDesc = item.description.toLowerCase().includes(q);
+
+            // Aliases for date commands
+            if (q.startsWith("date") || q === "today" || q === "tomorrow" || q === "yesterday") {
+              if (item.id.startsWith("date")) return true;
+            }
+
+            return matchesId || matchesTitle || matchesDesc;
+          });
         },
 
         render: () => {
@@ -215,6 +250,31 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
           const chain = editor.chain().focus().deleteRange(range);
 
           switch (item.id) {
+            case "date":
+            case "date-today":
+              chain
+                .insertContent([
+                  { type: "dateBadge", attrs: { date: getTodayDateString() } },
+                  { type: "text", text: " " },
+                ])
+                .run();
+              break;
+            case "date-tmrw":
+              chain
+                .insertContent([
+                  { type: "dateBadge", attrs: { date: getTomorrowDateString() } },
+                  { type: "text", text: " " },
+                ])
+                .run();
+              break;
+            case "date-yesterday":
+              chain
+                .insertContent([
+                  { type: "dateBadge", attrs: { date: getYesterdayDateString() } },
+                  { type: "text", text: " " },
+                ])
+                .run();
+              break;
             case "table":
               (chain as any).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
               break;

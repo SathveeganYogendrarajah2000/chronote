@@ -77,6 +77,9 @@ function createTextRunsFromInline(nodes?: ProseMirrorNode[]): TextRun[] {
       runs.push(createTextRunFromNode(node));
     } else if (node.type === "hardBreak") {
       runs.push(new TextRun({ break: 1 }));
+    } else if (node.type === "dateBadge") {
+      const d = (node.attrs?.date as string) || "";
+      runs.push(new TextRun({ text: `📅 ${d}`, bold: true, color: "0969DA" }));
     }
   }
 

@@ -67,6 +67,7 @@ export const GeneralNoteSchema = z.object({
   schemaVersion: z.literal(1),
   title: z.string().min(1).default("Untitled Note"),
   tags: z.array(TagSchema),
+  section: z.string().default("General").optional(),
   content: z.record(z.unknown()),
   pinned: z.boolean().default(false),
   createdAt: z.string().datetime(),
@@ -79,6 +80,9 @@ export const WorkspaceSettingsSchema = z.object({
   theme: z.enum(["dark", "light", "system"]).default("dark"),
   dsmSortOrder: z.enum(["desc", "asc"]).default("desc"),
   autosaveIntervalMs: z.number().min(200).max(5000).default(800),
+  noteSortBy: z.enum(["title", "updatedAt"]).default("title").optional(),
+  pinnedSections: z.array(z.string()).default([]).optional(),
+  customSections: z.array(z.string()).default([]).optional(),
 });
 
 export const WorkspaceSchema = z.object({
@@ -155,4 +159,3 @@ export const CoursesDocumentSchema = z.object({
   topics: z.array(LearningTopicSchema),
   resources: z.array(LearningResourceSchema),
 });
-

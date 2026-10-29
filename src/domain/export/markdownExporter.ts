@@ -86,6 +86,10 @@ function serializeInlineNodes(nodes?: ProseMirrorNode[], options?: MarkdownExpor
       if (node.type === "hardBreak") {
         return "  \n";
       }
+      if (node.type === "dateBadge") {
+        const d = (node.attrs?.date as string) || "";
+        return d ? `📅 ${d}` : "";
+      }
       return "";
     })
     .join("");

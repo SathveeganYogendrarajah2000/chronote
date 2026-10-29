@@ -4,6 +4,9 @@ export interface WorkspaceSettings {
   theme: "dark" | "light" | "system"; // Default: "system"
   dsmSortOrder: "desc" | "asc";   // Default: "desc" (newest date on top)
   autosaveIntervalMs: number;     // Default: 800
+  noteSortBy?: "title" | "updatedAt"; // Default: "title" (alphabetical)
+  pinnedSections?: string[];      // Ordered list of pinned folder/section names
+  customSections?: string[];      // Created sections even if empty
 }
 
 export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
@@ -12,6 +15,9 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   theme: "dark",
   dsmSortOrder: "desc",
   autosaveIntervalMs: 800,
+  noteSortBy: "title",
+  pinnedSections: [],
+  customSections: [],
 };
 
 export interface Workspace {

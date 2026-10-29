@@ -80,6 +80,10 @@ interface WorkspaceState {
   deleteNote: (id: string) => Promise<void>;
   rebuildIndex: () => Promise<IndexStats>;
   updateSettings: (settings: Partial<WorkspaceSettings>) => Promise<void>;
+  createSection: (sectionName: string) => Promise<void>;
+  deleteSection: (sectionName: string) => Promise<void>;
+  togglePinSection: (sectionName: string) => Promise<void>;
+  setNoteSortBy: (sortBy: "title" | "updatedAt") => Promise<void>;
   setWorkspaceModalOpen: (open: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -98,32 +102,31 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       // 1. Check if backend already has an active workspace open
       const active = await ipcBridge.getActiveWorkspace();
       if (active) {
-        set({ workspace: active, isLoading: false, isWorkspaceModalOpen: false });
+        set({ workspace: active, isLoading: false });
         await get().refreshNotes();
         const validNoteIds = new Set(get().recentNotes.map((n) => n.id));
         useTabsStore.getState().restoreSession(active.id, validNoteIds);
         return;
       }
 
-      // 2. Otherwise, check localStorage for last opened workspace
+      // 2. Check localStorage for last workspace path
       const storage = getLocalStorage();
       const lastPath = storage?.getItem(STORAGE_KEY_LAST_WORKSPACE);
       if (lastPath) {
         try {
-          const ws = await ipcBridge.openWorkspace(lastPath);
-          set({ workspace: ws, isLoading: false, isWorkspaceModalOpen: false });
+          const workspace = await ipcBridge.openWorkspace(lastPath);
+          set({ workspace, isLoading: false });
           await get().refreshNotes();
           const validNoteIds = new Set(get().recentNotes.map((n) => n.id));
-          useTabsStore.getState().restoreSession(ws.id, validNoteIds);
+          useTabsStore.getState().restoreSession(workspace.id, validNoteIds);
           return;
         } catch {
-          // Fall back to opening modal if last workspace cannot be opened
-          storage?.removeItem(STORAGE_KEY_LAST_WORKSPACE);
+          // If last workspace cannot be opened, proceed to auto-open picker
         }
       }
 
-      // 3. No active workspace; show the workspace selector modal
-      set({ workspace: null, isLoading: false, isWorkspaceModalOpen: true });
+      // 3. Fallback: prompt directory picker on first launch
+      set({ isLoading: false, isWorkspaceModalOpen: true });
     } catch (err) {
       set({
         isLoading: false,
@@ -246,6 +249,74 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     } catch (err) {
       console.error("Failed to save settings:", err);
     }
+  },
+
+  createSection: async (sectionName: string) => {
+    const trimmed = sectionName.trim();
+    if (!trimmed || trimmed.toLowerCase() === "general") return;
+    const { workspace } = get();
+    if (!workspace) return;
+    const current = workspace.settings.customSections || [];
+    if (current.includes(trimmed)) return;
+    await get().updateSettings({
+      customSections: [...current, trimmed],
+    });
+  },
+
+  deleteSection: async (sectionName: string) => {
+    const trimmed = sectionName.trim();
+    if (!trimmed || trimmed.toLowerCase() === "general") return;
+    const { workspace, recentNotes } = get();
+    if (!workspace) return;
+
+    // Move any notes in this section to "General"
+    const notesToMove = recentNotes.filter((n) => (n.section || "General") === trimmed);
+    for (const noteMeta of notesToMove) {
+      try {
+        const fullNote = await ipcBridge.readGeneralNote(noteMeta.id);
+        await ipcBridge.saveGeneralNote({
+          ...fullNote,
+          section: "General",
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error(`Failed to move note ${noteMeta.id} from deleted section:`, err);
+      }
+    }
+
+    const currentCustom = workspace.settings.customSections || [];
+    const currentPinned = workspace.settings.pinnedSections || [];
+
+    await get().updateSettings({
+      customSections: currentCustom.filter((s) => s !== trimmed),
+      pinnedSections: currentPinned.filter((s) => s !== trimmed),
+    });
+
+    await get().refreshNotes();
+  },
+
+  togglePinSection: async (sectionName: string) => {
+    const trimmed = sectionName.trim();
+    if (!trimmed) return;
+    const { workspace } = get();
+    if (!workspace) return;
+
+    const currentPinned = workspace.settings.pinnedSections || [];
+    const isAlreadyPinned = currentPinned.includes(trimmed);
+
+    const nextPinned = isAlreadyPinned
+      ? currentPinned.filter((s) => s !== trimmed)
+      : [...currentPinned, trimmed];
+
+    await get().updateSettings({
+      pinnedSections: nextPinned,
+    });
+  },
+
+  setNoteSortBy: async (sortBy: "title" | "updatedAt") => {
+    await get().updateSettings({
+      noteSortBy: sortBy,
+    });
   },
 
   setWorkspaceModalOpen: (open: boolean) => set({ isWorkspaceModalOpen: open }),

@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import type { ExportScope } from "@domain/export/export.types";
-import { useResourceStore } from "./useResourceStore";
 
 export type ResourceTabType = "outline" | "code" | "images" | "links" | "attachments" | "backlinks";
 export type ThemeMode = "dark" | "light" | "system";
@@ -97,6 +96,7 @@ interface UiState {
   activeResourceTab: ResourceTabType;
   theme: ThemeMode;
   searchModalOpen: boolean;
+  searchModalMode: "find" | "replace";
   exportModalOpen: boolean;
   exportInitialScope?: ExportScope | undefined;
   performanceModalOpen: boolean;
@@ -115,7 +115,8 @@ interface UiState {
   setActiveResourceTab: (tab: ResourceTabType) => void;
   openResourceOutline: () => void;
   setTheme: (theme: ThemeMode) => void;
-  setSearchModalOpen: (open: boolean) => void;
+  setSearchModalOpen: (open: boolean, mode?: "find" | "replace") => void;
+  setSearchModalMode: (mode: "find" | "replace") => void;
   setExportModalOpen: (open: boolean, scope?: ExportScope | undefined) => void;
   setPerformanceModalOpen: (open: boolean) => void;
   setZoomLevel: (level: number) => void;
@@ -133,14 +134,14 @@ export const useUiStore = create<UiState>((set, get) => ({
   activeResourceTab: "outline",
   theme: "dark",
   searchModalOpen: false,
+  searchModalMode: "find",
   exportModalOpen: false,
   exportInitialScope: undefined,
   performanceModalOpen: false,
   zoomLevel: getInitialZoom(),
   zoomNotification: null,
 
-  toggleSidebar: () =>
-    set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
 
   setSidebarWidth: (rawWidth: number) => {
@@ -187,11 +188,15 @@ export const useUiStore = create<UiState>((set, get) => ({
   setActiveResourceTab: (activeResourceTab) => set({ activeResourceTab }),
   openResourceOutline: () => {
     set({ resourcePaneCollapsed: false, activeResourceTab: "outline" });
-    useResourceStore.getState().setActiveTab("outline");
   },
 
   setTheme: (theme) => set({ theme }),
-  setSearchModalOpen: (searchModalOpen) => set({ searchModalOpen }),
+  setSearchModalOpen: (searchModalOpen, mode) =>
+    set({
+      searchModalOpen,
+      ...(mode ? { searchModalMode: mode } : {}),
+    }),
+  setSearchModalMode: (searchModalMode) => set({ searchModalMode }),
   setExportModalOpen: (exportModalOpen, exportInitialScope) =>
     set({ exportModalOpen, exportInitialScope }),
   setPerformanceModalOpen: (performanceModalOpen) => set({ performanceModalOpen }),

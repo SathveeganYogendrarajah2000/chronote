@@ -88,6 +88,7 @@ fn test_large_workspace_stress_and_rebuild_performance() {
             schema_version: 1,
             title: format!("Engineering Architecture Review Note #{}", i),
             tags: vec!["performance".to_string(), "architecture".to_string(), format!("node_{}", i % 10)],
+            section: "General".to_string(),
             content: note_content,
             pinned: i == 0,
             created_at: "2026-08-01T09:00:00Z".to_string(),
