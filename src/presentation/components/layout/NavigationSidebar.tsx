@@ -292,6 +292,10 @@ export const NavigationSidebar: React.FC = () => {
     const base = filterNotes(recentNotes, filterQuery);
     return filterNotesByTags(base, selectedTags, tagMatchMode);
   }, [recentNotes, filterQuery, selectedTags, tagMatchMode]);
+  const pinnedNotes = useMemo(() => {
+    return filteredNotes.filter((n) => n.pinned);
+  }, [filteredNotes]);
+
 
   // Group notes into sections
   const noteSortBy = workspace?.settings?.noteSortBy ?? "title";
@@ -857,6 +861,100 @@ export const NavigationSidebar: React.FC = () => {
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {/* Pinned Notes Quick Access Section */}
+          {pinnedNotes.length > 0 && !filterQuery && selectedTags.length === 0 && (
+            <div style={{ marginBottom: "6px", paddingBottom: "6px", borderBottom: "1px dashed var(--border-subtle)" }}>
+              <div className="sidebar-sub-label" style={{ display: "flex", alignItems: "center", gap: 4, paddingBottom: "2px" }}>
+                <span>📌 PINNED</span>
+                <span style={{ fontSize: "10px", color: "var(--accent-primary)" }}>({pinnedNotes.length})</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {pinnedNotes.map((note) => {
+                  const isTabActive = activeTabId === `tab_${note.id}`;
+                  return (
+                    <div
+                      key={`pinned_${note.id}`}
+                      role="button"
+                      tabIndex={0}
+                      className={`sidebar-note-item ${isTabActive ? "active" : ""}`}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData(
+                          "application/x-chronote-note",
+                          JSON.stringify({ id: note.id, title: note.title })
+                        );
+                        e.dataTransfer.setData("text/plain", `[[${note.title}]]`);
+                        e.dataTransfer.effectAllowed = "copyMove";
+                      }}
+                      onClick={() => handleOpenGeneralNote(note.id, note.title, note.pinned)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          handleOpenGeneralNote(note.id, note.title, note.pinned);
+                        }
+                      }}
+                      title={`${note.title} [Folder: ${note.section || "General"}]`}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0, opacity: 0.8 }}>
+                        <path d="M4 0h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H4z" />
+                      </svg>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                        {note.title}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "9px",
+                          padding: "1px 4px",
+                          borderRadius: "3px",
+                          background: "var(--bg-surface)",
+                          color: "var(--text-muted)",
+                          border: "1px solid var(--border-subtle)",
+                          marginRight: 4,
+                          flexShrink: 0,
+                        }}
+                        title={`Folder: ${note.section || "General"}`}
+                      >
+                        📁 {note.section || "General"}
+                      </span>
+                      <div
+                        className="sidebar-note-actions"
+                        draggable={false}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          className="sidebar-note-action-btn active"
+                          style={{ width: 18, height: 18, fontSize: 11, color: "var(--accent-primary)" }}
+                          title="Unpin note"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void togglePin(note.id);
+                          }}
+                        >
+                          📌
+                        </button>
+                        <button
+                          type="button"
+                          className="sidebar-note-action-btn danger"
+                          style={{ width: 18, height: 18, fontSize: 11 }}
+                          title="Delete note"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteCandidateId(note.id);
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {recentNotes.length === 0 && displaySectionGroups.length === 0 ? (
             <div style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--font-size-xs)", color: "var(--text-muted)" }}>
               {workspace ? "No notes created yet." : "Open a workspace to view notes."}
@@ -902,31 +1000,59 @@ export const NavigationSidebar: React.FC = () => {
                     </span>
 
                     <div className="sidebar-folder-actions" onClick={(e) => e.stopPropagation()}>
-                      <span
-                        className="sidebar-note-action-btn"
-                        style={{ width: 18, height: 18, fontSize: 11 }}
+                      <button
+                        type="button"
+                        className={`sidebar-note-action-btn ${group.isPinned ? "active" : ""}`}
+                        style={{
+                          width: 18,
+                          height: 18,
+                          fontSize: 11,
+                          color: group.isPinned ? "var(--accent-primary)" : "inherit",
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                        }}
                         title={group.isPinned ? "Unpin folder" : "Pin folder to top"}
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={() => void togglePinSection(group.name)}
                       >
                         {group.isPinned ? "📌" : "📍"}
-                      </span>
-                      <span
+                      </button>
+                      <button
+                        type="button"
                         className="sidebar-note-action-btn"
-                        style={{ width: 18, height: 18, fontSize: 12 }}
+                        style={{
+                          width: 18,
+                          height: 18,
+                          fontSize: 12,
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                        }}
                         title={`Add note in "${group.name}"`}
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => void handleCreateNoteInSection(group.name, e)}
                       >
                         +
-                      </span>
+                      </button>
                       {group.name !== "General" && (
-                        <span
+                        <button
+                          type="button"
                           className="sidebar-note-action-btn danger"
-                          style={{ width: 18, height: 18, fontSize: 11 }}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            fontSize: 11,
+                            border: "none",
+                            background: "transparent",
+                            cursor: "pointer",
+                          }}
                           title={`Delete folder "${group.name}" (contained notes will move to General)`}
+                          onMouseDown={(e) => e.stopPropagation()}
                           onClick={() => void deleteSection(group.name)}
                         >
                           🗑️
-                        </span>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -941,9 +1067,10 @@ export const NavigationSidebar: React.FC = () => {
                         group.notes.map((note) => {
                           const isTabActive = activeTabId === `tab_${note.id}`;
                           return (
-                            <button
+                            <div
                               key={note.id}
-                              type="button"
+                              role="button"
+                              tabIndex={0}
                               className={`sidebar-note-item ${isTabActive ? "active" : ""}`}
                               draggable
                               onDragStart={(e) => {
@@ -955,37 +1082,78 @@ export const NavigationSidebar: React.FC = () => {
                                 e.dataTransfer.effectAllowed = "copyMove";
                               }}
                               onClick={() => handleOpenGeneralNote(note.id, note.title, note.pinned)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  handleOpenGeneralNote(note.id, note.title, note.pinned);
+                                }
+                              }}
                               title={`${note.title} (Drag into editor or another folder)`}
                             >
                               <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0, opacity: 0.8 }}>
                                 <path d="M4 0h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H4z" />
                               </svg>
-                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                                 {note.title}
                               </span>
-                              <div className="sidebar-note-actions">
+
+                              {note.pinned && (
                                 <span
-                                  className="sidebar-note-action-btn"
+                                  style={{ fontSize: "10px", color: "var(--accent-primary)", flexShrink: 0, marginRight: 2 }}
+                                  title="Pinned note"
+                                >
+                                  📌
+                                </span>
+                              )}
+
+                              <div
+                                className="sidebar-note-actions"
+                                draggable={false}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  className={`sidebar-note-action-btn ${note.pinned ? "active" : ""}`}
+                                  style={{
+                                    width: 18,
+                                    height: 18,
+                                    fontSize: 11,
+                                    color: note.pinned ? "var(--accent-primary)" : "inherit",
+                                    border: "none",
+                                    background: "transparent",
+                                    cursor: "pointer",
+                                  }}
                                   title={note.pinned ? "Unpin note" : "Pin note to top"}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     void togglePin(note.id);
                                   }}
                                 >
-                                  📌
-                                </span>
-                                <span
+                                  {note.pinned ? "📌" : "📍"}
+                                </button>
+                                <button
+                                  type="button"
                                   className="sidebar-note-action-btn danger"
+                                  style={{
+                                    width: 18,
+                                    height: 18,
+                                    fontSize: 11,
+                                    border: "none",
+                                    background: "transparent",
+                                    cursor: "pointer",
+                                  }}
                                   title="Delete note"
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setDeleteCandidateId(note.id);
                                   }}
                                 >
                                   🗑️
-                                </span>
+                                </button>
                               </div>
-                            </button>
+                            </div>
                           );
                         })
                       )}

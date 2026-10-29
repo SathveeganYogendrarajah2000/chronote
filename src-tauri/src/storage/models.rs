@@ -84,6 +84,7 @@ pub struct GeneralNote {
     #[serde(default = "default_section")]
     pub section: String,
     pub content: serde_json::Value,
+    #[serde(default)]
     pub pinned: bool,
     pub created_at: String,
     pub updated_at: String,
@@ -97,6 +98,7 @@ pub struct NoteMetadata {
     pub tags: Vec<String>,
     #[serde(default = "default_section")]
     pub section: String,
+    #[serde(default)]
     pub pinned: bool,
     pub updated_at: String,
 }

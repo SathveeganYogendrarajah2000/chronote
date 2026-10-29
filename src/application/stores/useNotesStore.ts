@@ -300,24 +300,38 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
 
+    // 1. Optimistic update in workspace store so sidebar re-renders immediately
+    const currentNotes = useWorkspaceStore.getState().recentNotes;
+    useWorkspaceStore.setState({
+      recentNotes: currentNotes.map((n) =>
+        n.id === id ? { ...n, pinned: nextPinned } : n
+      ),
+    });
+
+    // 2. If active note, update active note state immediately
+    if (activeNote && activeNote.id === id) {
+      set({ activeNote: updated });
+    }
+
+    // 3. Sync tab pin status if tab is open
+    const tabId = `tab_${id}`;
+    if (nextPinned) {
+      useTabsStore.getState().pinTab(tabId);
+    } else {
+      useTabsStore.getState().unpinTab(tabId);
+    }
+
+    // 4. Persist to disk and sync backend
     try {
       await ipcBridge.saveGeneralNote(updated);
-
-      if (activeNote && activeNote.id === id) {
-        set({ activeNote: updated });
-      }
-
-      // Sync tab pin status if tab is open
-      const tabId = `tab_${id}`;
-      if (nextPinned) {
-        useTabsStore.getState().pinTab(tabId);
-      } else {
-        useTabsStore.getState().unpinTab(tabId);
-      }
-
       await useWorkspaceStore.getState().refreshNotes();
     } catch (err) {
       console.error(`Failed to toggle pin on note ${id}:`, err);
+      // Revert optimistic update on failure
+      useWorkspaceStore.setState({ recentNotes: currentNotes });
+      if (activeNote && activeNote.id === id) {
+        set({ activeNote: targetNote });
+      }
     }
   },
 
